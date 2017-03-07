@@ -29,6 +29,11 @@ import simple_log
 simple_log.register()
 ```
 
+Create Simple Log model:
+```python
+python manage.py migrate
+```
+
 That's all. Now simple log will detect all changes and save old and
 new values.
 
