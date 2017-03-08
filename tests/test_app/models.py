@@ -7,13 +7,24 @@ from django.utils.encoding import python_2_unicode_compatible
 
 @python_2_unicode_compatible
 class TestModel(models.Model):
-    char_field = models.CharField(verbose_name='Char field', max_length=100,
-                                  blank=True)
-    fk_field = models.ForeignKey('test_app.OtherModel', verbose_name='Fk field',
-                                 null=True, blank=True)
-    m2m_field = models.ManyToManyField('test_app.OtherModel',
-                                       verbose_name='M2m field', null=True,
-                                       blank=True)
+    char_field = models.CharField(
+        verbose_name='Char field',
+        max_length=100,
+        blank=True
+    )
+    fk_field = models.ForeignKey(
+        'test_app.OtherModel',
+        verbose_name='Fk field',
+        related_name='test_entries_fk',
+        null=True,
+        blank=True
+    )
+    m2m_field = models.ManyToManyField(
+        'test_app.OtherModel',
+        verbose_name='M2m field',
+        related_name='test_entries_m2m',
+        blank=True
+    )
 
     class Meta:
         verbose_name = 'test entry'

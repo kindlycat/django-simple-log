@@ -11,6 +11,8 @@ from . import settings
 __all__ = ['get_simple_log_model', 'get_current_user', 'get_current_request',
            'get_serializer']
 
+registered_models = []
+
 
 @lru_cache.lru_cache(maxsize=None)
 def get_simple_log_model():
@@ -31,13 +33,15 @@ def get_serializer():
     return import_string(settings.MODEL_SERIALIZER)
 
 
-@lru_cache.lru_cache(maxsize=None)
-def get_current_request():
-    return import_string(settings.GET_CURRENT_REQUEST)()
-
-
 def get_current_request_default():
     return getattr(_thread_locals, 'request', None)
+
+
+@lru_cache.lru_cache(maxsize=None)
+def _get_current_request():
+    return import_string(settings.GET_CURRENT_REQUEST)
+
+get_current_request = _get_current_request()
 
 
 def get_current_user():
@@ -57,11 +61,13 @@ def get_fields(klass):
     else:
         fields = [f for f in fields
                   if f.name not in settings.EXCLUDE_FIELD_LIST]
-    return [f for f in fields if not f.one_to_many]
+    return [f for f in fields if f.concrete]
 
 
 @lru_cache.lru_cache(maxsize=None)
 def get_models_for_log():
+    if registered_models:
+        return registered_models
     all_models = [m for m in django_apps.get_models()
                   if m._meta.label != settings.SIMPLE_LOG_MODEL]
     if settings.MODEL_LIST:
