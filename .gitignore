@@ -3,3 +3,4 @@
 django_simple_log.egg-info
 
 !.gitignore
+!.travis.yml

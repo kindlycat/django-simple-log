@@ -1,0 +1,13 @@
+language: python
+python:
+  - "3.5"
+env:
+  - DJANGO_VERSION=1.10.6
+install:
+  - pip install -q Django==$DJANGO_VERSION
+  - pip install -r tests/requirements.pip
+  - pip install coveralls
+after_script:
+  coveralls
+script:
+  coverage run --source=simple_log manage.py test tests;
