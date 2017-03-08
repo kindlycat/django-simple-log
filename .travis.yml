@@ -1,6 +1,8 @@
 language: python
 addons:
   postgresql: "9.5"
+services:
+  - postgresql
 python:
   - "3.5"
 env:
