@@ -1,6 +1,8 @@
 .*
 *.pyc
 django_simple_log.egg-info
+dist
+build
 
 !.gitignore
 !.travis.yml
