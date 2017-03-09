@@ -20,5 +20,5 @@ EXCLUDE_FIELD_LIST = getattr(
 )
 ANONYMOUS_REPR = getattr(settings, 'SIMPLE_LOG_ANONYMOUS_REPR', _('Anonymous'))
 NONE_USER_REPR = getattr(settings, 'SIMPLE_LOG_NONE_USER_REPR', _('System'))
-GET_CURRENT_REQUEST = getattr(settings, 'SIMPLE_LOG_GET_REQUEST_PATH',
+GET_CURRENT_REQUEST = getattr(settings, 'SIMPLE_LOG_GET_CURRENT_REQUEST',
                               'simple_log.utils.get_current_request_default')

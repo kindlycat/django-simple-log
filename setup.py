@@ -6,13 +6,13 @@ from setuptools import find_packages
 
 
 def readme():
-    with open('README.md') as f:
+    with open('README.rst') as f:
         return f.read()
 
 
 setup(
     name='django-simple-log',
-    version='0.0.4',
+    version='0.0.5',
     description='Logging django models changes.',
     long_description=readme(),
     keywords='django log audit history',
@@ -29,5 +29,6 @@ setup(
         'Programming Language :: Python :: 3.6',
         'Framework :: Django :: 1.9',
         'Framework :: Django :: 1.10',
+        'License :: OSI Approved :: BSD License',
     ],
 )
