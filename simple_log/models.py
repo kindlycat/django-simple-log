@@ -83,17 +83,17 @@ class SimpleLogAbstract(models.Model):
         if 'user_repr' not in kwargs:
             if user is None:
                 kwargs['user_repr'] = settings.NONE_USER_REPR
-            elif user.is_anonymous:
-                kwargs['user_repr'] = settings.ANONYMOUS_REPR
-            else:
+            elif user.is_authenticated():
                 kwargs['user_repr'] = force_text(user)
+            else:
+                kwargs['user_repr'] = settings.ANONYMOUS_REPR
         if 'user_ip' not in kwargs:
             kwargs['user_ip'] = cls.get_ip()
         kwargs.update({
             'content_type': get_content_type_for_model(instance.__class__),
             'object_id': instance.pk,
             'object_repr': force_text(instance),
-            'user': user if user and user.is_authenticated else None
+            'user': user if user and user.is_authenticated() else None
         })
         return cls.objects.create(**kwargs)
 

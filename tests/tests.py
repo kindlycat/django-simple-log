@@ -4,8 +4,11 @@ from __future__ import unicode_literals
 from django.contrib.auth.models import User
 from django.contrib.contenttypes.models import ContentType
 from django.test import TestCase
-from django.urls import reverse
 from django.utils.encoding import force_text
+try:
+    from django.urls import reverse
+except ImportError:
+    from django.core.urlresolvers import reverse
 
 from simple_log.models import SimpleLog
 from .test_app.models import TestModel, OtherModel
