@@ -5,9 +5,10 @@ from django.contrib.auth.models import User
 from django.contrib.contenttypes.models import ContentType
 from django.test import TestCase
 from django.urls import reverse
+from django.utils.encoding import force_text
 
 from simple_log.models import SimpleLog
-from tests.test_app.models import TestModel, OtherModel
+from .test_app.models import TestModel, OtherModel
 
 
 class AdminTestCase(TestCase):
@@ -54,10 +55,10 @@ class AdminTestCase(TestCase):
         sl = SimpleLog.objects.first()
         self.assertEqual(sl.action_flag, SimpleLog.ADD)
         self.assertEqual(sl.user, self.user)
-        self.assertEqual(sl.user_repr, str(self.user))
+        self.assertEqual(sl.user_repr, force_text(self.user))
         self.assertEqual(sl.user_ip, '127.0.0.1')
-        self.assertEqual(sl.object_id, str(new_obj.id))
-        self.assertEqual(sl.object_repr, str(new_obj))
+        self.assertEqual(sl.object_id, force_text(new_obj.id))
+        self.assertEqual(sl.object_repr, force_text(new_obj))
         self.assertEqual(sl.content_type,
                          ContentType.objects.get_for_model(new_obj))
         self.assertIsNone(sl.old)
@@ -71,15 +72,15 @@ class AdminTestCase(TestCase):
                 'fk_field': {
                     'label': 'Fk field',
                     'value': {
-                        'db': str(self.other_model.pk),
-                        'repr': str(self.other_model),
+                        'db': force_text(self.other_model.pk),
+                        'repr': force_text(self.other_model),
                     }
                 },
                 'm2m_field': {
                     'label': 'M2m field',
                     'value': [{
-                        'db': str(self.other_model.pk),
-                        'repr': str(self.other_model),
+                        'db': force_text(self.other_model.pk),
+                        'repr': force_text(self.other_model),
                     }]
                 }
             }
@@ -105,10 +106,10 @@ class AdminTestCase(TestCase):
         obj.refresh_from_db()
         self.assertEqual(sl.action_flag, SimpleLog.CHANGE)
         self.assertEqual(sl.user, self.user)
-        self.assertEqual(sl.user_repr, str(self.user))
+        self.assertEqual(sl.user_repr, force_text(self.user))
         self.assertEqual(sl.user_ip, '127.0.0.1')
-        self.assertEqual(sl.object_id, str(obj.id))
-        self.assertEqual(sl.object_repr, str(obj))
+        self.assertEqual(sl.object_id, force_text(obj.id))
+        self.assertEqual(sl.object_repr, force_text(obj))
         self.assertEqual(sl.content_type,
                          ContentType.objects.get_for_model(obj))
         self.assertDictEqual(
@@ -121,15 +122,15 @@ class AdminTestCase(TestCase):
                 'fk_field': {
                     'label': 'Fk field',
                     'value': {
-                        'db': str(self.other_model.pk),
-                        'repr': str(self.other_model),
+                        'db': force_text(self.other_model.pk),
+                        'repr': force_text(self.other_model),
                     }
                 },
                 'm2m_field': {
                     'label': 'M2m field',
                     'value': [{
-                        'db': str(self.other_model.pk),
-                        'repr': str(self.other_model),
+                        'db': force_text(self.other_model.pk),
+                        'repr': force_text(self.other_model),
                     }]
                 }
             }
@@ -169,10 +170,10 @@ class AdminTestCase(TestCase):
         sl = SimpleLog.objects.first()
         self.assertEqual(sl.action_flag, SimpleLog.DELETE)
         self.assertEqual(sl.user, self.user)
-        self.assertEqual(sl.user_repr, str(self.user))
+        self.assertEqual(sl.user_repr, force_text(self.user))
         self.assertEqual(sl.user_ip, '127.0.0.1')
-        self.assertEqual(sl.object_id, str(obj.id))
-        self.assertEqual(sl.object_repr, str(obj))
+        self.assertEqual(sl.object_id, force_text(obj.id))
+        self.assertEqual(sl.object_repr, force_text(obj))
         self.assertEqual(sl.content_type,
                          ContentType.objects.get_for_model(obj))
         self.assertIsNone(sl.new)
@@ -186,15 +187,60 @@ class AdminTestCase(TestCase):
                 'fk_field': {
                     'label': 'Fk field',
                     'value': {
-                        'db': str(self.other_model.pk),
-                        'repr': str(self.other_model),
+                        'db': force_text(self.other_model.pk),
+                        'repr': force_text(self.other_model),
                     }
                 },
                 'm2m_field': {
                     'label': 'M2m field',
                     'value': [{
-                        'db': str(self.other_model.pk),
-                        'repr': str(self.other_model),
+                        'db': force_text(self.other_model.pk),
+                        'repr': force_text(self.other_model),
+                    }]
+                }
+            }
+        )
+
+    def test_add_object_with_unicode(self):
+        other = OtherModel.objects.create(char_field='★')
+        initial_count = SimpleLog.objects.count()
+        params = {
+            'char_field': '★',
+            'fk_field': other.pk,
+            'm2m_field': [other.pk]
+        }
+        self.client.post(self.add_url, data=params)
+        new_obj = TestModel.objects.last()
+        self.assertEqual(SimpleLog.objects.count(), initial_count + 1)
+        sl = SimpleLog.objects.first()
+        self.assertEqual(sl.action_flag, SimpleLog.ADD)
+        self.assertEqual(sl.user, self.user)
+        self.assertEqual(sl.user_repr, force_text(self.user))
+        self.assertEqual(sl.user_ip, '127.0.0.1')
+        self.assertEqual(sl.object_id, force_text(new_obj.id))
+        self.assertEqual(sl.object_repr, force_text(new_obj))
+        self.assertEqual(sl.content_type,
+                         ContentType.objects.get_for_model(new_obj))
+        self.assertIsNone(sl.old)
+        self.assertDictEqual(
+            sl.new,
+            {
+                'char_field': {
+                    'label': 'Char field',
+                    'value': '★'
+                },
+                'fk_field': {
+                    'label': 'Fk field',
+                    'value': {
+                        'db': force_text(other.pk),
+                        'repr': force_text(other),
+                    }
+                },
+                'm2m_field': {
+                    'label': 'M2m field',
+                    'value': [{
+                        'db': force_text(other.pk),
+                        'repr': force_text(other),
                     }]
                 }
             }

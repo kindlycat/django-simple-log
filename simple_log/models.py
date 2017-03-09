@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from __future__ import unicode_literals
+
 from django.conf import settings as django_settings
 from django.contrib.admin.options import get_content_type_for_model
 from django.contrib.contenttypes.models import ContentType
@@ -7,6 +9,7 @@ from django.core.exceptions import ValidationError
 from django.core.validators import validate_ipv46_address
 from django.db import models
 from django.utils import timezone
+from django.utils.encoding import python_2_unicode_compatible, force_text
 from django.utils.functional import cached_property
 from django.utils.translation import ugettext_lazy as _
 
@@ -18,6 +21,7 @@ from .utils import (
 __all__ = ['SimpleLogAbstract', 'SimpleLog', 'ModelSerializer']
 
 
+@python_2_unicode_compatible
 class SimpleLogAbstract(models.Model):
     ADD = 1
     CHANGE = 2
@@ -82,13 +86,13 @@ class SimpleLogAbstract(models.Model):
             elif user.is_anonymous:
                 kwargs['user_repr'] = settings.ANONYMOUS_REPR
             else:
-                kwargs['user_repr'] = str(user)
+                kwargs['user_repr'] = force_text(user)
         if 'user_ip' not in kwargs:
             kwargs['user_ip'] = cls.get_ip()
         kwargs.update({
             'content_type': get_content_type_for_model(instance.__class__),
             'object_id': instance.pk,
-            'object_repr': str(instance),
+            'object_repr': force_text(instance),
             'user': user if user and user.is_authenticated else None
         })
         return cls.objects.create(**kwargs)
@@ -143,7 +147,7 @@ class ModelSerializer(object):
         ret = {}
         for field in fields:
             ret[field.name] = {
-                'label': str(field.verbose_name),
+                'label': force_text(field.verbose_name),
                 'value': self.get_field_value(instance, field)
             }
         return ret
@@ -160,8 +164,8 @@ class ModelSerializer(object):
     @staticmethod
     def get_m2m_value(instance, field):
         return [{
-            'db': str(x.pk),
-            'repr': str(x)
+            'db': force_text(x.pk),
+            'repr': force_text(x)
         } for x in getattr(instance, field.name).iterator()]
 
     @staticmethod
