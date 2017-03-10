@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from __future__ import unicode_literals
+from __future__ import absolute_import, unicode_literals
 
 from django.conf import settings as django_settings
 from django.contrib.admin.options import get_content_type_for_model
@@ -9,13 +9,13 @@ from django.core.exceptions import ValidationError
 from django.core.validators import validate_ipv46_address
 from django.db import models
 from django.utils import timezone
-from django.utils.encoding import python_2_unicode_compatible, force_text
+from django.utils.encoding import force_text, python_2_unicode_compatible
 from django.utils.functional import cached_property
 from django.utils.translation import ugettext_lazy as _
 
 from .conf import settings
 from .utils import (
-    get_current_user, get_fields, str_or_none, get_current_request
+    get_current_request, get_current_user, get_fields, str_or_none
 )
 
 __all__ = ['SimpleLogAbstract', 'SimpleLog', 'ModelSerializer']
@@ -179,7 +179,9 @@ class ModelSerializer(object):
     def get_choice_value(instance, field):
         return {
             'db': str_or_none(field.value_from_object(instance)),
-            'repr': str_or_none(instance._get_FIELD_display(field=field)) or '',
+            'repr': str_or_none(
+                instance._get_FIELD_display(field=field)
+            ) or '',
         }
 
     @staticmethod

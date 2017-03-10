@@ -4,27 +4,26 @@ from __future__ import unicode_literals
 from django.contrib.auth.models import User
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ImproperlyConfigured
-from django.test import TestCase, override_settings
+from django.test import override_settings, TestCase
 from django.test.utils import isolate_lru_cache
 from django.utils.encoding import force_text
 
+from simple_log.conf import settings
+from simple_log.models import SimpleLog
 from simple_log.utils import (
-    get_models_for_log, get_fields, get_simple_log_model
+    get_fields, get_models_for_log, get_simple_log_model
 )
-
-try:
-    from django.urls import reverse
-except ImportError:
-    from django.core.urlresolvers import reverse
+from .test_app.models import OtherModel, TestModel
 
 try:
     from unittest import mock
 except ImportError:
     import mock
 
-from simple_log.models import SimpleLog
-from simple_log.conf import settings
-from .test_app.models import TestModel, OtherModel
+try:
+    from django.urls import reverse
+except ImportError:
+    from django.core.urlresolvers import reverse
 
 
 class AdminTestCase(TestCase):
@@ -467,7 +466,7 @@ class SettingsTestCase(TestCase):
     def test_settings_object(self):
         # Get wrong attribute
         with self.assertRaises(AttributeError) as e:
-            test = settings.NOT_EXIST_ATTRIBUTE
+            getattr(settings, 'NOT_EXIST_ATTRIBUTE')
         self.assertEqual(
             force_text(e.exception),
             "'Settings' object has no attribute 'NOT_EXIST_ATTRIBUTE'"

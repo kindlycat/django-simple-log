@@ -16,7 +16,9 @@ install:
   - pip install -q Django==$DJANGO_VERSION
   - pip install -r tests/requirements.pip
   - pip install coveralls
+  - pip install flake8
 after_script:
-  coveralls
+  - coveralls
 script:
-  coverage run --source=simple_log --omit='simple_log/management/*' manage.py test tests;
+  - flake8 --exclude=migrations .
+  - coverage run --source=simple_log --omit='simple_log/management/*' manage.py test tests;

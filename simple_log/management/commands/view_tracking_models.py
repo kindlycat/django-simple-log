@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-from django.core.management.base import BaseCommand
 from django.apps import apps
+from django.core.management.base import BaseCommand
 
-from simple_log.utils import get_models_for_log, get_fields
+from simple_log.utils import get_fields, get_models_for_log
 
 
 class Command(BaseCommand):

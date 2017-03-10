@@ -1,15 +1,14 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
+from django.apps import apps as django_apps
 from django.core.exceptions import ImproperlyConfigured
 from django.utils import lru_cache
 from django.utils.encoding import force_text
 from django.utils.module_loading import import_string
-from django.apps import apps as django_apps
 
-from .middleware import _thread_locals
-from .conf import settings
-
+from simple_log.conf import settings
+from simple_log.middleware import _thread_locals
 
 __all__ = ['get_simple_log_model', 'get_current_user', 'get_current_request',
            'get_serializer']
@@ -43,6 +42,7 @@ def get_current_request_default():
 @lru_cache.lru_cache(maxsize=None)
 def _get_current_request():
     return import_string(settings.GET_CURRENT_REQUEST)
+
 
 get_current_request = _get_current_request()
 

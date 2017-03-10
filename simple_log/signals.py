@@ -2,11 +2,12 @@
 from __future__ import unicode_literals
 
 from django.db.models.signals import (
-    post_save, pre_save, m2m_changed, post_delete, pre_delete
+    m2m_changed, post_delete, post_save, pre_delete, pre_save
 )
 
-from .utils import (
-    get_simple_log_model, get_models_for_log, get_serializer, registered_models
+from simple_log.utils import (
+    get_models_for_log, get_serializer, get_simple_log_model,
+    registered_models
 )
 
 

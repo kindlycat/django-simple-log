@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.admin import register
 
-from tests.test_app.models import TestModel, OtherModel
+from tests.test_app.models import OtherModel, TestModel
 
 
 @register(TestModel)

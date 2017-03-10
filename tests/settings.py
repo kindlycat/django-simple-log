@@ -1,12 +1,16 @@
+# -*- coding: utf-8 -*-
+from __future__ import unicode_literals
+
 import os
-import django
 from distutils.version import LooseVersion
+
+import django
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = '!+_(r+32d!u$y6c*28p0+^3zy7)j033=69h@0yd=#bh2e-y_02'
 DEBUG = False
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -62,23 +66,6 @@ DATABASES = {
         'NAME': 'test_db',
     }
 }
-
-
-AUTH_PASSWORD_VALIDATORS = [
-    {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
-    },
-]
-
 
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'UTC'
