@@ -7,12 +7,17 @@ from django.test import TestCase, override_settings
 from django.test.utils import isolate_lru_cache
 from django.utils.encoding import force_text
 
-from simple_log.utils import get_models_for_log
+from simple_log.utils import get_models_for_log, get_fields
 
 try:
     from django.urls import reverse
 except ImportError:
     from django.core.urlresolvers import reverse
+
+try:
+    from unittest import mock
+except ImportError:
+    import mock
 
 from simple_log.models import SimpleLog
 from .test_app.models import TestModel, OtherModel
@@ -54,7 +59,8 @@ class AdminTestCase(TestCase):
         params = {
             'char_field': 'test',
             'fk_field': self.other_model.pk,
-            'm2m_field': [self.other_model.pk]
+            'm2m_field': [self.other_model.pk],
+            'choice_field': TestModel.TWO
         }
         self.client.post(self.add_url, data=params)
         new_obj = TestModel.objects.last()
@@ -89,6 +95,13 @@ class AdminTestCase(TestCase):
                         'db': force_text(self.other_model.pk),
                         'repr': force_text(self.other_model),
                     }]
+                },
+                'choice_field': {
+                    'label': 'Choice field',
+                    'value': {
+                        'db': force_text(TestModel.TWO),
+                        'repr': 'Two'
+                    }
                 }
             }
         )
@@ -97,7 +110,8 @@ class AdminTestCase(TestCase):
         params = {
             'char_field': 'test',
             'fk_field': self.other_model.pk,
-            'm2m_field': [self.other_model.pk]
+            'm2m_field': [self.other_model.pk],
+            'choice_field': TestModel.ONE
         }
         self.client.post(self.add_url, data=params)
         obj = TestModel.objects.last()
@@ -105,7 +119,8 @@ class AdminTestCase(TestCase):
         params = {
             'char_field': 'test2',
             'fk_field': '',
-            'm2m_field': []
+            'm2m_field': [],
+            'choice_field': TestModel.TWO
         }
         self.client.post(self.get_change_url(obj.pk), data=params)
         self.assertEqual(SimpleLog.objects.count(), initial_count + 1)
@@ -139,6 +154,13 @@ class AdminTestCase(TestCase):
                         'db': force_text(self.other_model.pk),
                         'repr': force_text(self.other_model),
                     }]
+                },
+                'choice_field': {
+                    'label': 'Choice field',
+                    'value': {
+                        'db': force_text(TestModel.ONE),
+                        'repr': 'One'
+                    }
                 }
             }
         )
@@ -159,6 +181,13 @@ class AdminTestCase(TestCase):
                 'm2m_field': {
                     'label': 'M2m field',
                     'value': []
+                },
+                'choice_field': {
+                    'label': 'Choice field',
+                    'value': {
+                        'db': force_text(TestModel.TWO),
+                        'repr': 'Two'
+                    }
                 }
             }
         )
@@ -167,7 +196,8 @@ class AdminTestCase(TestCase):
         params = {
             'char_field': 'test',
             'fk_field': self.other_model.pk,
-            'm2m_field': [self.other_model.pk]
+            'm2m_field': [self.other_model.pk],
+            'choice_field': TestModel.TWO
         }
         self.client.post(self.add_url, data=params)
         obj = TestModel.objects.last()
@@ -204,6 +234,13 @@ class AdminTestCase(TestCase):
                         'db': force_text(self.other_model.pk),
                         'repr': force_text(self.other_model),
                     }]
+                },
+                'choice_field': {
+                    'label': 'Choice field',
+                    'value': {
+                        'db': force_text(TestModel.TWO),
+                        'repr': 'Two'
+                    }
                 }
             }
         )
@@ -249,6 +286,13 @@ class AdminTestCase(TestCase):
                         'db': force_text(other.pk),
                         'repr': force_text(other),
                     }]
+                },
+                'choice_field': {
+                    'label': 'Choice field',
+                    'value': {
+                        'db': force_text(TestModel.ONE),
+                        'repr': 'One'
+                    }
                 }
             }
         )
@@ -264,6 +308,67 @@ class AdminTestCase(TestCase):
         initial_count = SimpleLog.objects.count()
         self.client.post(self.get_change_url(obj.pk), data=params)
         self.assertEqual(SimpleLog.objects.count(), initial_count)
+
+    @mock.patch.object(
+        TestModel,
+        'simple_log_fields',
+        new_callable=mock.PropertyMock,
+        create=True,
+        return_value=('char_field',)
+    )
+    def test_concrete_model_fields_add(self, mocked):
+        other_model = OtherModel.objects.create(char_field='other')
+        with isolate_lru_cache(get_fields):
+            initial_count = SimpleLog.objects.count()
+            TestModel.objects.create(
+                char_field='test',
+                fk_field=other_model
+            )
+            sl = SimpleLog.objects.first()
+            self.assertEqual(SimpleLog.objects.count(), initial_count + 1)
+            self.assertDictEqual(
+                sl.new,
+                {
+                    'char_field': {
+                        'label': 'Char field',
+                        'value': 'test'
+                    }
+                }
+            )
+
+    @mock.patch.object(
+        TestModel,
+        'simple_log_exclude_fields',
+        new_callable=mock.PropertyMock,
+        create=True,
+        return_value=('id', 'char_field', 'choice_field')
+    )
+    def test_concrete_model_exclude_fields_add(self, mocked):
+        other_model = OtherModel.objects.create(char_field='other')
+        with isolate_lru_cache(get_fields):
+            initial_count = SimpleLog.objects.count()
+            TestModel.objects.create(
+                char_field='test',
+                fk_field=other_model
+            )
+            sl = SimpleLog.objects.first()
+            self.assertEqual(SimpleLog.objects.count(), initial_count + 1)
+            self.assertDictEqual(
+                sl.new,
+                {
+                    'fk_field': {
+                        'label': 'Fk field',
+                        'value': {
+                            'db': force_text(other_model.pk),
+                            'repr': force_text(other_model)
+                        }
+                    },
+                    'm2m_field': {
+                        'label': 'M2m field',
+                        'value': []
+                    }
+                }
+            )
 
 
 class SettingsTest(TestCase):
@@ -294,3 +399,35 @@ class SettingsTest(TestCase):
             initial_count = SimpleLog.objects.count()
             OtherModel.objects.create(char_field='test')
             self.assertEqual(SimpleLog.objects.count(), initial_count)
+
+    @override_settings(
+        SIMPLE_LOG_EXCLUDE_FIELD_LIST=(
+            'id', 'char_field', 'choice_field'
+        )
+    )
+    def test_field_list_add(self):
+        other_model = OtherModel.objects.create(char_field='other')
+        with isolate_lru_cache(get_fields):
+            initial_count = SimpleLog.objects.count()
+            TestModel.objects.create(
+                char_field='test',
+                fk_field=other_model
+            )
+            sl = SimpleLog.objects.first()
+            self.assertEqual(SimpleLog.objects.count(), initial_count + 1)
+            self.assertDictEqual(
+                sl.new,
+                {
+                    'fk_field': {
+                        'label': 'Fk field',
+                        'value': {
+                            'db': force_text(other_model.pk),
+                            'repr': force_text(other_model)
+                        }
+                    },
+                    'm2m_field': {
+                        'label': 'M2m field',
+                        'value': []
+                    }
+                }
+            )

@@ -19,4 +19,4 @@ install:
 after_script:
   coveralls
 script:
-  coverage run --source=simple_log manage.py test tests;
+  coverage run --source=simple_log --omit='simple_log/management/*' manage.py test tests;

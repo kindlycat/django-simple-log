@@ -7,6 +7,13 @@ from django.utils.encoding import python_2_unicode_compatible
 
 @python_2_unicode_compatible
 class TestModel(models.Model):
+    ONE = 1
+    TWO = 2
+    CHOICES = (
+        (ONE, 'One'),
+        (TWO, 'Two'),
+    )
+
     char_field = models.CharField(
         verbose_name='Char field',
         max_length=100,
@@ -23,6 +30,12 @@ class TestModel(models.Model):
         'test_app.OtherModel',
         verbose_name='M2m field',
         related_name='test_entries_m2m',
+        blank=True
+    )
+    choice_field = models.PositiveSmallIntegerField(
+        verbose_name='Choice field',
+        choices=CHOICES,
+        default=ONE,
         blank=True
     )
 
