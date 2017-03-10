@@ -3,8 +3,12 @@ from __future__ import unicode_literals
 
 from django.contrib.auth.models import User
 from django.contrib.contenttypes.models import ContentType
-from django.test import TestCase
+from django.test import TestCase, override_settings
+from django.test.utils import isolate_lru_cache
 from django.utils.encoding import force_text
+
+from simple_log.utils import get_models_for_log
+
 try:
     from django.urls import reverse
 except ImportError:
@@ -45,7 +49,7 @@ class AdminTestCase(TestCase):
             args=args, kwargs=kwargs
         )
 
-    def test_add_object_all_field_filled_check_log(self):
+    def test_add_object_all_field_filled(self):
         initial_count = SimpleLog.objects.count()
         params = {
             'char_field': 'test',
@@ -89,7 +93,7 @@ class AdminTestCase(TestCase):
             }
         )
 
-    def test_change_object_all_field_filled_check_log(self):
+    def test_change_object_all_field_filled(self):
         params = {
             'char_field': 'test',
             'fk_field': self.other_model.pk,
@@ -248,3 +252,45 @@ class AdminTestCase(TestCase):
                 }
             }
         )
+
+    def test_no_change_no_log(self):
+        params = {
+            'char_field': 'test',
+            'fk_field': self.other_model.pk,
+            'm2m_field': [self.other_model.pk]
+        }
+        self.client.post(self.add_url, data=params)
+        obj = TestModel.objects.last()
+        initial_count = SimpleLog.objects.count()
+        self.client.post(self.get_change_url(obj.pk), data=params)
+        self.assertEqual(SimpleLog.objects.count(), initial_count)
+
+
+class SettingsTest(TestCase):
+    model = TestModel
+
+    @classmethod
+    def tearDown(cls):
+        SimpleLog.objects.all().delete()
+
+    @isolate_lru_cache(get_models_for_log)
+    @override_settings(SIMPLE_LOG_MODEL_LIST=('test_app.OtherModel',))
+    def test_model_list_add(self):
+        initial_count = SimpleLog.objects.count()
+        TestModel.objects.create(char_field='test')
+        self.assertEqual(SimpleLog.objects.count(), initial_count)
+
+        initial_count = SimpleLog.objects.count()
+        OtherModel.objects.create(char_field='test')
+        self.assertEqual(SimpleLog.objects.count(), initial_count + 1)
+
+    @isolate_lru_cache(get_models_for_log)
+    @override_settings(SIMPLE_LOG_EXCLUDE_MODEL_LIST=('test_app.OtherModel',))
+    def test_model_exclude_list_add(self):
+        initial_count = SimpleLog.objects.count()
+        TestModel.objects.create(char_field='test')
+        self.assertEqual(SimpleLog.objects.count(), initial_count + 1)
+
+        initial_count = SimpleLog.objects.count()
+        OtherModel.objects.create(char_field='test')
+        self.assertEqual(SimpleLog.objects.count(), initial_count)

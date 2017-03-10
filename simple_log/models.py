@@ -13,7 +13,7 @@ from django.utils.encoding import python_2_unicode_compatible, force_text
 from django.utils.functional import cached_property
 from django.utils.translation import ugettext_lazy as _
 
-from . import settings
+from .conf import settings
 from .utils import (
     get_current_user, get_fields, str_or_none, get_current_request
 )

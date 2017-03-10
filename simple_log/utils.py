@@ -8,7 +8,7 @@ from django.utils.module_loading import import_string
 from django.apps import apps as django_apps
 
 from .middleware import _thread_locals
-from . import settings
+from .conf import settings
 
 
 __all__ = ['get_simple_log_model', 'get_current_user', 'get_current_request',
@@ -20,14 +20,14 @@ registered_models = []
 @lru_cache.lru_cache(maxsize=None)
 def get_simple_log_model():
     try:
-        return django_apps.get_model(settings.SIMPLE_LOG_MODEL)
+        return django_apps.get_model(settings.MODEL)
     except ValueError:
         raise ImproperlyConfigured("SIMPLE_LOG_MODEL must be of the form "
                                    "'app_label.model_name'")
     except LookupError:
         raise ImproperlyConfigured(
             "SIMPLE_LOG_MODEL refers to model '%s' "
-            "that has not been installed" % settings.SIMPLE_LOG_MODEL
+            "that has not been installed" % settings.MODEL
         )
 
 
@@ -72,7 +72,7 @@ def get_models_for_log():
     if registered_models:
         return registered_models
     all_models = [m for m in django_apps.get_models()
-                  if m._meta.label != settings.SIMPLE_LOG_MODEL]
+                  if m._meta.label != settings.MODEL]
     if settings.MODEL_LIST:
         return [m for m in all_models if m._meta.label in settings.MODEL_LIST]
     if settings.EXCLUDE_MODEL_LIST:
