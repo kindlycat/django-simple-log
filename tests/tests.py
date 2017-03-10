@@ -4,8 +4,9 @@ from __future__ import unicode_literals
 from django.contrib.auth.models import User
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ImproperlyConfigured
+from django.core.management import call_command
 from django.test import override_settings, TestCase
-from django.test.utils import isolate_lru_cache
+from django.test.utils import isolate_lru_cache, modify_settings
 from django.utils.encoding import force_text
 
 from simple_log.conf import settings
@@ -437,40 +438,73 @@ class SettingsTestCase(TestCase):
                 }
             )
 
-    # @override_settings(SIMPLE_LOG_MODEL='test_app.CustomSimpleLog')
-    # def test_log_model(self):
-    #     with isolate_lru_cache(get_simple_log_model):
-    #         self.assertIs(get_simple_log_model(), CustomSimpleLog)
+    @override_settings(SIMPLE_LOG_MODEL='swappable.CustomSimpleLog')
+    @modify_settings(INSTALLED_APPS={'append': 'tests.swappable'})
+    def test_log_model(self):
+        call_command('migrate', verbosity=0, run_syncdb=True)
+        from .swappable.models import CustomSimpleLog
+        with isolate_lru_cache(get_simple_log_model):
+            self.assertIs(get_simple_log_model(), CustomSimpleLog)
+            other_model = OtherModel.objects.create(char_field='other')
+            initial_count = CustomSimpleLog.objects.count()
+            TestModel.objects.create(
+                char_field='test',
+                fk_field=other_model
+            )
+            sl = CustomSimpleLog.objects.first()
+            self.assertEqual(
+                CustomSimpleLog.objects.count(),
+                initial_count + 1
+            )
+            self.assertDictEqual(
+                sl.new,
+                {
+                    'char_field': {
+                        'label': 'Char field',
+                        'value': 'test'
+                    },
+                    'fk_field': {
+                        'label': 'Fk field',
+                        'value': {
+                            'db': force_text(other_model.pk),
+                            'repr': force_text(other_model),
+                        }
+                    },
+                    'm2m_field': {
+                        'label': 'M2m field',
+                        'value': []
+                    },
+                    'choice_field': {
+                        'label': 'Choice field',
+                        'value': {
+                            'db': force_text(TestModel.ONE),
+                            'repr': 'One'
+                        }
+                    }
+                }
+            )
+        CustomSimpleLog.objects.all().delete()
 
     @override_settings(SIMPLE_LOG_MODEL=111)
     def test_log_model_wrong_value(self):
         with isolate_lru_cache(get_simple_log_model):
-            with self.assertRaises(ImproperlyConfigured) as e:
+            msg = "SIMPLE_LOG_MODEL must be of the form 'app_label.model_name'"
+            with self.assertRaisesMessage(ImproperlyConfigured, msg):
                 get_simple_log_model()
-            self.assertEqual(
-                force_text(e.exception),
-                "SIMPLE_LOG_MODEL must be of the form 'app_label.model_name'"
-            )
 
     @override_settings(SIMPLE_LOG_MODEL='not_exist.Model')
     def test_log_model_not_exist(self):
         with isolate_lru_cache(get_simple_log_model):
-            with self.assertRaises(ImproperlyConfigured) as e:
+            msg = "SIMPLE_LOG_MODEL refers to model 'not_exist.Model' " \
+                  "that has not been installed"
+            with self.assertRaisesMessage(ImproperlyConfigured, msg):
                 get_simple_log_model()
-            self.assertEqual(
-                force_text(e.exception),
-                "SIMPLE_LOG_MODEL refers to model 'not_exist.Model' that has "
-                "not been installed"
-            )
 
     def test_settings_object(self):
         # Get wrong attribute
-        with self.assertRaises(AttributeError) as e:
+        msg = "'Settings' object has no attribute 'NOT_EXIST_ATTRIBUTE'"
+        with self.assertRaisesMessage(AttributeError, msg):
             getattr(settings, 'NOT_EXIST_ATTRIBUTE')
-        self.assertEqual(
-            force_text(e.exception),
-            "'Settings' object has no attribute 'NOT_EXIST_ATTRIBUTE'"
-        )
 
         # Override settings, skip not SIMPLE_LOG settings
         with override_settings(SOME_SETTING=111):
