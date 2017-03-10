@@ -273,24 +273,24 @@ class SettingsTest(TestCase):
     def tearDown(cls):
         SimpleLog.objects.all().delete()
 
-    @isolate_lru_cache(get_models_for_log)
     @override_settings(SIMPLE_LOG_MODEL_LIST=('test_app.OtherModel',))
     def test_model_list_add(self):
-        initial_count = SimpleLog.objects.count()
-        TestModel.objects.create(char_field='test')
-        self.assertEqual(SimpleLog.objects.count(), initial_count)
+        with isolate_lru_cache(get_models_for_log):
+            initial_count = SimpleLog.objects.count()
+            TestModel.objects.create(char_field='test')
+            self.assertEqual(SimpleLog.objects.count(), initial_count)
 
-        initial_count = SimpleLog.objects.count()
-        OtherModel.objects.create(char_field='test')
-        self.assertEqual(SimpleLog.objects.count(), initial_count + 1)
+            initial_count = SimpleLog.objects.count()
+            OtherModel.objects.create(char_field='test')
+            self.assertEqual(SimpleLog.objects.count(), initial_count + 1)
 
-    @isolate_lru_cache(get_models_for_log)
     @override_settings(SIMPLE_LOG_EXCLUDE_MODEL_LIST=('test_app.OtherModel',))
     def test_model_exclude_list_add(self):
-        initial_count = SimpleLog.objects.count()
-        TestModel.objects.create(char_field='test')
-        self.assertEqual(SimpleLog.objects.count(), initial_count + 1)
+        with isolate_lru_cache(get_models_for_log):
+            initial_count = SimpleLog.objects.count()
+            TestModel.objects.create(char_field='test')
+            self.assertEqual(SimpleLog.objects.count(), initial_count + 1)
 
-        initial_count = SimpleLog.objects.count()
-        OtherModel.objects.create(char_field='test')
-        self.assertEqual(SimpleLog.objects.count(), initial_count)
+            initial_count = SimpleLog.objects.count()
+            OtherModel.objects.create(char_field='test')
+            self.assertEqual(SimpleLog.objects.count(), initial_count)
