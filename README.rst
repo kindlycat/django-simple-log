@@ -12,6 +12,8 @@ Django simple log
     :target: https://pypi.python.org/pypi/django-simple-log
 .. image:: https://img.shields.io/badge/django-1.9%2C%201.10-green.svg
     :target: https://pypi.python.org/pypi/django-simple-log
+.. image:: https://img.shields.io/gitter/room/nwjs/nw.js.svg
+    :target: https://gitter.im/django-simple-log/django-simple-log
 
 Logging model changes on every create/update/delete. Working with django>=1.9
 (need JSONField).
