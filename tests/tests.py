@@ -251,7 +251,8 @@ class AdminTestCase(TestCase):
         params = {
             'char_field': '★',
             'fk_field': other.pk,
-            'm2m_field': [other.pk]
+            'm2m_field': [other.pk],
+            'choice_field': TestModel.ONE
         }
         self.client.post(self.add_url, data=params)
         new_obj = TestModel.objects.last()
@@ -301,7 +302,8 @@ class AdminTestCase(TestCase):
         params = {
             'char_field': 'test',
             'fk_field': self.other_model.pk,
-            'm2m_field': [self.other_model.pk]
+            'm2m_field': [self.other_model.pk],
+            'choice_field': TestModel.ONE
         }
         self.client.post(self.add_url, data=params)
         obj = TestModel.objects.last()
