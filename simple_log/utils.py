@@ -21,7 +21,7 @@ registered_models = []
 def get_simple_log_model():
     try:
         return django_apps.get_model(settings.MODEL)
-    except ValueError:
+    except (ValueError, AttributeError):
         raise ImproperlyConfigured("SIMPLE_LOG_MODEL must be of the form "
                                    "'app_label.model_name'")
     except LookupError:

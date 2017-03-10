@@ -3,11 +3,14 @@ from __future__ import unicode_literals
 
 from django.contrib.auth.models import User
 from django.contrib.contenttypes.models import ContentType
+from django.core.exceptions import ImproperlyConfigured
 from django.test import TestCase, override_settings
 from django.test.utils import isolate_lru_cache
 from django.utils.encoding import force_text
 
-from simple_log.utils import get_models_for_log, get_fields
+from simple_log.utils import (
+    get_models_for_log, get_fields, get_simple_log_model
+)
 
 try:
     from django.urls import reverse
@@ -20,7 +23,8 @@ except ImportError:
     import mock
 
 from simple_log.models import SimpleLog
-from .test_app.models import TestModel, OtherModel
+from simple_log.conf import settings
+from .test_app.models import TestModel, OtherModel, CustomSimpleLog
 
 
 class AdminTestCase(TestCase):
@@ -373,7 +377,7 @@ class AdminTestCase(TestCase):
             )
 
 
-class SettingsTest(TestCase):
+class SettingsTestCase(TestCase):
     model = TestModel
 
     @classmethod
@@ -433,3 +437,47 @@ class SettingsTest(TestCase):
                     }
                 }
             )
+
+    @override_settings(SIMPLE_LOG_MODEL='test_app.CustomSimpleLog')
+    def test_log_model(self):
+        with isolate_lru_cache(get_simple_log_model):
+            self.assertIs(get_simple_log_model(), CustomSimpleLog)
+
+    @override_settings(SIMPLE_LOG_MODEL=111)
+    def test_log_model_wrong_value(self):
+        with isolate_lru_cache(get_simple_log_model):
+            with self.assertRaises(ImproperlyConfigured) as e:
+                get_simple_log_model()
+            self.assertEqual(
+                force_text(e.exception),
+                "SIMPLE_LOG_MODEL must be of the form 'app_label.model_name'"
+            )
+
+    @override_settings(SIMPLE_LOG_MODEL='not_exist.Model')
+    def test_log_model_not_exist(self):
+        with isolate_lru_cache(get_simple_log_model):
+            with self.assertRaises(ImproperlyConfigured) as e:
+                get_simple_log_model()
+            self.assertEqual(
+                force_text(e.exception),
+                "SIMPLE_LOG_MODEL refers to model 'not_exist.Model' that has "
+                "not been installed"
+            )
+
+    def test_settings_object(self):
+        # Get wrong attribute
+        with self.assertRaises(AttributeError) as e:
+            test = settings.NOT_EXIST_ATTRIBUTE
+        self.assertEqual(
+            force_text(e.exception),
+            "'Settings' object has no attribute 'NOT_EXIST_ATTRIBUTE'"
+        )
+
+        # Override settings, skip not SIMPLE_LOG settings
+        with override_settings(SOME_SETTING=111):
+            self.assertIsNone(getattr(settings, 'SOME_SETTING', None))
+
+        # Override settings, ignore not in defaults
+        with override_settings(SIMPLE_LOG_SOME_SETTING=111):
+            self.assertIsNone(getattr(settings, 'SIMPLE_LOG_SOME_SETTING',
+                                      None))

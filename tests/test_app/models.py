@@ -4,6 +4,8 @@ from __future__ import unicode_literals
 from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
 
+from simple_log.models import SimpleLogAbstract
+
 
 @python_2_unicode_compatible
 class TestModel(models.Model):
@@ -59,3 +61,7 @@ class OtherModel(models.Model):
 
     def __str__(self):
         return self.char_field
+
+
+class CustomSimpleLog(SimpleLogAbstract):
+    pass
