@@ -24,7 +24,7 @@ Install using pip:
 
 .. code-block:: sh
 
-    pip install django-simple-log
+    $ pip install django-simple-log
 
 Add to installed apps:
 
@@ -50,7 +50,7 @@ Migrate:
 
 .. code-block:: sh
 
-    python manage.py migrate
+    $ python manage.py migrate
 
 
 Add to any __init__.py:
@@ -65,6 +65,16 @@ Add to any __init__.py:
     simple_log.register(Model)
     # Or multiple models
     simple_log.register(Model, AnotherModel)
+
+Commands
+========
+To view which models is tracking:
+
+.. code-block:: sh
+
+    $ python manage.py migrate view_tracking_models
+
+With option ``-f`` you can view which fields is tracking for every model.
 
 Settings
 ========

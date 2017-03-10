@@ -1,0 +1,35 @@
+# -*- coding: utf-8 -*-
+from __future__ import unicode_literals
+
+from django.core.management.base import BaseCommand
+from django.apps import apps
+
+from simple_log.utils import get_models_for_log, get_fields
+
+
+class Command(BaseCommand):
+    help = 'View all registered models, mark which is tracking'
+
+    def add_arguments(self, parser):
+        parser.add_argument(
+            '-f', '--with_fields',
+            action='store_true',
+            default=False,
+            help='Show which fields is tracking for every model'
+        )
+
+    def handle(self, *args, **options):
+        self.stdout.write('')
+        models_for_log = get_models_for_log()
+        for model in apps.get_models():
+            tracking = model in models_for_log
+            if not tracking and options['with_fields']:
+                continue
+            prefix = '[{}] '.format('+' if tracking else '-')
+            self.stdout.write(prefix + model._meta.label)
+            if tracking and options['with_fields']:
+                fields = get_fields(model)
+                self.stdout.write(
+                    '    - ' + '\n    - '.join([x.name for x in fields]),
+                )
+        self.stdout.write('')

@@ -34,6 +34,7 @@ DEPRECATED_SETTINGS = []
 
 
 class Settings(object):
+    prefix = 'SIMPLE_LOG_'
 
     def __getattr__(self, name):
         if name not in DEFAULTS:
@@ -45,13 +46,13 @@ class Settings(object):
         return value
 
     def get_setting(self, setting):
-        django_setting = 'SIMPLE_LOG_%s' % setting
+        django_setting = self.prefix + setting
         return getattr(dj_settings, django_setting, DEFAULTS[setting])
 
     def change_setting(self, setting, value, enter, **kwargs):
-        if not setting.startswith('SIMPLE_LOG_'):
+        if not setting.startswith(self.prefix):
             return
-        setting = setting.replace('SIMPLE_LOG_', '')
+        setting = setting.replace(self.prefix, '')
 
         if setting not in DEFAULTS:
             return
