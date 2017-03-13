@@ -10,14 +10,16 @@ from django.utils.module_loading import import_string
 from simple_log.conf import settings
 from simple_log.middleware import _thread_locals
 
-__all__ = ['get_simple_log_model', 'get_current_user', 'get_current_request',
+__all__ = ['get_log_model', 'get_current_user', 'get_current_request',
            'get_serializer']
 
-registered_models = []
+registered_models = {}
 
 
 @lru_cache.lru_cache(maxsize=None)
-def get_simple_log_model():
+def get_log_model(model=None):
+    if model and registered_models.get(model):
+        return registered_models[model]
     try:
         return django_apps.get_model(settings.MODEL)
     except (ValueError, AttributeError):
@@ -70,7 +72,7 @@ def get_fields(klass):
 @lru_cache.lru_cache(maxsize=None)
 def get_models_for_log():
     if registered_models:
-        return registered_models
+        return registered_models.keys()
     all_models = [m for m in django_apps.get_models()
                   if m._meta.label != settings.MODEL]
     if settings.MODEL_LIST:

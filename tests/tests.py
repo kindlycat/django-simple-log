@@ -1,20 +1,29 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
+from contextlib import contextmanager
 from django.contrib.auth.models import User
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ImproperlyConfigured
 from django.core.management import call_command
+from django.db.models.signals import (
+    post_save, pre_save, post_delete, m2m_changed
+)
 from django.test import override_settings, TestCase
 from django.test.utils import isolate_lru_cache, modify_settings
 from django.utils.encoding import force_text
 
+from simple_log import register
 from simple_log.conf import settings
 from simple_log.models import SimpleLog
-from simple_log.utils import (
-    get_fields, get_models_for_log, get_simple_log_model
+from simple_log.signals import (
+    log_pre_save_delete, log_post_save, log_post_delete, log_m2m_change
 )
-from .test_app.models import OtherModel, TestModel
+from simple_log import utils
+from simple_log.utils import (
+    get_fields, get_models_for_log, get_log_model
+)
+from .test_app.models import OtherModel, TestModel, CustomLogModel
 
 try:
     from unittest import mock
@@ -25,6 +34,14 @@ try:
     from django.urls import reverse
 except ImportError:
     from django.core.urlresolvers import reverse
+
+
+@contextmanager
+def disconnect_signals(sender=None):
+    pre_save.disconnect(receiver=log_pre_save_delete, sender=sender)
+    post_save.disconnect(receiver=log_post_save, sender=sender)
+    post_delete.disconnect(receiver=log_post_delete, sender=sender)
+    m2m_changed.disconnect(receiver=log_m2m_change, sender=sender)
 
 
 class AdminTestCase(TestCase):
@@ -376,6 +393,67 @@ class AdminTestCase(TestCase):
                 }
             )
 
+    def test_register_with_custom_log_model(self):
+        disconnect_signals()
+        with isolate_lru_cache(get_log_model):
+            register(TestModel, log_model=CustomLogModel)
+            sl_initial_count = SimpleLog.objects.count()
+            initial_count = CustomLogModel.objects.count()
+            params = {
+                'char_field': 'test',
+                'fk_field': self.other_model.pk,
+                'm2m_field': [self.other_model.pk],
+                'choice_field': TestModel.TWO
+            }
+            self.client.post(self.add_url, data=params)
+            new_obj = TestModel.objects.last()
+            self.assertEqual(SimpleLog.objects.count(), sl_initial_count)
+            self.assertEqual(CustomLogModel.objects.count(),
+                             initial_count + 1)
+            sl = CustomLogModel.objects.first()
+            self.assertEqual(sl.action_flag, CustomLogModel.ADD)
+            self.assertEqual(sl.user, self.user)
+            self.assertEqual(sl.user_repr, force_text(self.user))
+            self.assertEqual(sl.user_ip, '127.0.0.1')
+            self.assertEqual(sl.object_id, force_text(new_obj.id))
+            self.assertEqual(sl.object_repr, force_text(new_obj))
+            self.assertEqual(sl.content_type,
+                             ContentType.objects.get_for_model(new_obj))
+            self.assertIsNone(sl.old)
+            self.assertDictEqual(
+                sl.new,
+                {
+                    'char_field': {
+                        'label': 'Char field',
+                        'value': 'test'
+                    },
+                    'fk_field': {
+                        'label': 'Fk field',
+                        'value': {
+                            'db': force_text(self.other_model.pk),
+                            'repr': force_text(self.other_model),
+                        }
+                    },
+                    'm2m_field': {
+                        'label': 'M2m field',
+                        'value': [{
+                            'db': force_text(self.other_model.pk),
+                            'repr': force_text(self.other_model),
+                        }]
+                    },
+                    'choice_field': {
+                        'label': 'Choice field',
+                        'value': {
+                            'db': force_text(TestModel.TWO),
+                            'repr': 'Two'
+                        }
+                    }
+                }
+            )
+        disconnect_signals(TestModel)
+        register()
+        utils.registered_models = {}
+
 
 class SettingsTestCase(TestCase):
     model = TestModel
@@ -443,8 +521,8 @@ class SettingsTestCase(TestCase):
     def test_log_model(self):
         call_command('migrate', verbosity=0, run_syncdb=True)
         from .swappable.models import CustomSimpleLog
-        with isolate_lru_cache(get_simple_log_model):
-            self.assertIs(get_simple_log_model(), CustomSimpleLog)
+        with isolate_lru_cache(get_log_model):
+            self.assertIs(get_log_model(), CustomSimpleLog)
             other_model = OtherModel.objects.create(char_field='other')
             initial_count = CustomSimpleLog.objects.count()
             TestModel.objects.create(
@@ -487,18 +565,18 @@ class SettingsTestCase(TestCase):
 
     @override_settings(SIMPLE_LOG_MODEL=111)
     def test_log_model_wrong_value(self):
-        with isolate_lru_cache(get_simple_log_model):
+        with isolate_lru_cache(get_log_model):
             msg = "SIMPLE_LOG_MODEL must be of the form 'app_label.model_name'"
             with self.assertRaisesMessage(ImproperlyConfigured, msg):
-                get_simple_log_model()
+                get_log_model()
 
     @override_settings(SIMPLE_LOG_MODEL='not_exist.Model')
     def test_log_model_not_exist(self):
-        with isolate_lru_cache(get_simple_log_model):
+        with isolate_lru_cache(get_log_model):
             msg = "SIMPLE_LOG_MODEL refers to model 'not_exist.Model' " \
                   "that has not been installed"
             with self.assertRaisesMessage(ImproperlyConfigured, msg):
-                get_simple_log_model()
+                get_log_model()
 
     def test_settings_object(self):
         # Get wrong attribute

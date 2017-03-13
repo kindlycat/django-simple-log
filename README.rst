@@ -65,6 +65,8 @@ Add to any __init__.py:
     simple_log.register(Model)
     # Or multiple models
     simple_log.register(Model, AnotherModel)
+    # For define log model
+    simple_log.register(Model, AnotherModel, log_model=CustomLogModel)
 
 Commands
 ========

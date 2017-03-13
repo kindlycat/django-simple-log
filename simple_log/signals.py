@@ -6,7 +6,7 @@ from django.db.models.signals import (
 )
 
 from simple_log.utils import (
-    get_models_for_log, get_serializer, get_simple_log_model,
+    get_models_for_log, get_serializer, get_log_model,
     registered_models
 )
 
@@ -25,7 +25,7 @@ def log_pre_save_delete(sender, instance, **kwargs):
 def log_post_save(sender, instance, created, **kwargs):
     if sender not in get_models_for_log():
         return
-    SimpleLog = get_simple_log_model()
+    SimpleLog = get_log_model(sender)
     serializer = get_serializer()()
     new_values = serializer(instance)
 
@@ -41,7 +41,7 @@ def log_post_save(sender, instance, created, **kwargs):
 def log_post_delete(sender, instance, **kwargs):
     if sender not in get_models_for_log():
         return
-    SimpleLog = get_simple_log_model()
+    SimpleLog = get_log_model(sender)
 
     SimpleLog.log(
         instance,
@@ -54,7 +54,7 @@ def log_post_delete(sender, instance, **kwargs):
 def log_m2m_change(sender, instance, action, **kwargs):
     if instance.__class__ not in get_models_for_log():
         return
-    SimpleLog = get_simple_log_model()
+    SimpleLog = get_log_model(instance.__class__)
     serializer = get_serializer()()
 
     if action in ('pre_add', 'pre_remove'):
@@ -76,7 +76,7 @@ def log_m2m_change(sender, instance, action, **kwargs):
             instance._log.save()
 
 
-def register(*models):
+def register(*models, **kwargs):
     models = models or [None]
     for model in models:
         pre_save.connect(log_pre_save_delete, sender=model)
@@ -86,7 +86,7 @@ def register(*models):
         if not model:
             m2m_changed.connect(log_m2m_change)
         else:
-            registered_models.append(model)
+            registered_models[model] = kwargs.get('log_model')
             for m2m in model._meta.many_to_many:
                 sender = getattr(model, m2m.name).through
                 m2m_changed.connect(log_m2m_change, sender=sender)
