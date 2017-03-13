@@ -72,7 +72,7 @@ To view which models is tracking:
 
 .. code-block:: sh
 
-    $ python manage.py migrate view_tracking_models
+    $ python manage.py view_tracking_models
 
 With option ``-f`` you can view which fields is tracking for every model.
 
