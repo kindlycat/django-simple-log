@@ -225,7 +225,8 @@ class AdminTestCase(TestCase):
         self.client.post(self.get_add_url(self.model), data=params)
         obj = TestModel.objects.last()
         initial_count = SimpleLog.objects.count()
-        self.client.post(self.get_delete_url(self.model, obj.pk), data={'post': 'yes'})
+        self.client.post(self.get_delete_url(self.model, obj.pk),
+                         data={'post': 'yes'})
         self.assertEqual(SimpleLog.objects.count(), initial_count + 1)
         sl = SimpleLog.objects.first()
         self.assertEqual(sl.action_flag, SimpleLog.DELETE)
