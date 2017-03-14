@@ -104,8 +104,7 @@ class SimpleLogAbstract(models.Model):
             if self.old.get(k) != self.new.get(k)
         }
 
-    @staticmethod
-    def m2m_field_diff(old, new):
+    def m2m_field_diff(self, field_name):
         """
         :param old: list with old values
         :param new: list with new values
@@ -113,8 +112,8 @@ class SimpleLogAbstract(models.Model):
             - list with added items
             - list with removed items
         """
-        old = old or []
-        new = new or []
+        old = self.old.get(field_name, {}).get('value', [])
+        new = self.new.get(field_name, {}).get('value', [])
         return [x for x in new if x not in old], \
                [x for x in old if x not in new]
 
