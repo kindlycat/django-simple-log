@@ -583,3 +583,65 @@ class SettingsTestCase(TestCase):
         with override_settings(SIMPLE_LOG_SOME_SETTING=111):
             self.assertIsNone(getattr(settings, 'SIMPLE_LOG_SOME_SETTING',
                                       None))
+
+
+class LogModelTestCase(TestCase):
+    @classmethod
+    def tearDown(cls):
+        SimpleLog.objects.all().delete()
+
+    def test_log_get_edited_obj(self):
+        obj = TestModel.objects.create(char_field='test')
+        sl = SimpleLog.objects.first()
+        self.assertEqual(sl.get_edited_object(), obj)
+
+    def test_log_str(self):
+        obj = TestModel.objects.create(char_field='test')
+        sl = SimpleLog.objects.first()
+        self.assertEqual(str(sl), '%s: %s' % (str(obj), 'added'))
+
+        obj.char_field = 'test2'
+        obj.save()
+        sl = SimpleLog.objects.first()
+        self.assertEqual(str(sl), '%s: %s' % (str(obj), 'changed'))
+
+        obj.delete()
+        sl = SimpleLog.objects.first()
+        self.assertEqual(str(sl), '%s: %s' % (str(obj), 'deleted'))
+
+    def test_log_changed_fields(self):
+        obj = TestModel.objects.create(char_field='test')
+        other_model = OtherModel.objects.create(char_field='test')
+        params = {
+            'char_field': 'test2',
+            'fk_field': other_model,
+            'choice_field': TestModel.TWO
+        }
+        for param, value in params.items():
+            setattr(obj, param, value)
+        obj.save()
+        sl = SimpleLog.objects.first()
+        self.assertDictEqual(
+            sl.changed_fields,
+            {
+                'char_field': 'Char field',
+                'fk_field': 'Fk field',
+                'choice_field': 'Choice field'
+            }
+        )
+
+    def test_log_m2m_diff(self):
+        other_model = OtherModel.objects.create(char_field='test')
+        other_model2 = OtherModel.objects.create(char_field='test2')
+        obj = TestModel.objects.create(char_field='test')
+        obj.m2m_field.add(other_model)
+        obj = TestModel.objects.get(pk=obj.pk)
+        obj.m2m_field.add(other_model2)
+        obj.m2m_field.remove(other_model)
+        sl = SimpleLog.objects.first()
+        added, removed = sl.m2m_field_diff('m2m_field')
+
+        self.assertListEqual(added,
+                             [{'db': str(other_model2.pk), 'repr': 'test2'}])
+        self.assertListEqual(removed,
+                             [{'db': str(other_model.pk), 'repr': 'test'}])
