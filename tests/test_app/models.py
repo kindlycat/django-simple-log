@@ -38,7 +38,8 @@ class TestModel(models.Model):
         verbose_name='Choice field',
         choices=CHOICES,
         default=ONE,
-        blank=True
+        blank=True,
+        null=True
     )
 
     class Meta:
@@ -61,7 +62,3 @@ class OtherModel(models.Model):
 
     def __str__(self):
         return self.char_field
-
-
-class CustomLogModel(SimpleLogAbstract):
-    pass

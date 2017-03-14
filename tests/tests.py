@@ -23,7 +23,7 @@ from simple_log import utils
 from simple_log.utils import (
     get_fields, get_models_for_log, get_log_model
 )
-from .test_app.models import OtherModel, TestModel, CustomLogModel
+from .test_app.models import OtherModel, TestModel
 
 try:
     from unittest import mock
@@ -52,26 +52,28 @@ class AdminTestCase(TestCase):
                                                   'pass')
         self.other_model = OtherModel.objects.create(char_field='other')
         self.client.login(username='user', password='pass')
-        self.add_url = reverse(
-            'admin:{}_{}_add'.format(self.model._meta.app_label,
-                                     self.model._meta.model_name)
-        )
 
     @classmethod
     def tearDown(cls):
         SimpleLog.objects.all().delete()
 
-    def get_change_url(self, *args, **kwargs):
+    def get_add_url(self, model):
         return reverse(
-            'admin:{}_{}_change'.format(self.model._meta.app_label,
-                                        self.model._meta.model_name),
+            'admin:{}_{}_add'.format(model._meta.app_label,
+                                     model._meta.model_name)
+        )
+
+    def get_change_url(self, model, *args, **kwargs):
+        return reverse(
+            'admin:{}_{}_change'.format(model._meta.app_label,
+                                        model._meta.model_name),
             args=args, kwargs=kwargs
         )
 
-    def get_delete_url(self, *args, **kwargs):
+    def get_delete_url(self, model, *args, **kwargs):
         return reverse(
-            'admin:{}_{}_delete'.format(self.model._meta.app_label,
-                                        self.model._meta.model_name),
+            'admin:{}_{}_delete'.format(model._meta.app_label,
+                                        model._meta.model_name),
             args=args, kwargs=kwargs
         )
 
@@ -83,7 +85,7 @@ class AdminTestCase(TestCase):
             'm2m_field': [self.other_model.pk],
             'choice_field': TestModel.TWO
         }
-        self.client.post(self.add_url, data=params)
+        self.client.post(self.get_add_url(self.model), data=params)
         new_obj = TestModel.objects.last()
         self.assertEqual(SimpleLog.objects.count(), initial_count + 1)
         sl = SimpleLog.objects.first()
@@ -134,7 +136,7 @@ class AdminTestCase(TestCase):
             'm2m_field': [self.other_model.pk],
             'choice_field': TestModel.ONE
         }
-        self.client.post(self.add_url, data=params)
+        self.client.post(self.get_add_url(self.model), data=params)
         obj = TestModel.objects.last()
         initial_count = SimpleLog.objects.count()
         params = {
@@ -143,7 +145,7 @@ class AdminTestCase(TestCase):
             'm2m_field': [],
             'choice_field': TestModel.TWO
         }
-        self.client.post(self.get_change_url(obj.pk), data=params)
+        self.client.post(self.get_change_url(self.model, obj.pk), data=params)
         self.assertEqual(SimpleLog.objects.count(), initial_count + 1)
         sl = SimpleLog.objects.first()
         obj.refresh_from_db()
@@ -220,10 +222,10 @@ class AdminTestCase(TestCase):
             'm2m_field': [self.other_model.pk],
             'choice_field': TestModel.TWO
         }
-        self.client.post(self.add_url, data=params)
+        self.client.post(self.get_add_url(self.model), data=params)
         obj = TestModel.objects.last()
         initial_count = SimpleLog.objects.count()
-        self.client.post(self.get_delete_url(obj.pk), data={'post': 'yes'})
+        self.client.post(self.get_delete_url(self.model, obj.pk), data={'post': 'yes'})
         self.assertEqual(SimpleLog.objects.count(), initial_count + 1)
         sl = SimpleLog.objects.first()
         self.assertEqual(sl.action_flag, SimpleLog.DELETE)
@@ -275,7 +277,7 @@ class AdminTestCase(TestCase):
             'm2m_field': [other.pk],
             'choice_field': TestModel.ONE
         }
-        self.client.post(self.add_url, data=params)
+        self.client.post(self.get_add_url(self.model), data=params)
         new_obj = TestModel.objects.last()
         self.assertEqual(SimpleLog.objects.count(), initial_count + 1)
         sl = SimpleLog.objects.first()
@@ -326,10 +328,10 @@ class AdminTestCase(TestCase):
             'm2m_field': [self.other_model.pk],
             'choice_field': TestModel.ONE
         }
-        self.client.post(self.add_url, data=params)
+        self.client.post(self.get_add_url(self.model), data=params)
         obj = TestModel.objects.last()
         initial_count = SimpleLog.objects.count()
-        self.client.post(self.get_change_url(obj.pk), data=params)
+        self.client.post(self.get_change_url(self.model, obj.pk), data=params)
         self.assertEqual(SimpleLog.objects.count(), initial_count)
 
     @mock.patch.object(
@@ -393,66 +395,54 @@ class AdminTestCase(TestCase):
                 }
             )
 
+    def test_register_concrete_model(self):
+        disconnect_signals()
+        try:
+            with isolate_lru_cache(get_log_model):
+                register(TestModel)
+                initial_count = SimpleLog.objects.count()
+                params = {
+                    'char_field': 'test',
+                }
+                self.client.post(self.get_add_url(self.model), data=params)
+                self.assertEqual(SimpleLog.objects.count(), initial_count + 1)
+
+                initial_count = SimpleLog.objects.count()
+                self.client.post(self.get_add_url(OtherModel), data=params)
+                self.assertEqual(SimpleLog.objects.count(), initial_count)
+        except Exception:
+            raise
+        finally:
+            disconnect_signals(TestModel)
+            utils.registered_models.clear()
+            register()
+
+    @modify_settings(INSTALLED_APPS={'append': 'tests.swappable'})
     def test_register_with_custom_log_model(self):
         disconnect_signals()
-        with isolate_lru_cache(get_log_model):
-            register(TestModel, log_model=CustomLogModel)
-            sl_initial_count = SimpleLog.objects.count()
-            initial_count = CustomLogModel.objects.count()
-            params = {
-                'char_field': 'test',
-                'fk_field': self.other_model.pk,
-                'm2m_field': [self.other_model.pk],
-                'choice_field': TestModel.TWO
-            }
-            self.client.post(self.add_url, data=params)
-            new_obj = TestModel.objects.last()
-            self.assertEqual(SimpleLog.objects.count(), sl_initial_count)
-            self.assertEqual(CustomLogModel.objects.count(),
-                             initial_count + 1)
-            sl = CustomLogModel.objects.first()
-            self.assertEqual(sl.action_flag, CustomLogModel.ADD)
-            self.assertEqual(sl.user, self.user)
-            self.assertEqual(sl.user_repr, force_text(self.user))
-            self.assertEqual(sl.user_ip, '127.0.0.1')
-            self.assertEqual(sl.object_id, force_text(new_obj.id))
-            self.assertEqual(sl.object_repr, force_text(new_obj))
-            self.assertEqual(sl.content_type,
-                             ContentType.objects.get_for_model(new_obj))
-            self.assertIsNone(sl.old)
-            self.assertDictEqual(
-                sl.new,
-                {
-                    'char_field': {
-                        'label': 'Char field',
-                        'value': 'test'
-                    },
-                    'fk_field': {
-                        'label': 'Fk field',
-                        'value': {
-                            'db': force_text(self.other_model.pk),
-                            'repr': force_text(self.other_model),
-                        }
-                    },
-                    'm2m_field': {
-                        'label': 'M2m field',
-                        'value': [{
-                            'db': force_text(self.other_model.pk),
-                            'repr': force_text(self.other_model),
-                        }]
-                    },
-                    'choice_field': {
-                        'label': 'Choice field',
-                        'value': {
-                            'db': force_text(TestModel.TWO),
-                            'repr': 'Two'
-                        }
-                    }
+        try:
+            call_command('migrate', verbosity=0, run_syncdb=True)
+            from .swappable.models import CustomLogModel
+            with isolate_lru_cache(get_log_model):
+                register(TestModel, log_model=CustomLogModel)
+                sl_initial_count = SimpleLog.objects.count()
+                initial_count = CustomLogModel.objects.count()
+                params = {
+                    'char_field': 'test',
+                    'fk_field': self.other_model.pk,
+                    'm2m_field': [self.other_model.pk],
+                    'choice_field': TestModel.TWO
                 }
-            )
-        disconnect_signals(TestModel)
-        register()
-        utils.registered_models = {}
+                self.client.post(self.get_add_url(self.model), data=params)
+                self.assertEqual(SimpleLog.objects.count(), sl_initial_count)
+                self.assertEqual(CustomLogModel.objects.count(),
+                                 initial_count + 1)
+        except Exception:
+            raise
+        finally:
+            disconnect_signals(TestModel)
+            utils.registered_models.clear()
+            register()
 
 
 class SettingsTestCase(TestCase):
@@ -516,22 +506,22 @@ class SettingsTestCase(TestCase):
                 }
             )
 
-    @override_settings(SIMPLE_LOG_MODEL='swappable.CustomSimpleLog')
+    @override_settings(SIMPLE_LOG_MODEL='swappable.SwappableLogModel')
     @modify_settings(INSTALLED_APPS={'append': 'tests.swappable'})
     def test_log_model(self):
         call_command('migrate', verbosity=0, run_syncdb=True)
-        from .swappable.models import CustomSimpleLog
+        from .swappable.models import SwappableLogModel
         with isolate_lru_cache(get_log_model):
-            self.assertIs(get_log_model(), CustomSimpleLog)
+            self.assertIs(get_log_model(), SwappableLogModel)
             other_model = OtherModel.objects.create(char_field='other')
-            initial_count = CustomSimpleLog.objects.count()
+            initial_count = SwappableLogModel.objects.count()
             TestModel.objects.create(
                 char_field='test',
                 fk_field=other_model
             )
-            sl = CustomSimpleLog.objects.first()
+            sl = SwappableLogModel.objects.first()
             self.assertEqual(
-                CustomSimpleLog.objects.count(),
+                SwappableLogModel.objects.count(),
                 initial_count + 1
             )
             self.assertDictEqual(
@@ -561,7 +551,7 @@ class SettingsTestCase(TestCase):
                     }
                 }
             )
-        CustomSimpleLog.objects.all().delete()
+        SwappableLogModel.objects.all().delete()
 
     @override_settings(SIMPLE_LOG_MODEL=111)
     def test_log_model_wrong_value(self):
