@@ -72,7 +72,7 @@ def get_fields(klass):
 @lru_cache.lru_cache(maxsize=None)
 def get_models_for_log():
     if registered_models:
-        return registered_models.keys()
+        return list(registered_models.keys())
     all_models = [m for m in django_apps.get_models()
                   if m._meta.label != settings.MODEL]
     if settings.MODEL_LIST:

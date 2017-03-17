@@ -3,6 +3,7 @@
 django_simple_log.egg-info
 dist
 build
+htmlcov
 
 !.gitignore
 !.travis.yml
