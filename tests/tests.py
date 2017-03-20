@@ -2,7 +2,9 @@
 from __future__ import unicode_literals
 
 from contextlib import contextmanager
+
 from threading import local
+
 
 from django.apps import apps
 from django.contrib.auth.models import User
@@ -60,6 +62,7 @@ class BaseTestCaseMixin(object):
                 params[k] = v.pk
         return params
 
+
     def setUp(self):
         self.user = User.objects.all()[0]
         self.user_repr = force_text(self.user)
@@ -113,6 +116,10 @@ class BaseTestCaseMixin(object):
                                     model._meta.model_name),
             args=args, kwargs=kwargs
         )
+
+    @classmethod
+    def tearDown(cls):
+        SimpleLog.objects.all().delete()
 
     def test_add_object_all_field_filled(self):
         initial_count = SimpleLog.objects.count()
@@ -488,6 +495,7 @@ class BaseTestCaseMixin(object):
         self.assertEqual(SimpleLog.objects.count(), initial_count + 1)
         self.assertIsNone(sl.user_ip)
 
+
         self.add_object(self.model, params, headers={'REMOTE_ADDR': '123'})
         sl = SimpleLog.objects.first()
         self.assertEqual(SimpleLog.objects.count(), initial_count + 2)
@@ -752,7 +760,6 @@ class SystemTestCase(BaseTestCaseMixin, TestCase):
 
     def delete_object(self, obj):
         obj.delete()
-
 
 class SettingsTestCase(TestCase):
     model = TestModel
