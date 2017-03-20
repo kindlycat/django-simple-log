@@ -57,7 +57,7 @@ def log_m2m_change(sender, instance, action, **kwargs):
     SimpleLog = get_log_model(instance.__class__)
     serializer = get_serializer()()
 
-    if action in ('pre_add', 'pre_remove'):
+    if action in ('pre_add', 'pre_remove', 'pre_clear'):
         if not hasattr(instance, '_old_values'):
             instance._old_values = serializer(instance)
 
@@ -69,7 +69,7 @@ def log_m2m_change(sender, instance, action, **kwargs):
             new={},
         )
 
-    if action in ('post_add', 'post_remove'):
+    if action in ('post_add', 'post_remove', 'post_clear'):
         new_values = serializer(instance)
         if instance._old_values != new_values:
             instance._log.new = new_values
