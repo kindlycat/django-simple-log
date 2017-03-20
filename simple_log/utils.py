@@ -8,7 +8,7 @@ from django.utils.encoding import force_text
 from django.utils.module_loading import import_string
 
 from simple_log.conf import settings
-from simple_log.middleware import _thread_locals
+from simple_log import middleware
 
 __all__ = ['get_log_model', 'get_current_user', 'get_current_request',
            'get_serializer']
@@ -38,7 +38,7 @@ def get_serializer():
 
 
 def get_current_request_default():
-    return getattr(_thread_locals, 'request', None)
+    return getattr(middleware._thread_locals, 'request', None)
 
 
 @lru_cache.lru_cache(maxsize=None)

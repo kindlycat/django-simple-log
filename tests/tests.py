@@ -2,6 +2,7 @@
 from __future__ import unicode_literals
 
 from contextlib import contextmanager
+from threading import local
 
 from django.apps import apps
 from django.contrib.auth.models import User
@@ -25,6 +26,7 @@ from simple_log import utils
 from simple_log.utils import (
     get_fields, get_models_for_log, get_log_model
 )
+from simple_log import middleware
 from .test_app.models import OtherModel, TestModel
 
 try:
@@ -46,15 +48,47 @@ def disconnect_signals(sender=None):
     m2m_changed.disconnect(receiver=log_m2m_change, sender=sender)
 
 
-class AdminTestCase(TestCase):
+class BaseTestCaseMixin(object):
     model = TestModel
-    namespace = 'admin:'
+    namespace = ''
+
+    def prepare_params(self, model, params):
+        for k, v in params.items():
+            if model._meta.get_field(k).many_to_many:
+                params[k] = [x.pk for x in v]
+            elif model._meta.get_field(k).is_relation:
+                params[k] = v.pk
+        return params
 
     def setUp(self):
-        self.user = User.objects.create_superuser('user', 'test@example.com',
-                                                  'pass')
-        self.other_model = OtherModel.objects.create(char_field='other')
+        self.user = User.objects.all()[0]
+        self.user_repr = force_text(self.user)
+        self.ip = '127.0.0.1'
+        self.other_model = OtherModel.objects.all()[0]
         self.client.login(username='user', password='pass')
+
+    def add_object(self, model, params, **kwargs):
+        params = self.prepare_params(model, params)
+        headers = kwargs.get('headers', {})
+        self.client.post(self.get_add_url(self.model), data=params, **headers)
+        return self.model.objects.last()
+
+    def change_object(self, obj, params, **kwargs):
+        headers = kwargs.get('headers', {})
+        self.client.post(
+            self.get_change_url(obj._meta.model, obj.pk),
+            data=params, **headers
+        )
+        return obj._meta.model.objects.get(pk=obj.pk)
+
+    def delete_object(self, obj):
+        self.client.post(self.get_delete_url(obj._meta.model, obj.pk),
+                         data={'post': 'yes'})
+
+    @classmethod
+    def setUpTestData(cls):
+        User.objects.create_superuser('user', 'test@example.com', 'pass')
+        OtherModel.objects.create(char_field='other')
 
     def get_add_url(self, model):
         return reverse(
@@ -76,26 +110,21 @@ class AdminTestCase(TestCase):
             args=args, kwargs=kwargs
         )
 
-    @classmethod
-    def tearDown(cls):
-        SimpleLog.objects.all().delete()
-
     def test_add_object_all_field_filled(self):
         initial_count = SimpleLog.objects.count()
         params = {
             'char_field': 'test',
-            'fk_field': self.other_model.pk,
-            'm2m_field': [self.other_model.pk],
+            'fk_field': self.other_model,
+            'm2m_field': [self.other_model],
             'choice_field': TestModel.TWO
         }
-        self.client.post(self.get_add_url(self.model), data=params)
-        new_obj = TestModel.objects.last()
+        new_obj = self.add_object(self.model, params)
         self.assertEqual(SimpleLog.objects.count(), initial_count + 1)
         sl = SimpleLog.objects.first()
         self.assertEqual(sl.action_flag, SimpleLog.ADD)
         self.assertEqual(sl.user, self.user)
-        self.assertEqual(sl.user_repr, force_text(self.user))
-        self.assertEqual(sl.user_ip, '127.0.0.1')
+        self.assertEqual(sl.user_repr, self.user_repr)
+        self.assertEqual(sl.user_ip, self.ip)
         self.assertEqual(sl.object_id, force_text(new_obj.id))
         self.assertEqual(sl.object_repr, force_text(new_obj))
         self.assertEqual(sl.content_type,
@@ -135,12 +164,11 @@ class AdminTestCase(TestCase):
     def test_change_object_all_field_filled(self):
         params = {
             'char_field': 'test',
-            'fk_field': self.other_model.pk,
-            'm2m_field': [self.other_model.pk],
+            'fk_field': self.other_model,
+            'm2m_field': [self.other_model],
             'choice_field': TestModel.ONE
         }
-        self.client.post(self.get_add_url(self.model), data=params)
-        obj = TestModel.objects.last()
+        obj = self.add_object(self.model, params)
         initial_count = SimpleLog.objects.count()
         params = {
             'char_field': 'test2',
@@ -148,14 +176,13 @@ class AdminTestCase(TestCase):
             'm2m_field': [],
             'choice_field': TestModel.TWO
         }
-        self.client.post(self.get_change_url(self.model, obj.pk), data=params)
+        obj = self.change_object(obj, params)
         self.assertEqual(SimpleLog.objects.count(), initial_count + 1)
         sl = SimpleLog.objects.first()
-        obj.refresh_from_db()
         self.assertEqual(sl.action_flag, SimpleLog.CHANGE)
         self.assertEqual(sl.user, self.user)
-        self.assertEqual(sl.user_repr, force_text(self.user))
-        self.assertEqual(sl.user_ip, '127.0.0.1')
+        self.assertEqual(sl.user_repr, self.user_repr)
+        self.assertEqual(sl.user_ip, self.ip)
         self.assertEqual(sl.object_id, force_text(obj.id))
         self.assertEqual(sl.object_repr, force_text(obj))
         self.assertEqual(sl.content_type,
@@ -218,25 +245,24 @@ class AdminTestCase(TestCase):
             }
         )
 
-    def test_delete_object_check_log(self):
+    def test_delete_object(self):
         params = {
             'char_field': 'test',
-            'fk_field': self.other_model.pk,
-            'm2m_field': [self.other_model.pk],
+            'fk_field': self.other_model,
+            'm2m_field': [self.other_model],
             'choice_field': TestModel.TWO
         }
-        self.client.post(self.get_add_url(self.model), data=params)
-        obj = TestModel.objects.last()
+        obj = self.add_object(self.model, params)
+        obj_id = obj.id
         initial_count = SimpleLog.objects.count()
-        self.client.post(self.get_delete_url(self.model, obj.pk),
-                         data={'post': 'yes'})
+        self.delete_object(obj)
         self.assertEqual(SimpleLog.objects.count(), initial_count + 1)
         sl = SimpleLog.objects.first()
         self.assertEqual(sl.action_flag, SimpleLog.DELETE)
         self.assertEqual(sl.user, self.user)
-        self.assertEqual(sl.user_repr, force_text(self.user))
-        self.assertEqual(sl.user_ip, '127.0.0.1')
-        self.assertEqual(sl.object_id, force_text(obj.id))
+        self.assertEqual(sl.user_repr, self.user_repr)
+        self.assertEqual(sl.user_ip, self.ip)
+        self.assertEqual(sl.object_id, force_text(obj_id))
         self.assertEqual(sl.object_repr, force_text(obj))
         self.assertEqual(sl.content_type,
                          ContentType.objects.get_for_model(obj))
@@ -277,18 +303,17 @@ class AdminTestCase(TestCase):
         initial_count = SimpleLog.objects.count()
         params = {
             'char_field': '★',
-            'fk_field': other.pk,
-            'm2m_field': [other.pk],
+            'fk_field': other,
+            'm2m_field': [other],
             'choice_field': TestModel.ONE
         }
-        self.client.post(self.get_add_url(self.model), data=params)
-        new_obj = TestModel.objects.last()
+        new_obj = self.add_object(self.model, params)
         self.assertEqual(SimpleLog.objects.count(), initial_count + 1)
         sl = SimpleLog.objects.first()
         self.assertEqual(sl.action_flag, SimpleLog.ADD)
         self.assertEqual(sl.user, self.user)
-        self.assertEqual(sl.user_repr, force_text(self.user))
-        self.assertEqual(sl.user_ip, '127.0.0.1')
+        self.assertEqual(sl.user_repr, self.user_repr)
+        self.assertEqual(sl.user_ip, self.ip)
         self.assertEqual(sl.object_id, force_text(new_obj.id))
         self.assertEqual(sl.object_repr, force_text(new_obj))
         self.assertEqual(sl.content_type,
@@ -328,14 +353,13 @@ class AdminTestCase(TestCase):
     def test_no_change_no_log(self):
         params = {
             'char_field': 'test',
-            'fk_field': self.other_model.pk,
-            'm2m_field': [self.other_model.pk],
+            'fk_field': self.other_model,
+            'm2m_field': [self.other_model],
             'choice_field': TestModel.ONE
         }
-        self.client.post(self.get_add_url(self.model), data=params)
-        obj = TestModel.objects.last()
+        obj = self.add_object(self.model, params)
         initial_count = SimpleLog.objects.count()
-        self.client.post(self.get_change_url(self.model, obj.pk), data=params)
+        self.change_object(obj, params)
         self.assertEqual(SimpleLog.objects.count(), initial_count)
 
     @mock.patch.object(
@@ -408,12 +432,12 @@ class AdminTestCase(TestCase):
                 params = {
                     'char_field': 'test',
                 }
-                self.client.post(self.get_add_url(self.model), data=params)
+                self.add_object(self.model, params)
                 self.assertEqual(SimpleLog.objects.count(), initial_count + 1)
 
                 params['m2m_field'] = [TestModel.objects.all()[0]]
                 initial_count = SimpleLog.objects.count()
-                self.client.post(self.get_add_url(OtherModel), data=params)
+                self.add_object(OtherModel, params)
                 self.assertEqual(SimpleLog.objects.count(), initial_count)
                 self.assertListEqual(get_models_for_log(), [TestModel])
         except Exception:
@@ -435,11 +459,11 @@ class AdminTestCase(TestCase):
                 initial_count = CustomLogModel.objects.count()
                 params = {
                     'char_field': 'test',
-                    'fk_field': self.other_model.pk,
-                    'm2m_field': [self.other_model.pk],
+                    'fk_field': self.other_model,
+                    'm2m_field': [self.other_model],
                     'choice_field': TestModel.TWO
                 }
-                self.client.post(self.get_add_url(self.model), data=params)
+                self.add_object(self.model, params)
                 self.assertEqual(SimpleLog.objects.count(), sl_initial_count)
                 self.assertEqual(CustomLogModel.objects.count(),
                                  initial_count + 1)
@@ -455,45 +479,45 @@ class AdminTestCase(TestCase):
         params = {
             'char_field': 'test'
         }
-        self.client.post(self.get_add_url(self.model), data=params,
-                         HTTP_X_REAL_IP='123')
+        self.add_object(self.model, params, headers={'HTTP_X_REAL_IP': '123'})
         sl = SimpleLog.objects.first()
         self.assertEqual(SimpleLog.objects.count(), initial_count + 1)
         self.assertIsNone(sl.user_ip)
 
-        self.client.post(self.get_add_url(self.model), data=params,
-                         REMOTE_ADDR='123')
+        self.add_object(self.model, params, headers={'REMOTE_ADDR': '123'})
         sl = SimpleLog.objects.first()
         self.assertEqual(SimpleLog.objects.count(), initial_count + 2)
         self.assertIsNone(sl.user_ip)
 
-        self.client.post(self.get_add_url(self.model), data=params,
-                         REMOTE_ADDR=None, HTTP_X_FORWARDED_FOR='123')
+        self.add_object(self.model, params,
+                        headers={'REMOTE_ADDR': '123',
+                                 'HTTP_X_FORWARDED_FOR': '123'})
         sl = SimpleLog.objects.first()
         self.assertEqual(SimpleLog.objects.count(), initial_count + 3)
         self.assertIsNone(sl.user_ip)
 
 
-class CustomViewTestCase(AdminTestCase):
-    namespace = ''
+class AdminTestCase(BaseTestCaseMixin, TestCase):
+    namespace = 'admin:'
 
+
+class CustomViewTestCase(BaseTestCaseMixin, TestCase):
     def test_anonymous_add(self):
         self.client.logout()
         initial_count = SimpleLog.objects.count()
         params = {
             'char_field': 'test',
-            'fk_field': self.other_model.pk,
-            'm2m_field': [self.other_model.pk],
+            'fk_field': self.other_model,
+            'm2m_field': [self.other_model],
             'choice_field': TestModel.TWO
         }
-        self.client.post(self.get_add_url(self.model), data=params)
-        new_obj = TestModel.objects.last()
+        new_obj = self.add_object(self.model, params)
         self.assertEqual(SimpleLog.objects.count(), initial_count + 1)
         sl = SimpleLog.objects.first()
         self.assertEqual(sl.action_flag, SimpleLog.ADD)
         self.assertIsNone(sl.user)
         self.assertEqual(sl.user_repr, settings.ANONYMOUS_REPR)
-        self.assertEqual(sl.user_ip, '127.0.0.1')
+        self.assertEqual(sl.user_ip, self.ip)
         self.assertEqual(sl.object_id, force_text(new_obj.id))
         self.assertEqual(sl.object_repr, force_text(new_obj))
         self.assertEqual(sl.content_type,
@@ -534,12 +558,11 @@ class CustomViewTestCase(AdminTestCase):
         self.client.logout()
         params = {
             'char_field': 'test',
-            'fk_field': self.other_model.pk,
-            'm2m_field': [self.other_model.pk],
+            'fk_field': self.other_model,
+            'm2m_field': [self.other_model],
             'choice_field': TestModel.ONE
         }
-        self.client.post(self.get_add_url(self.model), data=params)
-        obj = TestModel.objects.last()
+        obj = self.add_object(self.model, params)
         initial_count = SimpleLog.objects.count()
         params = {
             'char_field': 'test2',
@@ -547,14 +570,13 @@ class CustomViewTestCase(AdminTestCase):
             'm2m_field': [],
             'choice_field': TestModel.TWO
         }
-        self.client.post(self.get_change_url(self.model, obj.pk), data=params)
+        obj = self.change_object(obj, params)
         self.assertEqual(SimpleLog.objects.count(), initial_count + 1)
         sl = SimpleLog.objects.first()
-        obj.refresh_from_db()
         self.assertEqual(sl.action_flag, SimpleLog.CHANGE)
         self.assertIsNone(sl.user)
         self.assertEqual(sl.user_repr, settings.ANONYMOUS_REPR)
-        self.assertEqual(sl.user_ip, '127.0.0.1')
+        self.assertEqual(sl.user_ip, self.ip)
         self.assertEqual(sl.object_id, force_text(obj.id))
         self.assertEqual(sl.object_repr, force_text(obj))
         self.assertEqual(sl.content_type,
@@ -617,25 +639,23 @@ class CustomViewTestCase(AdminTestCase):
             }
         )
 
-    def test_delete_object_check_log(self):
+    def test_anonymous_delelte(self):
         self.client.logout()
         params = {
             'char_field': 'test',
-            'fk_field': self.other_model.pk,
-            'm2m_field': [self.other_model.pk],
+            'fk_field': self.other_model,
+            'm2m_field': [self.other_model],
             'choice_field': TestModel.TWO
         }
-        self.client.post(self.get_add_url(self.model), data=params)
-        obj = TestModel.objects.last()
+        obj = self.add_object(self.model, params)
         initial_count = SimpleLog.objects.count()
-        self.client.post(self.get_delete_url(self.model, obj.pk),
-                         data={'post': 'yes'})
+        self.delete_object(obj)
         self.assertEqual(SimpleLog.objects.count(), initial_count + 1)
         sl = SimpleLog.objects.first()
         self.assertEqual(sl.action_flag, SimpleLog.DELETE)
         self.assertIsNone(sl.user)
         self.assertEqual(sl.user_repr, settings.ANONYMOUS_REPR)
-        self.assertEqual(sl.user_ip, '127.0.0.1')
+        self.assertEqual(sl.user_ip, self.ip)
         self.assertEqual(sl.object_id, force_text(obj.id))
         self.assertEqual(sl.object_repr, force_text(obj))
         self.assertEqual(sl.content_type,
@@ -677,14 +697,57 @@ class CustomViewTestCase(AdminTestCase):
         self.client.logout()
         params = {
             'char_field': 'test',
-            'fk_field': self.other_model.pk,
-            'm2m_field': [self.other_model.pk],
+            'fk_field': self.other_model,
+            'm2m_field': [self.other_model],
             'choice_field': TestModel.TWO
         }
-        self.client.post(self.get_add_url(self.model), data=params)
+        self.add_object(self.model, params)
         sl = SimpleLog.objects.first()
         self.assertIsNone(sl.user)
         self.assertEqual(sl.user_repr, 'UNKNOWN')
+
+
+class SystemTestCase(BaseTestCaseMixin, TestCase):
+    def setUp(self):
+        middleware._thread_locals = local()
+        self.user = None
+        self.user_repr = 'System'
+        self.ip = None
+        self.other_model = OtherModel.objects.all()[0]
+
+    def prepare_params(self, model, params):
+        new_params = {}
+        m2m = {}
+        for k, v in params.items():
+            if model._meta.get_field(k).many_to_many:
+                m2m[k] = v
+            elif model._meta.get_field(k).is_relation:
+                new_params[k] = v if v else None
+            else:
+                new_params[k] = v
+        return new_params, m2m
+
+    def add_object(self, model, params, **kwargs):
+        params, m2m = self.prepare_params(model, params)
+        obj = model.objects.create(**params)
+        for k, v in m2m.items():
+            getattr(obj, k).add(*v)
+        return obj
+
+    def change_object(self, obj, params, **kwargs):
+        params, m2m = self.prepare_params(obj._meta.model, params)
+        for k, v in params.items():
+            setattr(obj, k, v)
+        obj.save()
+        for k, v in m2m.items():
+            if not v:
+                getattr(obj, k).clear()
+            else:
+                getattr(obj, k).add(*v)
+        return obj._meta.model.objects.get(pk=obj.pk)
+
+    def delete_object(self, obj):
+        obj.delete()
 
 
 class SettingsTestCase(TestCase):
