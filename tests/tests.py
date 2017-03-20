@@ -67,6 +67,10 @@ class BaseTestCaseMixin(object):
         self.other_model = OtherModel.objects.all()[0]
         self.client.login(username='user', password='pass')
 
+    @classmethod
+    def tearDown(cls):
+        SimpleLog.objects.all().delete()
+
     def add_object(self, model, params, **kwargs):
         params = self.prepare_params(model, params)
         headers = kwargs.get('headers', {})
