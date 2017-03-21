@@ -6,13 +6,12 @@ from django.db.models.signals import (
 )
 
 from simple_log.utils import (
-    get_models_for_log, get_serializer, get_log_model,
-    registered_models
+    get_serializer, get_log_model, registered_models, need_to_log
 )
 
 
 def log_pre_save_delete(sender, instance, **kwargs):
-    if sender not in get_models_for_log():
+    if not need_to_log(sender):
         return
     instance._old_instance = None
     if instance.pk:
@@ -23,7 +22,7 @@ def log_pre_save_delete(sender, instance, **kwargs):
 
 
 def log_post_save(sender, instance, created, **kwargs):
-    if sender not in get_models_for_log():
+    if not need_to_log(sender):
         return
     SimpleLog = get_log_model(sender)
     serializer = get_serializer()()
@@ -39,7 +38,7 @@ def log_post_save(sender, instance, created, **kwargs):
 
 
 def log_post_delete(sender, instance, **kwargs):
-    if sender not in get_models_for_log():
+    if not need_to_log(sender):
         return
     SimpleLog = get_log_model(sender)
 
@@ -52,7 +51,7 @@ def log_post_delete(sender, instance, **kwargs):
 
 
 def log_m2m_change(sender, instance, action, **kwargs):
-    if instance.__class__ not in get_models_for_log():
+    if not need_to_log(instance.__class__):
         return
     SimpleLog = get_log_model(instance.__class__)
     serializer = get_serializer()()

@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
+from contextlib import contextmanager
 from django.apps import apps as django_apps
 from django.core.exceptions import ImproperlyConfigured
 from django.utils import lru_cache
@@ -85,3 +86,17 @@ def get_models_for_log():
 
 def str_or_none(value):
     return None if value is None else force_text(value)
+
+
+def need_to_log(model):
+    disabled = getattr(middleware._thread_locals, 'disable_logging', False)
+    return model in get_models_for_log() and not disabled
+
+
+@contextmanager
+def disable_logging():
+    middleware._thread_locals.disable_logging = True
+    try:
+        yield
+    finally:
+        delattr(middleware._thread_locals, 'disable_logging')

@@ -68,6 +68,19 @@ Add to any __init__.py:
     # For define log model
     simple_log.register(Model, AnotherModel, log_model=CustomLogModel)
 
+
+Disable logging
+===============
+For disable logging in **current thread**:
+
+.. code-block:: python
+
+    from simple_log.utils import disable_logging
+
+    with disable_logging():
+        # create/update/delete objects
+
+
 Commands
 ========
 To view which models is tracking:
