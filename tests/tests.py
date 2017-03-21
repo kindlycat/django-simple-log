@@ -25,8 +25,8 @@ from simple_log.signals import (
 )
 from simple_log import utils
 from simple_log.utils import (
-    get_fields, get_models_for_log, get_log_model
-)
+    get_fields, get_models_for_log, get_log_model,
+    disable_logging)
 from simple_log import middleware
 from .test_app.models import OtherModel, TestModel
 
@@ -501,6 +501,26 @@ class BaseTestCaseMixin(object):
         self.assertEqual(SimpleLog.objects.count(), initial_count + 3)
         self.assertIsNone(sl.user_ip)
 
+    def test_disable_log(self):
+        initial_count = SimpleLog.objects.count()
+        with disable_logging():
+            params = {
+                'char_field': 'test',
+                'fk_field': self.other_model,
+                'm2m_field': [self.other_model],
+                'choice_field': TestModel.TWO
+            }
+            obj = self.add_object(self.model, params)
+            params = {
+                'char_field': 'test2',
+                'fk_field': '',
+                'm2m_field': [],
+                'choice_field': TestModel.ONE
+            }
+            self.change_object(obj, params)
+            self.delete_object(obj)
+        self.assertEqual(SimpleLog.objects.count(), initial_count)
+
 
 class AdminTestCase(BaseTestCaseMixin, TestCase):
     namespace = 'admin:'
@@ -753,6 +773,19 @@ class SystemTestCase(BaseTestCaseMixin, TestCase):
 
     def delete_object(self, obj):
         obj.delete()
+
+    @override_settings(SIMPLE_LOG_NONE_USER_REPR='GLaDOS')
+    def test_system_change_repr(self):
+        params = {
+            'char_field': 'test',
+            'fk_field': self.other_model,
+            'm2m_field': [self.other_model],
+            'choice_field': TestModel.TWO
+        }
+        self.add_object(self.model, params)
+        sl = SimpleLog.objects.first()
+        self.assertIsNone(sl.user)
+        self.assertEqual(sl.user_repr, 'GLaDOS')
 
 
 class SettingsTestCase(TestCase):
