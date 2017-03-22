@@ -71,7 +71,7 @@ Add to any __init__.py:
 
 Disable logging
 ===============
-For disable logging in **current thread**:
+For temporary disable logging:
 
 .. code-block:: python
 
