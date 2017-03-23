@@ -937,6 +937,16 @@ class SettingsTestCase(TestCase):
         with isolate_lru_cache(get_models_for_log):
             self.assertListEqual(get_models_for_log(), all_models)
 
+    @override_settings(SIMPLE_LOG_OLD_INSTANCE_ATTR_NAME='old')
+    def test_old_instance_attr_name(self):
+        self.model.objects.create(char_field='value')
+        initial_count = SimpleLog.objects.count()
+        obj = self.model.objects.all()[0]
+        obj.char_field = 'new value'
+        obj.save()
+        self.assertEqual(SimpleLog.objects.count(), initial_count + 1)
+        self.assertEqual(obj.old.pk, obj.pk)
+
 
 class LogModelTestCase(TestCase):
     @classmethod

@@ -12,7 +12,7 @@ from simple_log.conf import settings
 from simple_log import middleware
 
 __all__ = ['get_log_model', 'get_current_user', 'get_current_request',
-           'get_serializer']
+           'get_serializer', 'disable_logging', 'get_models_for_log']
 
 registered_models = {}
 

@@ -158,3 +158,9 @@ Default: ``'simple_log.utils.get_current_request_default'``
 
 Function that return current request. Rewrite this setting if you already
 have middleware for storing current request.
+
+SIMPLE_LOG_OLD_INSTANCE_ATTR_NAME
+---------------------------------
+Default: ``'_old_instance'``
+
+Attribute's name for storing old instance of logging object.

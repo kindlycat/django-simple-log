@@ -26,7 +26,8 @@ DEFAULTS = {
     ),
     'ANONYMOUS_REPR': _('Anonymous'),
     'NONE_USER_REPR': _('System'),
-    'GET_CURRENT_REQUEST': 'simple_log.utils.get_current_request_default'
+    'GET_CURRENT_REQUEST': 'simple_log.utils.get_current_request_default',
+    'OLD_INSTANCE_ATTR_NAME': '_old_instance',
 }
 
 

@@ -8,17 +8,22 @@ from django.db.models.signals import (
 from simple_log.utils import (
     get_serializer, get_log_model, registered_models, need_to_log
 )
+from simple_log.conf import settings
 
 
 def log_pre_save_delete(sender, instance, **kwargs):
     if not need_to_log(sender):
         return
-    instance._old_instance = None
-    if instance.pk:
-        instance._old_instance = sender.objects.filter(pk=instance.pk)\
-                                               .select_related().first()
+    if instance.pk and not hasattr(instance, settings.OLD_INSTANCE_ATTR_NAME):
+        setattr(
+            instance,
+            settings.OLD_INSTANCE_ATTR_NAME,
+            sender.objects.filter(pk=instance.pk).select_related().first()
+        )
     serializer = get_serializer()()
-    instance._old_values = serializer(instance._old_instance)
+    instance._old_values = serializer(
+        getattr(instance, settings.OLD_INSTANCE_ATTR_NAME, None)
+    )
 
 
 def log_post_save(sender, instance, created, **kwargs):
