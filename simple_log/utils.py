@@ -70,17 +70,24 @@ def get_fields(klass):
     return [f for f in fields if f.concrete]
 
 
+def get_label(m):
+    try:
+        return m._meta.label
+    except AttributeError:
+        return '{}.{}'.format(m._meta.app_label, m._meta.object_name)
+
+
 @lru_cache.lru_cache(maxsize=None)
 def get_models_for_log():
     if registered_models:
         return list(registered_models.keys())
     all_models = [m for m in django_apps.get_models()
-                  if m._meta.label != settings.MODEL]
+                  if get_label(m) != settings.MODEL]
     if settings.MODEL_LIST:
-        return [m for m in all_models if m._meta.label in settings.MODEL_LIST]
+        return [m for m in all_models if get_label(m) in settings.MODEL_LIST]
     if settings.EXCLUDE_MODEL_LIST:
         return [m for m in all_models
-                if m._meta.label not in settings.EXCLUDE_MODEL_LIST]
+                if get_label(m) not in settings.EXCLUDE_MODEL_LIST]
     return all_models
 
 

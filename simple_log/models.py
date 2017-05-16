@@ -4,7 +4,6 @@ from __future__ import absolute_import, unicode_literals
 from django.conf import settings as django_settings
 from django.contrib.admin.options import get_content_type_for_model
 from django.contrib.contenttypes.models import ContentType
-from django.contrib.postgres.fields.jsonb import JSONField
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_ipv46_address
 from django.db import models
@@ -17,6 +16,12 @@ from .conf import settings
 from .utils import (
     get_current_request, get_current_user, get_fields, str_or_none
 )
+
+try:
+    from django.contrib.postgres.fields.jsonb import JSONField
+except ImportError:
+    from jsonfield import JSONField
+
 
 __all__ = ['SimpleLogAbstract', 'SimpleLog', 'ModelSerializer']
 
@@ -38,13 +43,13 @@ class SimpleLogAbstract(models.Model):
     )
     content_type = models.ForeignKey(
         ContentType,
-        models.SET_NULL,
+        on_delete=models.SET_NULL,
         verbose_name=_('content type'),
         blank=True, null=True,
     )
     user = models.ForeignKey(
         django_settings.AUTH_USER_MODEL,
-        models.SET_NULL,
+        on_delete=models.SET_NULL,
         verbose_name=_('user'),
         null=True
     )
@@ -78,6 +83,7 @@ class SimpleLogAbstract(models.Model):
     @classmethod
     def log(cls, instance, **kwargs):
         user = kwargs.get('user')
+        commit = kwargs.pop('commit', True)
         if 'user' not in kwargs:
             user = get_current_user()
         if 'user_repr' not in kwargs:
@@ -95,7 +101,10 @@ class SimpleLogAbstract(models.Model):
             'object_repr': force_text(instance),
             'user': user if user and user.is_authenticated() else None
         })
-        return cls.objects.create(**kwargs)
+        obj = cls(**kwargs)
+        if commit:
+            obj.save()
+        return obj
 
     @cached_property
     def changed_fields(self):
@@ -163,6 +172,8 @@ class ModelSerializer(object):
 
     @staticmethod
     def get_m2m_value(instance, field):
+        if not instance.pk:
+            return []
         return [{
             'db': force_text(x.pk),
             'repr': force_text(x)

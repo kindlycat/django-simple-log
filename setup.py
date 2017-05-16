@@ -22,7 +22,7 @@ setup(
     url='https://github.com/kindlycat/django-simple-log/',
     packages=find_packages(exclude=('manage', 'tests', 'tests.*')),
     include_package_data=True,
-    install_requires=['Django>=1.9'],
+    install_requires=['Django>=1.8'],
     classifiers=[
         'Development Status :: 3 - Alpha',
         'Programming Language :: Python :: 2.7',

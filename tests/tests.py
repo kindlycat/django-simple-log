@@ -11,17 +11,17 @@ from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ImproperlyConfigured
 from django.core.management import call_command
 from django.db.models.signals import (
-    post_save, pre_save, post_delete, m2m_changed
-)
-from django.test import override_settings, TestCase
-from django.test.utils import isolate_lru_cache, modify_settings
+    post_save, pre_save, post_delete, m2m_changed,
+    pre_delete)
+from django.test import override_settings, TestCase, TransactionTestCase
+from django.test.utils import modify_settings
 from django.utils.encoding import force_text
 
 from simple_log import register
 from simple_log.conf import settings
 from simple_log.models import SimpleLog
 from simple_log.signals import (
-    log_pre_save_delete, log_post_save, log_post_delete, log_m2m_change
+    log_pre_delete, log_pre_save
 )
 from simple_log import utils
 from simple_log.utils import (
@@ -29,6 +29,7 @@ from simple_log.utils import (
     disable_logging)
 from simple_log import middleware
 from .test_app.models import OtherModel, TestModel
+from .utils import isolate_lru_cache
 
 try:
     from unittest import mock
@@ -43,13 +44,14 @@ except ImportError:
 
 @contextmanager
 def disconnect_signals(sender=None):
-    pre_save.disconnect(receiver=log_pre_save_delete, sender=sender)
-    post_save.disconnect(receiver=log_post_save, sender=sender)
-    post_delete.disconnect(receiver=log_post_delete, sender=sender)
-    m2m_changed.disconnect(receiver=log_m2m_change, sender=sender)
+    pre_save.disconnect(receiver=log_pre_save, sender=sender)
+    # post_save.disconnect(receiver=log_post_save, sender=sender)
+    pre_delete.disconnect(receiver=log_pre_delete, sender=sender)
+    # m2m_changed.disconnect(receiver=log_m2m_change, sender=sender)
 
 
 class BaseTestCaseMixin(object):
+    reset_sequences = True
     model = TestModel
     namespace = ''
 
@@ -62,21 +64,20 @@ class BaseTestCaseMixin(object):
         return params
 
     def setUp(self):
+        with disable_logging():
+            User.objects.create_superuser('user', 'test@example.com', 'pass')
+            OtherModel.objects.create(char_field='other')
         self.user = User.objects.all()[0]
         self.user_repr = force_text(self.user)
         self.ip = '127.0.0.1'
         self.other_model = OtherModel.objects.all()[0]
         self.client.login(username='user', password='pass')
 
-    @classmethod
-    def tearDown(cls):
-        SimpleLog.objects.all().delete()
-
     def add_object(self, model, params, **kwargs):
         params = self.prepare_params(model, params)
         headers = kwargs.get('headers', {})
-        self.client.post(self.get_add_url(self.model), data=params, **headers)
-        return self.model.objects.last()
+        self.client.post(self.get_add_url(model), data=params, **headers)
+        return model.objects.last()
 
     def change_object(self, obj, params, **kwargs):
         headers = kwargs.get('headers', {})
@@ -89,11 +90,6 @@ class BaseTestCaseMixin(object):
     def delete_object(self, obj):
         self.client.post(self.get_delete_url(obj._meta.model, obj.pk),
                          data={'post': 'yes'})
-
-    @classmethod
-    def setUpTestData(cls):
-        User.objects.create_superuser('user', 'test@example.com', 'pass')
-        OtherModel.objects.create(char_field='other')
 
     def get_add_url(self, model):
         return reverse(
@@ -522,7 +518,7 @@ class BaseTestCaseMixin(object):
         self.assertEqual(SimpleLog.objects.count(), initial_count)
 
 
-class AdminTestCase(BaseTestCaseMixin, TestCase):
+class AdminTestCase(BaseTestCaseMixin, TransactionTestCase):
     namespace = 'admin:'
 
 

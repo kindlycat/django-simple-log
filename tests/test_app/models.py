@@ -54,7 +54,6 @@ class OtherModel(models.Model):
     char_field = models.CharField(verbose_name='Char field', max_length=100)
     m2m_field = models.ManyToManyField(
         'test_app.TestModel',
-        null=True,
         blank=True
     )
 
