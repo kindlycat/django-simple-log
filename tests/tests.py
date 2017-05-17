@@ -21,14 +21,14 @@ from simple_log import register
 from simple_log.conf import settings
 from simple_log.models import SimpleLog
 from simple_log.signals import (
-    log_pre_delete, log_pre_save,
+    log_pre_save_delete, log_post_delete,
     log_post_save, log_m2m_change)
 from simple_log import utils
 from simple_log.utils import (
     get_fields, get_models_for_log, get_log_model,
     disable_logging)
 from simple_log import middleware
-from .test_app.models import OtherModel, TestModel
+from .test_app.models import OtherModel, TestModel, SwappableLogModel
 from .utils import isolate_lru_cache
 
 try:
@@ -44,15 +44,15 @@ except ImportError:
 
 @contextmanager
 def disconnect_signals(sender=None):
-    pre_save.disconnect(receiver=log_pre_save, sender=sender)
+    pre_save.disconnect(receiver=log_pre_save_delete, sender=sender)
     post_save.disconnect(receiver=log_post_save, sender=sender)
-    pre_delete.disconnect(receiver=log_pre_delete, sender=sender)
+    pre_delete.disconnect(receiver=log_pre_save_delete, sender=sender)
+    post_delete.disconnect(receiver=log_post_delete, sender=sender)
     m2m_changed.disconnect(receiver=log_m2m_change, sender=sender)
 
 
 class BaseTestCaseMixin(object):
     reset_sequences = True
-    model = TestModel
     namespace = ''
 
     def prepare_params(self, model, params):
@@ -77,7 +77,7 @@ class BaseTestCaseMixin(object):
         params = self.prepare_params(model, params)
         headers = kwargs.get('headers', {})
         self.client.post(self.get_add_url(model), data=params, **headers)
-        return model.objects.last()
+        return model.objects.latest('pk')
 
     def change_object(self, obj, params, **kwargs):
         headers = kwargs.get('headers', {})
@@ -119,9 +119,9 @@ class BaseTestCaseMixin(object):
             'm2m_field': [self.other_model],
             'choice_field': TestModel.TWO
         }
-        new_obj = self.add_object(self.model, params)
+        new_obj = self.add_object(TestModel, params)
         self.assertEqual(SimpleLog.objects.count(), initial_count + 1)
-        sl = SimpleLog.objects.first()
+        sl = SimpleLog.objects.latest('pk')
         self.assertEqual(sl.action_flag, SimpleLog.ADD)
         self.assertEqual(sl.user, self.user)
         self.assertEqual(sl.user_repr, self.user_repr)
@@ -169,7 +169,7 @@ class BaseTestCaseMixin(object):
             'm2m_field': [self.other_model],
             'choice_field': TestModel.ONE
         }
-        obj = self.add_object(self.model, params)
+        obj = self.add_object(TestModel, params)
         initial_count = SimpleLog.objects.count()
         params = {
             'char_field': 'test2',
@@ -179,7 +179,7 @@ class BaseTestCaseMixin(object):
         }
         obj = self.change_object(obj, params)
         self.assertEqual(SimpleLog.objects.count(), initial_count + 1)
-        sl = SimpleLog.objects.first()
+        sl = SimpleLog.objects.latest('pk')
         self.assertEqual(sl.action_flag, SimpleLog.CHANGE)
         self.assertEqual(sl.user, self.user)
         self.assertEqual(sl.user_repr, self.user_repr)
@@ -253,12 +253,12 @@ class BaseTestCaseMixin(object):
             'm2m_field': [self.other_model],
             'choice_field': TestModel.TWO
         }
-        obj = self.add_object(self.model, params)
+        obj = self.add_object(TestModel, params)
         obj_id = obj.id
         initial_count = SimpleLog.objects.count()
         self.delete_object(obj)
         self.assertEqual(SimpleLog.objects.count(), initial_count + 1)
-        sl = SimpleLog.objects.first()
+        sl = SimpleLog.objects.latest('pk')
         self.assertEqual(sl.action_flag, SimpleLog.DELETE)
         self.assertEqual(sl.user, self.user)
         self.assertEqual(sl.user_repr, self.user_repr)
@@ -308,9 +308,9 @@ class BaseTestCaseMixin(object):
             'm2m_field': [other],
             'choice_field': TestModel.ONE
         }
-        new_obj = self.add_object(self.model, params)
+        new_obj = self.add_object(TestModel, params)
         self.assertEqual(SimpleLog.objects.count(), initial_count + 1)
-        sl = SimpleLog.objects.first()
+        sl = SimpleLog.objects.latest('pk')
         self.assertEqual(sl.action_flag, SimpleLog.ADD)
         self.assertEqual(sl.user, self.user)
         self.assertEqual(sl.user_repr, self.user_repr)
@@ -358,7 +358,7 @@ class BaseTestCaseMixin(object):
             'm2m_field': [self.other_model],
             'choice_field': TestModel.ONE
         }
-        obj = self.add_object(self.model, params)
+        obj = self.add_object(TestModel, params)
         initial_count = SimpleLog.objects.count()
         self.change_object(obj, params)
         self.assertEqual(SimpleLog.objects.count(), initial_count)
@@ -378,7 +378,7 @@ class BaseTestCaseMixin(object):
                 char_field='test',
                 fk_field=other_model
             )
-            sl = SimpleLog.objects.first()
+            sl = SimpleLog.objects.latest('pk')
             self.assertEqual(SimpleLog.objects.count(), initial_count + 1)
             self.assertDictEqual(
                 sl.new,
@@ -405,7 +405,7 @@ class BaseTestCaseMixin(object):
                 char_field='test',
                 fk_field=other_model
             )
-            sl = SimpleLog.objects.first()
+            sl = SimpleLog.objects.latest('pk')
             self.assertEqual(SimpleLog.objects.count(), initial_count + 1)
             self.assertDictEqual(
                 sl.new,
@@ -433,7 +433,7 @@ class BaseTestCaseMixin(object):
                 params = {
                     'char_field': 'test',
                 }
-                self.add_object(self.model, params)
+                self.add_object(TestModel, params)
                 self.assertEqual(SimpleLog.objects.count(), initial_count + 1)
 
                 params['m2m_field'] = [TestModel.objects.all()[0]]
@@ -464,7 +464,7 @@ class BaseTestCaseMixin(object):
                     'm2m_field': [self.other_model],
                     'choice_field': TestModel.TWO
                 }
-                self.add_object(self.model, params)
+                self.add_object(TestModel, params)
                 self.assertEqual(SimpleLog.objects.count(), sl_initial_count)
                 self.assertEqual(CustomLogModel.objects.count(),
                                  initial_count + 1)
@@ -480,20 +480,20 @@ class BaseTestCaseMixin(object):
         params = {
             'char_field': 'test'
         }
-        self.add_object(self.model, params, headers={'HTTP_X_REAL_IP': '123'})
-        sl = SimpleLog.objects.first()
+        self.add_object(TestModel, params, headers={'HTTP_X_REAL_IP': '123'})
+        sl = SimpleLog.objects.latest('pk')
         self.assertEqual(SimpleLog.objects.count(), initial_count + 1)
         self.assertIsNone(sl.user_ip)
 
-        self.add_object(self.model, params, headers={'REMOTE_ADDR': '123'})
-        sl = SimpleLog.objects.first()
+        self.add_object(TestModel, params, headers={'REMOTE_ADDR': '123'})
+        sl = SimpleLog.objects.latest('pk')
         self.assertEqual(SimpleLog.objects.count(), initial_count + 2)
         self.assertIsNone(sl.user_ip)
 
-        self.add_object(self.model, params,
+        self.add_object(TestModel, params,
                         headers={'REMOTE_ADDR': '123',
                                  'HTTP_X_FORWARDED_FOR': '123'})
-        sl = SimpleLog.objects.first()
+        sl = SimpleLog.objects.latest('pk')
         self.assertEqual(SimpleLog.objects.count(), initial_count + 3)
         self.assertIsNone(sl.user_ip)
 
@@ -506,7 +506,7 @@ class BaseTestCaseMixin(object):
                 'm2m_field': [self.other_model],
                 'choice_field': TestModel.TWO
             }
-            obj = self.add_object(self.model, params)
+            obj = self.add_object(TestModel, params)
             params = {
                 'char_field': 'test2',
                 'fk_field': '',
@@ -532,9 +532,9 @@ class CustomViewTestCase(BaseTestCaseMixin, TransactionTestCase):
             'm2m_field': [self.other_model],
             'choice_field': TestModel.TWO
         }
-        new_obj = self.add_object(self.model, params)
+        new_obj = self.add_object(TestModel, params)
         self.assertEqual(SimpleLog.objects.count(), initial_count + 1)
-        sl = SimpleLog.objects.first()
+        sl = SimpleLog.objects.latest('pk')
         self.assertEqual(sl.action_flag, SimpleLog.ADD)
         self.assertIsNone(sl.user)
         self.assertEqual(sl.user_repr, settings.ANONYMOUS_REPR)
@@ -583,7 +583,7 @@ class CustomViewTestCase(BaseTestCaseMixin, TransactionTestCase):
             'm2m_field': [self.other_model],
             'choice_field': TestModel.ONE
         }
-        obj = self.add_object(self.model, params)
+        obj = self.add_object(TestModel, params)
         initial_count = SimpleLog.objects.count()
         params = {
             'char_field': 'test2',
@@ -593,7 +593,7 @@ class CustomViewTestCase(BaseTestCaseMixin, TransactionTestCase):
         }
         obj = self.change_object(obj, params)
         self.assertEqual(SimpleLog.objects.count(), initial_count + 1)
-        sl = SimpleLog.objects.first()
+        sl = SimpleLog.objects.latest('pk')
         self.assertEqual(sl.action_flag, SimpleLog.CHANGE)
         self.assertIsNone(sl.user)
         self.assertEqual(sl.user_repr, settings.ANONYMOUS_REPR)
@@ -668,11 +668,11 @@ class CustomViewTestCase(BaseTestCaseMixin, TransactionTestCase):
             'm2m_field': [self.other_model],
             'choice_field': TestModel.TWO
         }
-        obj = self.add_object(self.model, params)
+        obj = self.add_object(TestModel, params)
         initial_count = SimpleLog.objects.count()
         self.delete_object(obj)
         self.assertEqual(SimpleLog.objects.count(), initial_count + 1)
-        sl = SimpleLog.objects.first()
+        sl = SimpleLog.objects.latest('pk')
         self.assertEqual(sl.action_flag, SimpleLog.DELETE)
         self.assertIsNone(sl.user)
         self.assertEqual(sl.user_repr, settings.ANONYMOUS_REPR)
@@ -722,15 +722,17 @@ class CustomViewTestCase(BaseTestCaseMixin, TransactionTestCase):
             'm2m_field': [self.other_model],
             'choice_field': TestModel.TWO
         }
-        self.add_object(self.model, params)
-        sl = SimpleLog.objects.first()
+        self.add_object(TestModel, params)
+        sl = SimpleLog.objects.latest('pk')
         self.assertIsNone(sl.user)
         self.assertEqual(sl.user_repr, 'UNKNOWN')
 
 
-class SystemTestCase(BaseTestCaseMixin, TestCase):
+class SystemTestCase(BaseTestCaseMixin, TransactionTestCase):
     def setUp(self):
         middleware._thread_locals = local()
+        with disable_logging():
+            OtherModel.objects.create(char_field='other')
         self.user = None
         self.user_repr = 'System'
         self.ip = None
@@ -753,7 +755,7 @@ class SystemTestCase(BaseTestCaseMixin, TestCase):
         obj = model.objects.create(**params)
         for k, v in m2m.items():
             getattr(obj, k).add(*v)
-        return obj
+        return model.objects.latest('pk')
 
     def change_object(self, obj, params, **kwargs):
         params, m2m = self.prepare_params(obj._meta.model, params)
@@ -778,14 +780,19 @@ class SystemTestCase(BaseTestCaseMixin, TestCase):
             'm2m_field': [self.other_model],
             'choice_field': TestModel.TWO
         }
-        self.add_object(self.model, params)
-        sl = SimpleLog.objects.first()
+        self.add_object(TestModel, params)
+        sl = SimpleLog.objects.latest('pk')
         self.assertIsNone(sl.user)
         self.assertEqual(sl.user_repr, 'GLaDOS')
 
 
-class SettingsTestCase(TestCase):
-    model = TestModel
+class SettingsTestCase(TransactionTestCase):
+    reset_sequences = True
+
+    available_apps = [
+        'tests.test_app',
+        'django.contrib.contenttypes',
+    ]
 
     @classmethod
     def tearDown(cls):
@@ -828,7 +835,7 @@ class SettingsTestCase(TestCase):
                 char_field='test',
                 fk_field=other_model
             )
-            sl = SimpleLog.objects.first()
+            sl = SimpleLog.objects.latest('pk')
             self.assertEqual(SimpleLog.objects.count(), initial_count + 1)
             self.assertDictEqual(
                 sl.new,
@@ -847,11 +854,11 @@ class SettingsTestCase(TestCase):
                 }
             )
 
-    @override_settings(SIMPLE_LOG_MODEL='swappable.SwappableLogModel')
-    @modify_settings(INSTALLED_APPS={'append': 'tests.swappable'})
+    @override_settings(SIMPLE_LOG_MODEL='test_app.SwappableLogModel')
+    # @modify_settings(INSTALLED_APPS={'append': 'tests.swappable'})
     def test_log_model(self):
+        import ipdb; ipdb.set_trace()
         call_command('migrate', verbosity=0, run_syncdb=True)
-        from .swappable.models import SwappableLogModel
         with isolate_lru_cache(get_log_model):
             self.assertIs(get_log_model(), SwappableLogModel)
             other_model = OtherModel.objects.create(char_field='other')
@@ -860,7 +867,7 @@ class SettingsTestCase(TestCase):
                 char_field='test',
                 fk_field=other_model
             )
-            sl = SwappableLogModel.objects.first()
+            sl = SwappableLogModel.objects.latest('pk')
             self.assertEqual(
                 SwappableLogModel.objects.count(),
                 initial_count + 1
@@ -935,41 +942,44 @@ class SettingsTestCase(TestCase):
 
     @override_settings(SIMPLE_LOG_OLD_INSTANCE_ATTR_NAME='old')
     def test_old_instance_attr_name(self):
-        self.model.objects.create(char_field='value')
+        TestModel.objects.create(char_field='value')
         initial_count = SimpleLog.objects.count()
-        obj = self.model.objects.all()[0]
+        obj = TestModel.objects.all()[0]
         obj.char_field = 'new value'
         obj.save()
         self.assertEqual(SimpleLog.objects.count(), initial_count + 1)
         self.assertEqual(obj.old.pk, obj.pk)
 
 
-class LogModelTestCase(TestCase):
+class LogModelTestCase(TransactionTestCase):
     @classmethod
     def tearDown(cls):
         SimpleLog.objects.all().delete()
 
     def test_log_get_edited_obj(self):
         obj = TestModel.objects.create(char_field='test')
-        sl = SimpleLog.objects.first()
+        sl = SimpleLog.objects.latest('pk')
         self.assertEqual(sl.get_edited_object(), obj)
 
     def test_log_str(self):
-        obj = TestModel.objects.create(char_field='test')
-        sl = SimpleLog.objects.first()
+        TestModel.objects.create(char_field='test')
+        obj = TestModel.objects.latest('pk')
+        sl = SimpleLog.objects.latest('pk')
         self.assertEqual(str(sl), '%s: %s' % (str(obj), 'added'))
 
         obj.char_field = 'test2'
         obj.save()
-        sl = SimpleLog.objects.first()
+        obj = TestModel.objects.latest('pk')
+        sl = SimpleLog.objects.latest('pk')
         self.assertEqual(str(sl), '%s: %s' % (str(obj), 'changed'))
 
         obj.delete()
-        sl = SimpleLog.objects.first()
+        sl = SimpleLog.objects.latest('pk')
         self.assertEqual(str(sl), '%s: %s' % (str(obj), 'deleted'))
 
     def test_log_changed_fields(self):
-        obj = TestModel.objects.create(char_field='test')
+        TestModel.objects.create(char_field='test')
+        obj = TestModel.objects.latest('pk')
         other_model = OtherModel.objects.create(char_field='test')
         params = {
             'char_field': 'test2',
@@ -979,7 +989,7 @@ class LogModelTestCase(TestCase):
         for param, value in params.items():
             setattr(obj, param, value)
         obj.save()
-        sl = SimpleLog.objects.first()
+        sl = SimpleLog.objects.latest('pk')
         self.assertDictEqual(
             sl.changed_fields,
             {
@@ -997,7 +1007,7 @@ class LogModelTestCase(TestCase):
         obj = TestModel.objects.get(pk=obj.pk)
         obj.m2m_field.add(other_model2)
         obj.m2m_field.remove(other_model)
-        sl = SimpleLog.objects.first()
+        sl = SimpleLog.objects.latest('pk')
         added, removed = sl.m2m_field_diff('m2m_field')
 
         self.assertListEqual(added,

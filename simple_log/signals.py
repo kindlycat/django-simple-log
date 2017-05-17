@@ -13,23 +13,20 @@ from simple_log.conf import settings
 from django.db import connection
 
 
-def save_log(instance, flag):
+def save_log(instance):
     model = instance.__class__
     if not need_to_log(model):
         return
-    SimpleLog = get_log_model(model)
     serializer = get_serializer()()
     new_values = serializer(instance)
     if instance._old_values != new_values:
-        SimpleLog.log(
-            instance,
-            action_flag=flag,
-            old=instance._old_values or None,
-            new=new_values or None,
-        )
+        instance._log.old = instance._old_values or None
+        instance._log.new = new_values or None
+        instance._log.save()
+    instance._on_commit = False
 
 
-def set_old_instance(instance):
+def set_initial(instance):
     if instance.pk and not hasattr(instance, settings.OLD_INSTANCE_ATTR_NAME):
         setattr(
             instance,
@@ -37,93 +34,75 @@ def set_old_instance(instance):
             instance.__class__.objects.filter(pk=instance.pk)
                                       .select_related().first()
         )
-
-
-def log_pre_save(sender, instance, **kwargs):
-    if not need_to_log(sender):
-        return
-    set_old_instance(instance)
-    serializer = get_serializer()()
-    SimpleLog = get_log_model(instance.__class__)
     if not hasattr(instance, '_old_values'):
+        serializer = get_serializer()()
         instance._old_values = serializer(
             getattr(instance, settings.OLD_INSTANCE_ATTR_NAME, None)
         )
+    instance._on_commit = False
 
 
-def log_pre_delete(sender, instance, **kwargs):
+def log_pre_save_delete(sender, instance, **kwargs):
     if not need_to_log(sender):
         return
-    set_old_instance(instance)
-    serializer = get_serializer()()
-    SimpleLog = get_log_model(instance.__class__)
-    if not hasattr(instance, '_old_values'):
-        instance._old_values = serializer(
-            getattr(instance, settings.OLD_INSTANCE_ATTR_NAME, None)
-        )
-    SimpleLog.log(
-        instance,
-        action_flag=SimpleLog.DELETE,
-        old=instance._old_values,
-        new=None
-    )
+    set_initial(instance)
 
 
 def log_post_save(sender, instance, created, **kwargs):
     if not need_to_log(sender):
         return
     SimpleLog = get_log_model(sender)
-    flag = SimpleLog.ADD if created else SimpleLog.CHANGE
-    connection.on_commit(lambda: save_log(instance, flag))
+    if not hasattr(instance, '_log'):
+        instance._log = SimpleLog.log(
+            instance,
+            action_flag=SimpleLog.ADD if created else SimpleLog.CHANGE,
+            commit=False
+        )
+    if not instance._on_commit:
+        connection.on_commit(lambda: save_log(instance))
+        instance._on_commit = True
 
 
 def log_post_delete(sender, instance, **kwargs):
     if not need_to_log(sender):
         return
-    SimpleLog = get_log_model(sender)
-
+    SimpleLog = get_log_model(instance.__class__)
     SimpleLog.log(
         instance,
         action_flag=SimpleLog.DELETE,
         old=instance._old_values,
-        new=None
+        new=None,
     )
-    # connection.on_commit(lambda: save_log(instance))
 
 
 def log_m2m_change(sender, instance, action, **kwargs):
     if not need_to_log(instance.__class__):
         return
-    SimpleLog = get_log_model(instance.__class__)
-    serializer = get_serializer()()
 
     if action in ('pre_add', 'pre_remove', 'pre_clear'):
-        set_old_instance(instance)
-        if not hasattr(instance, '_old_values'):
-            instance._old_values = serializer(instance)
+        set_initial(instance)
 
-    if not hasattr(instance, '_log'):
-        instance._log = SimpleLog.log(
-            instance,
-            action_flag=SimpleLog.CHANGE,
-            commit=False,
-        )
-    connection.on_commit(lambda: save_log(instance, SimpleLog.CHANGE))
-
-    # if action in ('post_add', 'post_remove', 'post_clear'):
-    #     new_values = serializer(instance)
-    #     if instance._old_values != new_values:
-    #         instance._log.new = new_values
-    #         instance._log.save()
+    if action in ('post_add', 'post_remove', 'post_clear'):
+        SimpleLog = get_log_model(instance.__class__)
+        if not hasattr(instance, '_log'):
+            instance._log = SimpleLog.log(
+                instance,
+                action_flag=SimpleLog.DELETE,
+                old=instance._old_values,
+                commit=False
+            )
+        if not instance._on_commit:
+            connection.on_commit(lambda: save_log(instance))
+            instance._on_commit = True
 
 
 def register(*models, **kwargs):
     models = models or [None]
     for model in models:
-        pre_save.connect(log_pre_save, sender=model)
+        pre_save.connect(log_pre_save_delete, sender=model)
         post_save.connect(log_post_save, sender=model)
-        pre_delete.connect(log_pre_delete, sender=model)
-        # post_delete.connect(log_post_delete, sender=model)
+        pre_delete.connect(log_pre_save_delete, sender=model)
+        post_delete.connect(log_post_delete, sender=model)
         if not model:
             m2m_changed.connect(log_m2m_change)
         if model:

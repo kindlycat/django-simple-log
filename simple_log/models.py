@@ -81,9 +81,8 @@ class SimpleLogAbstract(models.Model):
         return self.content_type.get_object_for_this_type(pk=self.object_id)
 
     @classmethod
-    def log(cls, instance, **kwargs):
+    def log(cls, instance, commit=True, **kwargs):
         user = kwargs.get('user')
-        commit = kwargs.pop('commit', True)
         if 'user' not in kwargs:
             user = get_current_user()
         if 'user_repr' not in kwargs:
@@ -108,9 +107,12 @@ class SimpleLogAbstract(models.Model):
 
     @cached_property
     def changed_fields(self):
+        old = self.old or {}
+        new = self.new or {}
+        vals = old or new
         return {
-            k: self.old[k]['label'] for k in self.old.keys()
-            if self.old.get(k) != self.new.get(k)
+            k: vals[k]['label'] for k in vals.keys()
+            if old.get(k) != new.get(k)
         }
 
     def m2m_field_diff(self, field_name):
@@ -121,8 +123,8 @@ class SimpleLogAbstract(models.Model):
             - list with added items
             - list with removed items
         """
-        old = self.old.get(field_name, {}).get('value', [])
-        new = self.new.get(field_name, {}).get('value', [])
+        old = (self.old or {}).get(field_name, {}).get('value', [])
+        new = (self.new or {}).get(field_name, {}).get('value', [])
         return [x for x in new if x not in old], \
                [x for x in old if x not in new]
 
