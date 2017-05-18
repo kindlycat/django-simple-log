@@ -1,35 +1,27 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-from contextlib import contextmanager
-
 from threading import local
 
 from django.apps import apps
 from django.contrib.auth.models import User
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ImproperlyConfigured
-from django.db.models.signals import (
-    post_save, pre_save, post_delete, m2m_changed, pre_delete
-)
 from django.test import override_settings, TransactionTestCase
 from django.utils.encoding import force_text
 
 from simple_log import register
 from simple_log.conf import settings
 from simple_log.models import SimpleLog
-from simple_log.signals import (
-    log_pre_save_delete, log_post_delete,
-    log_post_save, log_m2m_change)
 from simple_log import utils
 from simple_log.utils import (
-    get_fields, get_models_for_log, get_log_model,
-    disable_logging)
+    get_fields, get_models_for_log, get_log_model, disable_logging
+)
 from simple_log import middleware
 from .test_app.models import (
     OtherModel, TestModel, SwappableLogModel, CustomLogModel
 )
-from .utils import isolate_lru_cache
+from .utils import isolate_lru_cache, disconnect_signals
 
 try:
     from unittest import mock
@@ -42,28 +34,11 @@ except ImportError:
     from django.core.urlresolvers import reverse
 
 
-@contextmanager
-def disconnect_signals(sender=None):
-    pre_save.disconnect(receiver=log_pre_save_delete, sender=sender)
-    post_save.disconnect(receiver=log_post_save, sender=sender)
-    pre_delete.disconnect(receiver=log_pre_save_delete, sender=sender)
-    post_delete.disconnect(receiver=log_post_delete, sender=sender)
-    m2m_changed.disconnect(receiver=log_m2m_change, sender=sender)
-
-
 class BaseTestCaseMixin(object):
-    reset_sequences = True
     namespace = ''
 
-    def prepare_params(self, model, params):
-        for k, v in params.items():
-            if model._meta.get_field(k).many_to_many:
-                params[k] = [x.pk for x in v]
-            elif model._meta.get_field(k).is_relation:
-                params[k] = v.pk
-        return params
-
     def setUp(self):
+        middleware._thread_locals = local()
         with disable_logging():
             User.objects.create_superuser('user', 'test@example.com', 'pass')
             OtherModel.objects.create(char_field='other')
@@ -72,6 +47,14 @@ class BaseTestCaseMixin(object):
         self.ip = '127.0.0.1'
         self.other_model = OtherModel.objects.all()[0]
         self.client.login(username='user', password='pass')
+
+    def prepare_params(self, model, params):
+        for k, v in params.items():
+            if model._meta.get_field(k).many_to_many:
+                params[k] = [x.pk for x in v]
+            elif model._meta.get_field(k).is_relation:
+                params[k] = v.pk
+        return params
 
     def add_object(self, model, params, **kwargs):
         params = self.prepare_params(model, params)
@@ -784,14 +767,200 @@ class SystemTestCase(BaseTestCaseMixin, TransactionTestCase):
         self.assertIsNone(sl.user)
         self.assertEqual(sl.user_repr, 'GLaDOS')
 
+    def test_change_m2m(self):
+        params = {
+            'char_field': 'test',
+            'm2m_field': [self.other_model],
+        }
+        obj = self.add_object(TestModel, params)
+
+        # clear
+        obj.m2m_field.clear()
+        sl = SimpleLog.objects.latest('pk')
+        self.assertDictEqual(
+            sl.old,
+            {
+                'char_field': {
+                    'label': 'Char field',
+                    'value': 'test'
+                },
+                'fk_field': {
+                    'label': 'Fk field',
+                    'value': {
+                        'db': None,
+                        'repr': ''
+                    }
+                },
+                'm2m_field': {
+                    'label': 'M2m field',
+                    'value': [{
+                        'db': force_text(self.other_model.pk),
+                        'repr': force_text(self.other_model)
+                    }]
+                },
+                'choice_field': {
+                    'label': 'Choice field',
+                    'value': {
+                        'db': '1',
+                        'repr': 'One'
+                    }
+                }
+            }
+        )
+        self.assertDictEqual(
+            sl.new,
+            {
+                'char_field': {
+                    'label': 'Char field',
+                    'value': 'test'
+                },
+                'fk_field': {
+                    'label': 'Fk field',
+                    'value': {
+                        'db': None,
+                        'repr': ''
+                    }
+                },
+                'm2m_field': {
+                    'label': 'M2m field',
+                    'value': []
+                },
+                'choice_field': {
+                    'label': 'Choice field',
+                    'value': {
+                        'db': '1',
+                        'repr': 'One'
+                    }
+                }
+            }
+        )
+
+        # add
+        obj = TestModel.objects.latest('pk')
+        obj.m2m_field.add(self.other_model)
+        sl = SimpleLog.objects.latest('pk')
+        self.assertDictEqual(
+            sl.old,
+            {
+                'char_field': {
+                    'label': 'Char field',
+                    'value': 'test'
+                },
+                'fk_field': {
+                    'label': 'Fk field',
+                    'value': {
+                        'db': None,
+                        'repr': ''
+                    }
+                },
+                'm2m_field': {
+                    'label': 'M2m field',
+                    'value': []
+                },
+                'choice_field': {
+                    'label': 'Choice field',
+                    'value': {
+                        'db': '1',
+                        'repr': 'One'
+                    }
+                }
+            }
+        )
+        self.assertDictEqual(
+            sl.new,
+            {
+                'char_field': {
+                    'label': 'Char field',
+                    'value': 'test'
+                },
+                'fk_field': {
+                    'label': 'Fk field',
+                    'value': {
+                        'db': None,
+                        'repr': ''
+                    }
+                },
+                'm2m_field': {
+                    'label': 'M2m field',
+                    'value': [{
+                        'db': force_text(self.other_model.pk),
+                        'repr': force_text(self.other_model)
+                    }]
+                },
+                'choice_field': {
+                    'label': 'Choice field',
+                    'value': {
+                        'db': '1',
+                        'repr': 'One'
+                    }
+                }
+            }
+        )
+
+        # delete
+        obj = TestModel.objects.latest('pk')
+        obj.m2m_field.remove(self.other_model)
+        sl = SimpleLog.objects.latest('pk')
+        self.assertDictEqual(
+            sl.old,
+            {
+                'char_field': {
+                    'label': 'Char field',
+                    'value': 'test'
+                },
+                'fk_field': {
+                    'label': 'Fk field',
+                    'value': {
+                        'db': None,
+                        'repr': ''
+                    }
+                },
+                'm2m_field': {
+                    'label': 'M2m field',
+                    'value': [{
+                        'db': force_text(self.other_model.pk),
+                        'repr': force_text(self.other_model)
+                    }]
+                },
+                'choice_field': {
+                    'label': 'Choice field',
+                    'value': {
+                        'db': '1',
+                        'repr': 'One'
+                    }
+                }
+            }
+        )
+        self.assertDictEqual(
+            sl.new,
+            {
+                'char_field': {
+                    'label': 'Char field',
+                    'value': 'test'
+                },
+                'fk_field': {
+                    'label': 'Fk field',
+                    'value': {
+                        'db': None,
+                        'repr': ''
+                    }
+                },
+                'm2m_field': {
+                    'label': 'M2m field',
+                    'value': []
+                },
+                'choice_field': {
+                    'label': 'Choice field',
+                    'value': {
+                        'db': '1',
+                        'repr': 'One'
+                    }
+                }
+            }
+        )
+
 
 class SettingsTestCase(TransactionTestCase):
-    reset_sequences = True
-
-    @classmethod
-    def tearDown(cls):
-        SimpleLog.objects.all().delete()
-
     @override_settings(SIMPLE_LOG_MODEL_LIST=('test_app.OtherModel',))
     def test_model_list_add(self):
         with isolate_lru_cache(get_models_for_log):
@@ -891,7 +1060,6 @@ class SettingsTestCase(TransactionTestCase):
                         }
                     }
                 )
-            SwappableLogModel.objects.all().delete()
 
     @override_settings(SIMPLE_LOG_MODEL=111)
     def test_log_model_wrong_value(self):
@@ -944,14 +1112,8 @@ class SettingsTestCase(TransactionTestCase):
 
 
 class LogModelTestCase(TransactionTestCase):
-    reset_sequences = True
-
     def setUp(self):
         middleware._thread_locals = local()
-
-    @classmethod
-    def tearDown(cls):
-        SimpleLog.objects.all().delete()
 
     def test_log_get_edited_obj(self):
         obj = TestModel.objects.create(char_field='test')

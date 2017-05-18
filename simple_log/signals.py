@@ -59,8 +59,8 @@ def log_post_save(sender, instance, created, **kwargs):
             commit=False
         )
     if not instance._on_commit:
-        connection.on_commit(lambda: save_log(instance))
         instance._on_commit = True
+        connection.on_commit(lambda: save_log(instance))
 
 
 def log_post_delete(sender, instance, **kwargs):
@@ -92,8 +92,8 @@ def log_m2m_change(sender, instance, action, **kwargs):
                 commit=False
             )
         if not instance._on_commit:
-            connection.on_commit(lambda: save_log(instance))
             instance._on_commit = True
+            connection.on_commit(lambda: save_log(instance))
 
 
 def register(*models, **kwargs):
