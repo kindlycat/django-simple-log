@@ -60,9 +60,13 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'tests.wsgi.application'
 
+db_engine = 'django.db.backends.postgresql_psycopg2'
+if LooseVersion(django.get_version()) < LooseVersion('1.9'):
+    db_engine = 'transaction_hooks.backends.postgresql_psycopg2'
+
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'ENGINE': db_engine,
         'NAME': 'test_db',
     }
 }

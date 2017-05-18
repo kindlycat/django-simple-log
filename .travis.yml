@@ -10,11 +10,12 @@ python:
   - "3.5"
   - "3.6"
 env:
-  - DJANGO_VERSION=1.9.12
-  - DJANGO_VERSION=1.10.6
-  - DJANGO_VERSION=1.11
+  - DJANGO_VERSION='django>=1.8.0,<1.9.0'
+  - DJANGO_VERSION='django>=1.9.0,<1.10.0'
+  - DJANGO_VERSION='django>=1.10.0,<1.11.0'
+  - DJANGO_VERSION='django>=1.11'
 install:
-  - pip install -q Django==$DJANGO_VERSION
+  - pip install -q $DJANGO_VERSION
   - pip install -r tests/requirements.pip
   - pip install coveralls
   - pip install flake8
