@@ -9,12 +9,10 @@ from django.apps import apps
 from django.contrib.auth.models import User
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ImproperlyConfigured
-from django.core.management import call_command
 from django.db.models.signals import (
-    post_save, pre_save, post_delete, m2m_changed,
-    pre_delete)
-from django.test import override_settings, TestCase, TransactionTestCase
-from django.test.utils import modify_settings
+    post_save, pre_save, post_delete, m2m_changed, pre_delete
+)
+from django.test import override_settings, TransactionTestCase
 from django.utils.encoding import force_text
 
 from simple_log import register
@@ -28,7 +26,9 @@ from simple_log.utils import (
     get_fields, get_models_for_log, get_log_model,
     disable_logging)
 from simple_log import middleware
-from .test_app.models import OtherModel, TestModel, SwappableLogModel
+from .test_app.models import (
+    OtherModel, TestModel, SwappableLogModel, CustomLogModel
+)
 from .utils import isolate_lru_cache
 
 try:
@@ -448,26 +448,25 @@ class BaseTestCaseMixin(object):
             utils.registered_models.clear()
             register()
 
-    @modify_settings(INSTALLED_APPS={'append': 'tests.swappable'})
-    def _test_register_with_custom_log_model(self):
+    def test_register_with_custom_log_model(self):
         disconnect_signals()
         try:
-            call_command('migrate', verbosity=0, run_syncdb=True)
-            from .swappable.models import CustomLogModel
-            with isolate_lru_cache(get_log_model):
-                register(TestModel, log_model=CustomLogModel)
-                sl_initial_count = SimpleLog.objects.count()
-                initial_count = CustomLogModel.objects.count()
-                params = {
-                    'char_field': 'test',
-                    'fk_field': self.other_model,
-                    'm2m_field': [self.other_model],
-                    'choice_field': TestModel.TWO
-                }
-                self.add_object(TestModel, params)
-                self.assertEqual(SimpleLog.objects.count(), sl_initial_count)
-                self.assertEqual(CustomLogModel.objects.count(),
-                                 initial_count + 1)
+            with isolate_lru_cache(get_models_for_log):
+                with isolate_lru_cache(get_log_model):
+                    register(TestModel, log_model=CustomLogModel)
+                    sl_initial_count = SimpleLog.objects.count()
+                    initial_count = CustomLogModel.objects.count()
+                    params = {
+                        'char_field': 'test',
+                        'fk_field': self.other_model,
+                        'm2m_field': [self.other_model],
+                        'choice_field': TestModel.TWO
+                    }
+                    self.add_object(TestModel, params)
+                    self.assertEqual(SimpleLog.objects.count(),
+                                     sl_initial_count)
+                    self.assertEqual(CustomLogModel.objects.count(),
+                                     initial_count + 1)
         except Exception:
             raise
         finally:
@@ -789,11 +788,6 @@ class SystemTestCase(BaseTestCaseMixin, TransactionTestCase):
 class SettingsTestCase(TransactionTestCase):
     reset_sequences = True
 
-    available_apps = [
-        'tests.test_app',
-        'django.contrib.contenttypes',
-    ]
-
     @classmethod
     def tearDown(cls):
         SimpleLog.objects.all().delete()
@@ -855,51 +849,49 @@ class SettingsTestCase(TransactionTestCase):
             )
 
     @override_settings(SIMPLE_LOG_MODEL='test_app.SwappableLogModel')
-    # @modify_settings(INSTALLED_APPS={'append': 'tests.swappable'})
     def test_log_model(self):
-        import ipdb; ipdb.set_trace()
-        call_command('migrate', verbosity=0, run_syncdb=True)
-        with isolate_lru_cache(get_log_model):
-            self.assertIs(get_log_model(), SwappableLogModel)
-            other_model = OtherModel.objects.create(char_field='other')
-            initial_count = SwappableLogModel.objects.count()
-            TestModel.objects.create(
-                char_field='test',
-                fk_field=other_model
-            )
-            sl = SwappableLogModel.objects.latest('pk')
-            self.assertEqual(
-                SwappableLogModel.objects.count(),
-                initial_count + 1
-            )
-            self.assertDictEqual(
-                sl.new,
-                {
-                    'char_field': {
-                        'label': 'Char field',
-                        'value': 'test'
-                    },
-                    'fk_field': {
-                        'label': 'Fk field',
-                        'value': {
-                            'db': force_text(other_model.pk),
-                            'repr': force_text(other_model),
-                        }
-                    },
-                    'm2m_field': {
-                        'label': 'M2m field',
-                        'value': []
-                    },
-                    'choice_field': {
-                        'label': 'Choice field',
-                        'value': {
-                            'db': force_text(TestModel.ONE),
-                            'repr': 'One'
+        with isolate_lru_cache(get_models_for_log):
+            with isolate_lru_cache(get_log_model):
+                self.assertIs(get_log_model(), SwappableLogModel)
+                other_model = OtherModel.objects.create(char_field='other')
+                initial_count = SwappableLogModel.objects.count()
+                TestModel.objects.create(
+                    char_field='test',
+                    fk_field=other_model
+                )
+                sl = SwappableLogModel.objects.latest('pk')
+                self.assertEqual(
+                    SwappableLogModel.objects.count(),
+                    initial_count + 1
+                )
+                self.assertDictEqual(
+                    sl.new,
+                    {
+                        'char_field': {
+                            'label': 'Char field',
+                            'value': 'test'
+                        },
+                        'fk_field': {
+                            'label': 'Fk field',
+                            'value': {
+                                'db': force_text(other_model.pk),
+                                'repr': force_text(other_model),
+                            }
+                        },
+                        'm2m_field': {
+                            'label': 'M2m field',
+                            'value': []
+                        },
+                        'choice_field': {
+                            'label': 'Choice field',
+                            'value': {
+                                'db': force_text(TestModel.ONE),
+                                'repr': 'One'
+                            }
                         }
                     }
-                }
-            )
-        SwappableLogModel.objects.all().delete()
+                )
+            SwappableLogModel.objects.all().delete()
 
     @override_settings(SIMPLE_LOG_MODEL=111)
     def test_log_model_wrong_value(self):
@@ -952,6 +944,11 @@ class SettingsTestCase(TransactionTestCase):
 
 
 class LogModelTestCase(TransactionTestCase):
+    reset_sequences = True
+
+    def setUp(self):
+        middleware._thread_locals = local()
+
     @classmethod
     def tearDown(cls):
         SimpleLog.objects.all().delete()

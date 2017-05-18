@@ -81,8 +81,10 @@ def get_label(m):
 def get_models_for_log():
     if registered_models:
         return list(registered_models.keys())
+    log_models = [get_label(get_log_model())]
+    log_models += [get_label(x) for x in registered_models.values()]
     all_models = [m for m in django_apps.get_models()
-                  if get_label(m) != settings.MODEL]
+                  if get_label(m) not in log_models]
     if settings.MODEL_LIST:
         return [m for m in all_models if get_label(m) in settings.MODEL_LIST]
     if settings.EXCLUDE_MODEL_LIST:
