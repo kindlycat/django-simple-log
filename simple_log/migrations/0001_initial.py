@@ -11,10 +11,7 @@ try:
     from django.contrib.postgres.fields.jsonb import JSONField
 except ImportError:
     # django 1.8
-    try:
-        from jsonfield import JSONField
-    except ImportError:
-        raise ImportError('For django 1.8 need install django-jsonfield')
+    from jsonfield import JSONField
 
 
 class Migration(migrations.Migration):
