@@ -773,10 +773,13 @@ class SystemTestCase(BaseTestCaseMixin, TransactionTestCase):
             'm2m_field': [self.other_model],
         }
         obj = self.add_object(TestModel, params)
+        initial_count = SimpleLog.objects.count()
 
         # clear
         obj.m2m_field.clear()
         sl = SimpleLog.objects.latest('pk')
+        self.assertEqual(SimpleLog.objects.count(), initial_count + 1)
+        self.assertEqual(sl.action_flag, SimpleLog.CHANGE)
         self.assertDictEqual(
             sl.old,
             {
@@ -839,6 +842,8 @@ class SystemTestCase(BaseTestCaseMixin, TransactionTestCase):
         obj = TestModel.objects.latest('pk')
         obj.m2m_field.add(self.other_model)
         sl = SimpleLog.objects.latest('pk')
+        self.assertEqual(SimpleLog.objects.count(), initial_count + 2)
+        self.assertEqual(sl.action_flag, SimpleLog.CHANGE)
         self.assertDictEqual(
             sl.old,
             {
@@ -901,6 +906,8 @@ class SystemTestCase(BaseTestCaseMixin, TransactionTestCase):
         obj = TestModel.objects.latest('pk')
         obj.m2m_field.remove(self.other_model)
         sl = SimpleLog.objects.latest('pk')
+        self.assertEqual(SimpleLog.objects.count(), initial_count + 3)
+        self.assertEqual(sl.action_flag, SimpleLog.CHANGE)
         self.assertDictEqual(
             sl.old,
             {

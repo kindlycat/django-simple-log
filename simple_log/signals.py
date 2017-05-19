@@ -14,8 +14,7 @@ from django.db import connection
 
 
 def save_log(instance):
-    model = instance.__class__
-    if not need_to_log(model):
+    if not need_to_log(instance.__class__):
         return
     serializer = get_serializer()()
     new_values = serializer(instance)
@@ -87,7 +86,7 @@ def log_m2m_change(sender, instance, action, **kwargs):
         if not hasattr(instance, '_log'):
             instance._log = SimpleLog.log(
                 instance,
-                action_flag=SimpleLog.DELETE,
+                action_flag=SimpleLog.CHANGE,
                 old=instance._old_values,
                 commit=False
             )
