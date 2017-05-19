@@ -14,8 +14,6 @@ from django.db import connection
 
 
 def save_log(instance):
-    if not need_to_log(instance.__class__):
-        return
     serializer = get_serializer()()
     new_values = serializer(instance)
     if instance._old_values != new_values:

@@ -75,3 +75,7 @@ class SwappableLogModel(SimpleLogAbstract):
 
 class CustomLogModel(SimpleLogAbstract):
     pass
+
+
+class BadLogModel(models.Model):
+    pass

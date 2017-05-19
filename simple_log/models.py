@@ -174,8 +174,6 @@ class ModelSerializer(object):
 
     @staticmethod
     def get_m2m_value(instance, field):
-        if not instance.pk:
-            return []
         return [{
             'db': force_text(x.pk),
             'repr': force_text(x)

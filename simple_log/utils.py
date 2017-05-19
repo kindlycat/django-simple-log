@@ -21,7 +21,7 @@ def check_log_model(model):
     from simple_log.models import SimpleLogAbstract
     if not issubclass(model, SimpleLogAbstract):
         raise ImproperlyConfigured('Log model should be subclass of '
-                                   'SimpleLogAbstract')
+                                   'SimpleLogAbstract.')
     return model
 
 
