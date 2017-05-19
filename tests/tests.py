@@ -7,7 +7,6 @@ from django.apps import apps
 from django.contrib.auth.models import User
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ImproperlyConfigured
-from django.db import models
 from django.test import override_settings, TransactionTestCase
 from django.utils.encoding import force_text
 
