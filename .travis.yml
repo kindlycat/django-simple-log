@@ -10,10 +10,13 @@ python:
   - "3.5"
   - "3.6"
 env:
-  - DJANGO_VERSION='django>=1.8.0,<1.9.0'
-  - DJANGO_VERSION='django>=1.9.0,<1.10.0'
-  - DJANGO_VERSION='django>=1.10.0,<1.11.0'
-  - DJANGO_VERSION='django>=1.11'
+  global:
+    - PARALLEL='--parallel 4'
+  matrix:
+    - DJANGO_VERSION='django>=1.8.0,<1.9.0' PARALLEL=''
+    - DJANGO_VERSION='django>=1.9.0,<1.10.0'
+    - DJANGO_VERSION='django>=1.10.0,<1.11.0'
+    - DJANGO_VERSION='django>=1.11'
 install:
   - pip install -q $DJANGO_VERSION
   - pip install -r tests/requirements.pip
@@ -23,4 +26,4 @@ after_script:
   - coveralls
 script:
   - flake8 --exclude=migrations .
-  - coverage run --source=simple_log --omit='simple_log/management/*' manage.py test tests;
+  - coverage run --source=simple_log --omit='simple_log/management/*' manage.py test tests $PARALLEL;

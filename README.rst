@@ -10,7 +10,7 @@ Django simple log
     :target: https://pypi.python.org/pypi/django-simple-log
 .. image:: https://img.shields.io/pypi/pyversions/django-simple-log.svg
     :target: https://pypi.python.org/pypi/django-simple-log
-.. image:: https://img.shields.io/badge/django-1.9%2C%201.10%2C%201.11-green.svg
+.. image:: https://img.shields.io/badge/django-%3E%3D1.8-green.svg
     :target: https://pypi.python.org/pypi/django-simple-log
 .. image:: https://img.shields.io/gitter/room/nwjs/nw.js.svg
     :target: https://gitter.im/django-simple-log/django-simple-log
@@ -45,6 +45,21 @@ Add middleware for detecting user:
         'simple_log.middleware.ThreadLocalMiddleware',
         ...
     ]
+
+For django 1.8:
+
+.. code-block:: sh
+
+    $ pip install django-jsonfield django-transaction-hooks
+
+.. code-block:: python
+
+    DATABASES = {
+        'default': {
+            'ENGINE': 'transaction_hooks.backends.postgresql_psycopg2',
+            ...
+        }
+    }
 
 Migrate:
 

@@ -12,7 +12,7 @@ from django.utils.encoding import force_text
 
 from simple_log import register
 from simple_log.conf import settings
-from simple_log.models import SimpleLog
+from simple_log.models import SimpleLog, SimpleLogAbstract
 from simple_log import utils
 from simple_log.utils import (
     get_fields, get_models_for_log, get_log_model, disable_logging
@@ -1103,7 +1103,8 @@ class SettingsTestCase(TransactionTestCase):
         SIMPLE_LOG_EXCLUDE_MODEL_LIST=(),
     )
     def test_log_all_models(self):
-        all_models = [x for x in apps.get_models() if x != SimpleLog]
+        all_models = [x for x in apps.get_models()
+                      if not issubclass(x, SimpleLogAbstract)]
         with isolate_lru_cache(get_models_for_log):
             self.assertListEqual(get_models_for_log(), all_models)
 
