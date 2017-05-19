@@ -15,8 +15,7 @@ Django simple log
 .. image:: https://img.shields.io/gitter/room/nwjs/nw.js.svg
     :target: https://gitter.im/django-simple-log/django-simple-log
 
-Logging model changes on every create/update/delete. Working with django>=1.9
-(need JSONField).
+Logging model changes on every create/update/delete.
 
 TL;DR
 -----
