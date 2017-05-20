@@ -4,6 +4,8 @@ from __future__ import unicode_literals
 from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
 
+from simple_log.models import SimpleLogAbstract
+
 
 @python_2_unicode_compatible
 class TestModel(models.Model):
@@ -54,7 +56,6 @@ class OtherModel(models.Model):
     char_field = models.CharField(verbose_name='Char field', max_length=100)
     m2m_field = models.ManyToManyField(
         'test_app.TestModel',
-        null=True,
         blank=True
     )
 
@@ -65,3 +66,16 @@ class OtherModel(models.Model):
 
     def __str__(self):
         return self.char_field
+
+
+class SwappableLogModel(SimpleLogAbstract):
+    class Meta(SimpleLogAbstract.Meta):
+        swappable = 'SIMPLE_LOG_MODEL'
+
+
+class CustomLogModel(SimpleLogAbstract):
+    pass
+
+
+class BadLogModel(models.Model):
+    pass

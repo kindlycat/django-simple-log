@@ -17,12 +17,20 @@ __all__ = ['get_log_model', 'get_current_user', 'get_current_request',
 registered_models = {}
 
 
+def check_log_model(model):
+    from simple_log.models import SimpleLogAbstract
+    if not issubclass(model, SimpleLogAbstract):
+        raise ImproperlyConfigured('Log model should be subclass of '
+                                   'SimpleLogAbstract.')
+    return model
+
+
 @lru_cache.lru_cache(maxsize=None)
 def get_log_model(model=None):
     if model and registered_models.get(model):
-        return registered_models[model]
+        return check_log_model(registered_models[model])
     try:
-        return django_apps.get_model(settings.MODEL)
+        return check_log_model(django_apps.get_model(settings.MODEL))
     except (ValueError, AttributeError):
         raise ImproperlyConfigured("SIMPLE_LOG_MODEL must be of the form "
                                    "'app_label.model_name'")
@@ -70,17 +78,25 @@ def get_fields(klass):
     return [f for f in fields if f.concrete]
 
 
+def get_label(m):
+    try:
+        return m._meta.label
+    except AttributeError:
+        return '{}.{}'.format(m._meta.app_label, m._meta.object_name)
+
+
 @lru_cache.lru_cache(maxsize=None)
 def get_models_for_log():
     if registered_models:
         return list(registered_models.keys())
+    from simple_log.models import SimpleLogAbstract
     all_models = [m for m in django_apps.get_models()
-                  if m._meta.label != settings.MODEL]
+                  if not issubclass(m, SimpleLogAbstract)]
     if settings.MODEL_LIST:
-        return [m for m in all_models if m._meta.label in settings.MODEL_LIST]
+        return [m for m in all_models if get_label(m) in settings.MODEL_LIST]
     if settings.EXCLUDE_MODEL_LIST:
         return [m for m in all_models
-                if m._meta.label not in settings.EXCLUDE_MODEL_LIST]
+                if get_label(m) not in settings.EXCLUDE_MODEL_LIST]
     return all_models
 
 

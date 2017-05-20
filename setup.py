@@ -13,7 +13,7 @@ def readme():
 
 setup(
     name='django-simple-log',
-    version='0.0.6',
+    version='0.0.8',
     description='Logging django models changes.',
     long_description=readme(),
     keywords='django log audit history',
@@ -22,14 +22,16 @@ setup(
     url='https://github.com/kindlycat/django-simple-log/',
     packages=find_packages(exclude=('manage', 'tests', 'tests.*')),
     include_package_data=True,
-    install_requires=['Django>=1.9'],
+    install_requires=['Django>=1.8'],
     classifiers=[
         'Development Status :: 3 - Alpha',
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
+        'Framework :: Django :: 1.8',
         'Framework :: Django :: 1.9',
         'Framework :: Django :: 1.10',
+        'Framework :: Django :: 1.11',
         'License :: OSI Approved :: BSD License',
     ],
 )

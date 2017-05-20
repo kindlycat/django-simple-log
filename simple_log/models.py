@@ -4,7 +4,6 @@ from __future__ import absolute_import, unicode_literals
 from django.conf import settings as django_settings
 from django.contrib.admin.options import get_content_type_for_model
 from django.contrib.contenttypes.models import ContentType
-from django.contrib.postgres.fields.jsonb import JSONField
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_ipv46_address
 from django.db import models
@@ -17,6 +16,12 @@ from .conf import settings
 from .utils import (
     get_current_request, get_current_user, get_fields, str_or_none
 )
+
+try:
+    from django.contrib.postgres.fields.jsonb import JSONField
+except ImportError:
+    from jsonfield import JSONField
+
 
 __all__ = ['SimpleLogAbstract', 'SimpleLog', 'ModelSerializer']
 
@@ -38,13 +43,13 @@ class SimpleLogAbstract(models.Model):
     )
     content_type = models.ForeignKey(
         ContentType,
-        models.SET_NULL,
+        on_delete=models.SET_NULL,
         verbose_name=_('content type'),
         blank=True, null=True,
     )
     user = models.ForeignKey(
         django_settings.AUTH_USER_MODEL,
-        models.SET_NULL,
+        on_delete=models.SET_NULL,
         verbose_name=_('user'),
         null=True
     )
@@ -76,7 +81,7 @@ class SimpleLogAbstract(models.Model):
         return self.content_type.get_object_for_this_type(pk=self.object_id)
 
     @classmethod
-    def log(cls, instance, **kwargs):
+    def log(cls, instance, commit=True, **kwargs):
         user = kwargs.get('user')
         if 'user' not in kwargs:
             user = get_current_user()
@@ -95,13 +100,19 @@ class SimpleLogAbstract(models.Model):
             'object_repr': force_text(instance),
             'user': user if user and user.is_authenticated() else None
         })
-        return cls.objects.create(**kwargs)
+        obj = cls(**kwargs)
+        if commit:
+            obj.save()
+        return obj
 
     @cached_property
     def changed_fields(self):
+        old = self.old or {}
+        new = self.new or {}
+        vals = old or new
         return {
-            k: self.old[k]['label'] for k in self.old.keys()
-            if self.old.get(k) != self.new.get(k)
+            k: vals[k]['label'] for k in vals.keys()
+            if old.get(k) != new.get(k)
         }
 
     def m2m_field_diff(self, field_name):
@@ -112,8 +123,8 @@ class SimpleLogAbstract(models.Model):
             - list with added items
             - list with removed items
         """
-        old = self.old.get(field_name, {}).get('value', [])
-        new = self.new.get(field_name, {}).get('value', [])
+        old = (self.old or {}).get(field_name, {}).get('value', [])
+        new = (self.new or {}).get(field_name, {}).get('value', [])
         return [x for x in new if x not in old], \
                [x for x in old if x not in new]
 
