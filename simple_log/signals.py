@@ -13,13 +13,16 @@ from simple_log.conf import settings
 from django.db import connection
 
 
-def save_log(instance):
+def save_log(instance, force_save=False):
     serializer = get_serializer()()
-    new_values = serializer(instance)
-    if instance._old_values != new_values:
-        instance._log.old = instance._old_values or None
-        instance._log.new = new_values or None
+    if force_save:
         instance._log.save()
+    else:
+        new_values = serializer(instance)
+        if instance._old_values != new_values:
+            instance._log.old = instance._old_values or None
+            instance._log.new = new_values or None
+            instance._log.save()
     instance._on_commit = False
 
 
@@ -64,12 +67,16 @@ def log_post_delete(sender, instance, **kwargs):
     if not need_to_log(sender):
         return
     SimpleLog = get_log_model(instance.__class__)
-    SimpleLog.log(
+    instance._log = SimpleLog.log(
         instance,
         action_flag=SimpleLog.DELETE,
         old=instance._old_values,
         new=None,
+        commit=False
     )
+    if not instance._on_commit:
+        instance._on_commit = True
+        connection.on_commit(lambda: save_log(instance, True))
 
 
 def log_m2m_change(sender, instance, action, **kwargs):
