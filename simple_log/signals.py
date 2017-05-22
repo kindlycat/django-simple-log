@@ -14,7 +14,7 @@ from django.db import connection
 
 
 def save_log(instance, force_save=False):
-    serializer = get_serializer()()
+    serializer = get_serializer(instance.__class__)()
     if force_save:
         instance._log.save()
     else:
@@ -35,7 +35,7 @@ def set_initial(instance):
                                       .select_related().first()
         )
     if not hasattr(instance, '_old_values'):
-        serializer = get_serializer()()
+        serializer = get_serializer(instance.__class__)()
         instance._old_values = serializer(
             getattr(instance, settings.OLD_INSTANCE_ATTR_NAME, None)
         )

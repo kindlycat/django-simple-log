@@ -4,7 +4,7 @@ from __future__ import unicode_literals
 from contextlib import contextmanager
 from django.apps import apps as django_apps
 from django.core.exceptions import ImproperlyConfigured
-from django.utils import lru_cache
+from django.utils import lru_cache, six
 from django.utils.encoding import force_text
 from django.utils.module_loading import import_string
 
@@ -42,8 +42,14 @@ def get_log_model(model=None):
 
 
 @lru_cache.lru_cache(maxsize=None)
-def get_serializer():
-    return import_string(settings.MODEL_SERIALIZER)
+def get_serializer(model=None):
+    if hasattr(model, 'simple_log_serializer'):
+        serializer = model.simple_log_serializer
+    else:
+        serializer = settings.MODEL_SERIALIZER
+    if isinstance(serializer, six.string_types):
+        return import_string(serializer)
+    return serializer
 
 
 def get_current_request_default():

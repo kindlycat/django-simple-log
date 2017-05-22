@@ -15,12 +15,12 @@ from simple_log.conf import settings
 from simple_log.models import SimpleLog, SimpleLogAbstract
 from simple_log import utils
 from simple_log.utils import (
-    get_fields, get_models_for_log, get_log_model, disable_logging
-)
+    get_fields, get_models_for_log, get_log_model, disable_logging,
+    get_serializer)
 from simple_log import middleware
 from .test_app.models import (
-    OtherModel, TestModel, SwappableLogModel, CustomLogModel
-)
+    OtherModel, TestModel, SwappableLogModel, CustomLogModel,
+    CustomSerializer)
 from .utils import isolate_lru_cache, disconnect_signals
 
 try:
@@ -406,6 +406,17 @@ class BaseTestCaseMixin(object):
                     }
                 }
             )
+
+    @mock.patch.object(
+        TestModel,
+        'simple_log_serializer',
+        new_callable=mock.PropertyMock,
+        create=True,
+        return_value=CustomSerializer
+    )
+    def test_concrete_model_serializer(self, mocked):
+        with isolate_lru_cache(get_serializer):
+            self.assertEqual(get_serializer(TestModel), CustomSerializer)
 
     def test_register_concrete_model(self):
         disconnect_signals()
@@ -991,6 +1002,16 @@ class SettingsTestCase(TransactionTestCase):
             initial_count = SimpleLog.objects.count()
             OtherModel.objects.create(char_field='test')
             self.assertEqual(SimpleLog.objects.count(), initial_count)
+
+    def test_model_serializer(self):
+        with override_settings(SIMPLE_LOG_MODEL_SERIALIZER='tests.test_app.models.CustomSerializer'):
+            with isolate_lru_cache(get_serializer):
+                self.assertEqual(get_serializer(TestModel), CustomSerializer)
+
+        with override_settings(SIMPLE_LOG_MODEL_SERIALIZER=CustomSerializer):
+            with isolate_lru_cache(get_serializer):
+                self.assertEqual(get_serializer(TestModel), CustomSerializer)
+
 
     @override_settings(
         SIMPLE_LOG_EXCLUDE_FIELD_LIST=(
