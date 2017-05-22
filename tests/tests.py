@@ -1004,14 +1004,14 @@ class SettingsTestCase(TransactionTestCase):
             self.assertEqual(SimpleLog.objects.count(), initial_count)
 
     def test_model_serializer(self):
-        with override_settings(SIMPLE_LOG_MODEL_SERIALIZER='tests.test_app.models.CustomSerializer'):
+        custom_serializer = 'tests.test_app.models.CustomSerializer'
+        with override_settings(SIMPLE_LOG_MODEL_SERIALIZER=custom_serializer):
             with isolate_lru_cache(get_serializer):
                 self.assertEqual(get_serializer(TestModel), CustomSerializer)
 
         with override_settings(SIMPLE_LOG_MODEL_SERIALIZER=CustomSerializer):
             with isolate_lru_cache(get_serializer):
                 self.assertEqual(get_serializer(TestModel), CustomSerializer)
-
 
     @override_settings(
         SIMPLE_LOG_EXCLUDE_FIELD_LIST=(
