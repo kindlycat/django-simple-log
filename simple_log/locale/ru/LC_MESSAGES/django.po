@@ -26,7 +26,7 @@ msgstr "Журнал"
 
 #: simple_log/models.py:26
 msgid "added"
-msgstr "доавлен"
+msgstr "добавлен"
 
 #: simple_log/models.py:27
 msgid "changed"
