@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-from threading import local
-
 from django.apps import apps
 from django.contrib.auth.models import User
 from django.contrib.contenttypes.models import ContentType
@@ -10,18 +8,17 @@ from django.core.exceptions import ImproperlyConfigured
 from django.test import override_settings, TransactionTestCase
 from django.utils.encoding import force_text
 
-from simple_log import register
 from simple_log.conf import settings
 from simple_log.models import SimpleLog, SimpleLogAbstract
-from simple_log import utils
 from simple_log.utils import (
-    get_fields, get_models_for_log, get_log_model, disable_logging
+    get_fields, get_log_model, disable_logging, get_serializer, get_model_list,
+    del_thread_variable
 )
-from simple_log import middleware
+from .test_app.models import CustomLogModel
 from .test_app.models import (
-    OtherModel, TestModel, SwappableLogModel, CustomLogModel
+    OtherModel, TestModel, SwappableLogModel, CustomSerializer
 )
-from .utils import isolate_lru_cache, disconnect_signals
+from .utils import isolate_lru_cache
 
 try:
     from unittest import mock
@@ -38,7 +35,7 @@ class BaseTestCaseMixin(object):
     namespace = ''
 
     def setUp(self):
-        middleware._thread_locals = local()
+        del_thread_variable('request')
         with disable_logging():
             User.objects.create_superuser('user', 'test@example.com', 'pass')
             OtherModel.objects.create(char_field='other')
@@ -407,55 +404,27 @@ class BaseTestCaseMixin(object):
                 }
             )
 
-    def test_register_concrete_model(self):
-        disconnect_signals()
-        try:
-            with isolate_lru_cache(get_models_for_log):
-                register(TestModel)
-                initial_count = SimpleLog.objects.count()
-                params = {
-                    'char_field': 'test',
-                }
-                self.add_object(TestModel, params)
-                self.assertEqual(SimpleLog.objects.count(), initial_count + 1)
+    @mock.patch.object(
+        TestModel,
+        'simple_log_serializer',
+        new_callable=mock.PropertyMock,
+        create=True,
+        return_value=CustomSerializer
+    )
+    def test_concrete_model_serializer(self, mocked):
+        with isolate_lru_cache(get_serializer):
+            self.assertEqual(get_serializer(TestModel), CustomSerializer)
 
-                params['m2m_field'] = [TestModel.objects.all()[0]]
-                initial_count = SimpleLog.objects.count()
-                self.add_object(OtherModel, params)
-                self.assertEqual(SimpleLog.objects.count(), initial_count)
-                self.assertListEqual(get_models_for_log(), [TestModel])
-        except Exception:
-            raise
-        finally:
-            disconnect_signals(TestModel)
-            utils.registered_models.clear()
-            register()
-
-    def test_register_with_custom_log_model(self):
-        disconnect_signals()
-        try:
-            with isolate_lru_cache(get_models_for_log):
-                with isolate_lru_cache(get_log_model):
-                    register(TestModel, log_model=CustomLogModel)
-                    sl_initial_count = SimpleLog.objects.count()
-                    initial_count = CustomLogModel.objects.count()
-                    params = {
-                        'char_field': 'test',
-                        'fk_field': self.other_model,
-                        'm2m_field': [self.other_model],
-                        'choice_field': TestModel.TWO
-                    }
-                    self.add_object(TestModel, params)
-                    self.assertEqual(SimpleLog.objects.count(),
-                                     sl_initial_count)
-                    self.assertEqual(CustomLogModel.objects.count(),
-                                     initial_count + 1)
-        except Exception:
-            raise
-        finally:
-            disconnect_signals(TestModel)
-            utils.registered_models.clear()
-            register()
+    @mock.patch.object(
+        TestModel,
+        'simple_log_model',
+        new_callable=mock.PropertyMock,
+        create=True,
+        return_value=CustomLogModel
+    )
+    def test_concrete_model_log_model(self, mocked):
+        with isolate_lru_cache(get_log_model):
+            self.assertEqual(get_log_model(TestModel), CustomLogModel)
 
     def test_log_bad_ip(self):
         initial_count = SimpleLog.objects.count()
@@ -712,7 +681,7 @@ class CustomViewTestCase(BaseTestCaseMixin, TransactionTestCase):
 
 class SystemTestCase(BaseTestCaseMixin, TransactionTestCase):
     def setUp(self):
-        middleware._thread_locals = local()
+        del_thread_variable('request')
         with disable_logging():
             OtherModel.objects.create(char_field='other')
         self.user = None
@@ -966,31 +935,40 @@ class SystemTestCase(BaseTestCaseMixin, TransactionTestCase):
             }
         )
 
+    def test_create_log_commit(self):
+        initial_count = SimpleLog.objects.count()
+        SimpleLog.log(self.other_model, action_flag=1, commit=False)
+        self.assertEqual(SimpleLog.objects.count(), initial_count)
+
+        initial_count = SimpleLog.objects.count()
+        SimpleLog.log(self.other_model, action_flag=1)
+        self.assertEqual(SimpleLog.objects.count(), initial_count + 1)
+
 
 class SettingsTestCase(TransactionTestCase):
     @override_settings(SIMPLE_LOG_MODEL_LIST=('test_app.OtherModel',))
     def test_model_list_add(self):
-        with isolate_lru_cache(get_models_for_log):
-            initial_count = SimpleLog.objects.count()
-            other_obj = OtherModel.objects.create(char_field='test')
-            self.assertEqual(SimpleLog.objects.count(), initial_count + 1)
-            self.assertListEqual(get_models_for_log(), [OtherModel])
-
-            initial_count = SimpleLog.objects.count()
-            obj = TestModel.objects.create(char_field='test')
-            obj.m2m_field.add(other_obj)
-            self.assertEqual(SimpleLog.objects.count(), initial_count)
+        with isolate_lru_cache(get_model_list):
+            self.assertListEqual(get_model_list(), [OtherModel])
 
     @override_settings(SIMPLE_LOG_EXCLUDE_MODEL_LIST=('test_app.OtherModel',))
     def test_model_exclude_list_add(self):
-        with isolate_lru_cache(get_models_for_log):
-            initial_count = SimpleLog.objects.count()
-            TestModel.objects.create(char_field='test')
-            self.assertEqual(SimpleLog.objects.count(), initial_count + 1)
+        model_list = [
+            x for x in apps.get_models()
+            if not issubclass(x, SimpleLogAbstract) and x is not OtherModel
+        ]
+        with isolate_lru_cache(get_model_list):
+            self.assertListEqual(get_model_list(), model_list)
 
-            initial_count = SimpleLog.objects.count()
-            OtherModel.objects.create(char_field='test')
-            self.assertEqual(SimpleLog.objects.count(), initial_count)
+    def test_model_serializer(self):
+        custom_serializer = 'tests.test_app.models.CustomSerializer'
+        with override_settings(SIMPLE_LOG_MODEL_SERIALIZER=custom_serializer):
+            with isolate_lru_cache(get_serializer):
+                self.assertEqual(get_serializer(TestModel), CustomSerializer)
+
+        with override_settings(SIMPLE_LOG_MODEL_SERIALIZER=CustomSerializer):
+            with isolate_lru_cache(get_serializer):
+                self.assertEqual(get_serializer(TestModel), CustomSerializer)
 
     @override_settings(
         SIMPLE_LOG_EXCLUDE_FIELD_LIST=(
@@ -1026,47 +1004,46 @@ class SettingsTestCase(TransactionTestCase):
 
     @override_settings(SIMPLE_LOG_MODEL='test_app.SwappableLogModel')
     def test_log_model(self):
-        with isolate_lru_cache(get_models_for_log):
-            with isolate_lru_cache(get_log_model):
-                self.assertIs(get_log_model(), SwappableLogModel)
-                other_model = OtherModel.objects.create(char_field='other')
-                initial_count = SwappableLogModel.objects.count()
-                TestModel.objects.create(
-                    char_field='test',
-                    fk_field=other_model
-                )
-                sl = SwappableLogModel.objects.latest('pk')
-                self.assertEqual(
-                    SwappableLogModel.objects.count(),
-                    initial_count + 1
-                )
-                self.assertDictEqual(
-                    sl.new,
-                    {
-                        'char_field': {
-                            'label': 'Char field',
-                            'value': 'test'
-                        },
-                        'fk_field': {
-                            'label': 'Fk field',
-                            'value': {
-                                'db': force_text(other_model.pk),
-                                'repr': force_text(other_model),
-                            }
-                        },
-                        'm2m_field': {
-                            'label': 'M2m field',
-                            'value': []
-                        },
-                        'choice_field': {
-                            'label': 'Choice field',
-                            'value': {
-                                'db': force_text(TestModel.ONE),
-                                'repr': 'One'
-                            }
+        with isolate_lru_cache(get_log_model):
+            self.assertIs(get_log_model(), SwappableLogModel)
+            other_model = OtherModel.objects.create(char_field='other')
+            initial_count = SwappableLogModel.objects.count()
+            TestModel.objects.create(
+                char_field='test',
+                fk_field=other_model
+            )
+            sl = SwappableLogModel.objects.latest('pk')
+            self.assertEqual(
+                SwappableLogModel.objects.count(),
+                initial_count + 1
+            )
+            self.assertDictEqual(
+                sl.new,
+                {
+                    'char_field': {
+                        'label': 'Char field',
+                        'value': 'test'
+                    },
+                    'fk_field': {
+                        'label': 'Fk field',
+                        'value': {
+                            'db': force_text(other_model.pk),
+                            'repr': force_text(other_model),
+                        }
+                    },
+                    'm2m_field': {
+                        'label': 'M2m field',
+                        'value': []
+                    },
+                    'choice_field': {
+                        'label': 'Choice field',
+                        'value': {
+                            'db': force_text(TestModel.ONE),
+                            'repr': 'One'
                         }
                     }
-                )
+                }
+            )
 
     @override_settings(SIMPLE_LOG_MODEL=111)
     def test_log_model_wrong_value(self):
@@ -1112,8 +1089,8 @@ class SettingsTestCase(TransactionTestCase):
     def test_log_all_models(self):
         all_models = [x for x in apps.get_models()
                       if not issubclass(x, SimpleLogAbstract)]
-        with isolate_lru_cache(get_models_for_log):
-            self.assertListEqual(get_models_for_log(), all_models)
+        with isolate_lru_cache(get_model_list):
+            self.assertListEqual(get_model_list(), all_models)
 
     @override_settings(SIMPLE_LOG_OLD_INSTANCE_ATTR_NAME='old')
     def test_old_instance_attr_name(self):
@@ -1128,7 +1105,7 @@ class SettingsTestCase(TransactionTestCase):
 
 class LogModelTestCase(TransactionTestCase):
     def setUp(self):
-        middleware._thread_locals = local()
+        del_thread_variable('request')
 
     def test_log_get_edited_obj(self):
         obj = TestModel.objects.create(char_field='test')

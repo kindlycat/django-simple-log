@@ -1,20 +1,36 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
+from threading import local
+
 from contextlib import contextmanager
 from django.apps import apps as django_apps
 from django.core.exceptions import ImproperlyConfigured
-from django.utils import lru_cache
+from django.utils import lru_cache, six
 from django.utils.encoding import force_text
 from django.utils.module_loading import import_string
 
 from simple_log.conf import settings
-from simple_log import middleware
 
-__all__ = ['get_log_model', 'get_current_user', 'get_current_request',
-           'get_serializer', 'disable_logging', 'get_models_for_log']
+__all__ = ['set_thread_variable', 'get_thread_variable', 'del_thread_variable',
+           'get_log_model', 'get_current_user', 'get_current_request',
+           'get_serializer', 'disable_logging', 'get_model_list']
 
-registered_models = {}
+
+_thread_locals = local()
+
+
+def set_thread_variable(key, val):
+    setattr(_thread_locals, key, val)
+
+
+def get_thread_variable(key, default=None):
+    return getattr(_thread_locals, key, default)
+
+
+def del_thread_variable(key):
+    if hasattr(_thread_locals, key):
+        return delattr(_thread_locals, key)
 
 
 def check_log_model(model):
@@ -27,8 +43,8 @@ def check_log_model(model):
 
 @lru_cache.lru_cache(maxsize=None)
 def get_log_model(model=None):
-    if model and registered_models.get(model):
-        return check_log_model(registered_models[model])
+    if model and hasattr(model, 'simple_log_model'):
+        return model.simple_log_model
     try:
         return check_log_model(django_apps.get_model(settings.MODEL))
     except (ValueError, AttributeError):
@@ -42,12 +58,18 @@ def get_log_model(model=None):
 
 
 @lru_cache.lru_cache(maxsize=None)
-def get_serializer():
-    return import_string(settings.MODEL_SERIALIZER)
+def get_serializer(model=None):
+    if hasattr(model, 'simple_log_serializer'):
+        serializer = model.simple_log_serializer
+    else:
+        serializer = settings.MODEL_SERIALIZER
+    if isinstance(serializer, six.string_types):
+        return import_string(serializer)
+    return serializer
 
 
 def get_current_request_default():
-    return getattr(middleware._thread_locals, 'request', None)
+    return get_thread_variable('request')
 
 
 @lru_cache.lru_cache(maxsize=None)
@@ -86,33 +108,27 @@ def get_label(m):
 
 
 @lru_cache.lru_cache(maxsize=None)
-def get_models_for_log():
-    if registered_models:
-        return list(registered_models.keys())
+def get_model_list():
     from simple_log.models import SimpleLogAbstract
-    all_models = [m for m in django_apps.get_models()
+    model_list = [m for m in django_apps.get_models()
                   if not issubclass(m, SimpleLogAbstract)]
     if settings.MODEL_LIST:
-        return [m for m in all_models if get_label(m) in settings.MODEL_LIST]
+        model_list = [m for m in model_list
+                      if get_label(m) in settings.MODEL_LIST]
     if settings.EXCLUDE_MODEL_LIST:
-        return [m for m in all_models
-                if get_label(m) not in settings.EXCLUDE_MODEL_LIST]
-    return all_models
+        model_list = [m for m in model_list
+                      if get_label(m) not in settings.EXCLUDE_MODEL_LIST]
+    return model_list
 
 
 def str_or_none(value):
     return None if value is None else force_text(value)
 
 
-def need_to_log(model):
-    disabled = getattr(middleware._thread_locals, 'disable_logging', False)
-    return model in get_models_for_log() and not disabled
-
-
 @contextmanager
 def disable_logging():
-    middleware._thread_locals.disable_logging = True
+    set_thread_variable('disable_logging', True)
     try:
         yield
     finally:
-        delattr(middleware._thread_locals, 'disable_logging')
+        del_thread_variable('disable_logging')
