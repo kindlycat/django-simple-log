@@ -14,7 +14,7 @@ from simple_log.utils import (
     get_fields, get_log_model, disable_logging, get_serializer, get_model_list,
     del_thread_variable
 )
-from tests.test_app.models import CustomLogModel
+from .test_app.models import CustomLogModel
 from .test_app.models import (
     OtherModel, TestModel, SwappableLogModel, CustomSerializer
 )
@@ -934,6 +934,15 @@ class SystemTestCase(BaseTestCaseMixin, TransactionTestCase):
                 }
             }
         )
+
+    def test_create_log_commit(self):
+        initial_count = SimpleLog.objects.count()
+        SimpleLog.log(self.other_model, action_flag=1, commit=False)
+        self.assertEqual(SimpleLog.objects.count(), initial_count)
+
+        initial_count = SimpleLog.objects.count()
+        SimpleLog.log(self.other_model, action_flag=1)
+        self.assertEqual(SimpleLog.objects.count(), initial_count + 1)
 
 
 class SettingsTestCase(TransactionTestCase):
