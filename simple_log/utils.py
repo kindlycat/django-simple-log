@@ -9,12 +9,10 @@ from django.utils.encoding import force_text
 from django.utils.module_loading import import_string
 
 from simple_log.conf import settings
-from simple_log import middleware
+from simple_log.middleware import _thread_locals
 
 __all__ = ['get_log_model', 'get_current_user', 'get_current_request',
-           'get_serializer', 'disable_logging', 'get_models_for_log']
-
-registered_models = {}
+           'get_serializer', 'disable_logging', 'get_model_list']
 
 
 def check_log_model(model):
@@ -27,8 +25,8 @@ def check_log_model(model):
 
 @lru_cache.lru_cache(maxsize=None)
 def get_log_model(model=None):
-    if model and registered_models.get(model):
-        return check_log_model(registered_models[model])
+    if model and hasattr(model, 'simple_log_model'):
+        return model.simple_log_model
     try:
         return check_log_model(django_apps.get_model(settings.MODEL))
     except (ValueError, AttributeError):
@@ -53,7 +51,7 @@ def get_serializer(model=None):
 
 
 def get_current_request_default():
-    return getattr(middleware._thread_locals, 'request', None)
+    return getattr(_thread_locals, 'request', None)
 
 
 @lru_cache.lru_cache(maxsize=None)
@@ -92,33 +90,27 @@ def get_label(m):
 
 
 @lru_cache.lru_cache(maxsize=None)
-def get_models_for_log():
-    if registered_models:
-        return list(registered_models.keys())
+def get_model_list():
     from simple_log.models import SimpleLogAbstract
-    all_models = [m for m in django_apps.get_models()
+    model_list = [m for m in django_apps.get_models()
                   if not issubclass(m, SimpleLogAbstract)]
     if settings.MODEL_LIST:
-        return [m for m in all_models if get_label(m) in settings.MODEL_LIST]
+        model_list = [m for m in model_list
+                      if get_label(m) in settings.MODEL_LIST]
     if settings.EXCLUDE_MODEL_LIST:
-        return [m for m in all_models
-                if get_label(m) not in settings.EXCLUDE_MODEL_LIST]
-    return all_models
+        model_list = [m for m in model_list
+                      if get_label(m) not in settings.EXCLUDE_MODEL_LIST]
+    return model_list
 
 
 def str_or_none(value):
     return None if value is None else force_text(value)
 
 
-def need_to_log(model):
-    disabled = getattr(middleware._thread_locals, 'disable_logging', False)
-    return model in get_models_for_log() and not disabled
-
-
 @contextmanager
 def disable_logging():
-    middleware._thread_locals.disable_logging = True
+    _thread_locals.disable_logging = True
     try:
         yield
     finally:
-        delattr(middleware._thread_locals, 'disable_logging')
+        delattr(_thread_locals, 'disable_logging')

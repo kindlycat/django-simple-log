@@ -4,7 +4,7 @@ from __future__ import unicode_literals
 from django.apps import apps
 from django.core.management.base import BaseCommand
 
-from simple_log.utils import get_fields, get_models_for_log
+from simple_log.utils import get_fields, get_model_list
 
 
 class Command(BaseCommand):
@@ -20,9 +20,8 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         self.stdout.write('')
-        models_for_log = get_models_for_log()
         for model in apps.get_models():
-            tracking = model in models_for_log
+            tracking = model in get_model_list()
             if not tracking and options['with_fields']:
                 continue
             prefix = '[{}] '.format('+' if tracking else '-')

@@ -67,22 +67,6 @@ Migrate:
     $ python manage.py migrate
 
 
-Add to any __init__.py:
-
-.. code-block:: python
-
-    import simple_log
-
-    # For track all registered applications, including third-party
-    simple_log.register()
-    # Or for concrete model
-    simple_log.register(Model)
-    # Or multiple models
-    simple_log.register(Model, AnotherModel)
-    # For define log model
-    simple_log.register(Model, AnotherModel, log_model=CustomLogModel)
-
-
 Disable logging
 ===============
 For temporary disable logging:
@@ -113,9 +97,7 @@ SIMPLE_LOG_MODEL_LIST
 
 Default: ``()``
 
-If set, than ``simple_log.register()`` register only models in the list.
-
-If you use ``simple_log.register(Model)``, this setting will be ignored.
+List of models for logging by label: 'app.Model'.
 
 SIMPLE_LOG_EXCLUDE_MODEL_LIST
 -----------------------------
@@ -123,10 +105,7 @@ SIMPLE_LOG_EXCLUDE_MODEL_LIST
 Default: ``('admin.LogEntry', 'migrations.Migration', 'sessions.Session',
 'contenttypes.ContentType', 'captcha.CaptchaStore')``
 
-If set, than ``simple_log.register()`` register every model except in the list.
-
-If you use ``simple_log.register(Model)`` or ``SIMPLE_LOG_MODEL_LIST``, this
-setting will be ignored.
+List of models for exlude from logging by label: 'app.Model'.
 
 SIMPLE_LOG_EXCLUDE_FIELD_LIST
 -----------------------------
@@ -177,4 +156,4 @@ SIMPLE_LOG_OLD_INSTANCE_ATTR_NAME
 ---------------------------------
 Default: ``'_old_instance'``
 
-Attribute's name for storing old instance of logging object.
+Name of attribute for storing old instance of logging object.
