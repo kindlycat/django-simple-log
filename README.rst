@@ -105,7 +105,7 @@ SIMPLE_LOG_EXCLUDE_MODEL_LIST
 Default: ``('admin.LogEntry', 'migrations.Migration', 'sessions.Session',
 'contenttypes.ContentType', 'captcha.CaptchaStore')``
 
-List of models for exlude from logging by label: 'app.Model'.
+List of models for exclude from logging by label: 'app.Model'.
 
 SIMPLE_LOG_EXCLUDE_FIELD_LIST
 -----------------------------
@@ -136,8 +136,11 @@ SIMPLE_LOG_MODEL
 ----------------
 Default: ``'simple_log.SimpleLog'``
 
-Model for writing logs. If you want to define your own model, you can
+Model for writing logs. If you want to define your own model, you should
 inheritance from ``simple_log.SimpleLogAbstract`` and change this setting.
+
+If you need to define log model for concrete model, you can property to model:
+``simple_log_model = 'simple_log.SimpleLog'``.
 
 SIMPLE_LOG_MODEL_SERIALIZER
 ---------------------------

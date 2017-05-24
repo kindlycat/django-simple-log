@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
+from threading import local
+
 from contextlib import contextmanager
 from django.apps import apps as django_apps
 from django.core.exceptions import ImproperlyConfigured
@@ -9,10 +11,26 @@ from django.utils.encoding import force_text
 from django.utils.module_loading import import_string
 
 from simple_log.conf import settings
-from simple_log.middleware import _thread_locals
 
-__all__ = ['get_log_model', 'get_current_user', 'get_current_request',
+__all__ = ['set_thread_variable', 'get_thread_variable', 'del_thread_variable',
+           'get_log_model', 'get_current_user', 'get_current_request',
            'get_serializer', 'disable_logging', 'get_model_list']
+
+
+_thread_locals = local()
+
+
+def set_thread_variable(key, val):
+    setattr(_thread_locals, key, val)
+
+
+def get_thread_variable(key, default=None):
+    return getattr(_thread_locals, key, default)
+
+
+def del_thread_variable(key):
+    if hasattr(_thread_locals, key):
+        return delattr(_thread_locals, key)
 
 
 def check_log_model(model):
@@ -51,7 +69,7 @@ def get_serializer(model=None):
 
 
 def get_current_request_default():
-    return getattr(_thread_locals, 'request', None)
+    return get_thread_variable('request')
 
 
 @lru_cache.lru_cache(maxsize=None)
@@ -109,8 +127,8 @@ def str_or_none(value):
 
 @contextmanager
 def disable_logging():
-    _thread_locals.disable_logging = True
+    set_thread_variable('disable_logging', True)
     try:
         yield
     finally:
-        delattr(_thread_locals, 'disable_logging')
+        del_thread_variable('disable_logging')

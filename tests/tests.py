@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-from threading import local
-
 from django.apps import apps
 from django.contrib.auth.models import User
 from django.contrib.contenttypes.models import ContentType
@@ -13,9 +11,10 @@ from django.utils.encoding import force_text
 from simple_log.conf import settings
 from simple_log.models import SimpleLog, SimpleLogAbstract
 from simple_log.utils import (
-    get_fields, get_log_model, disable_logging, get_serializer, get_model_list
+    get_fields, get_log_model, disable_logging, get_serializer, get_model_list,
+    del_thread_variable
 )
-from simple_log import middleware
+from tests.test_app.models import CustomLogModel
 from .test_app.models import (
     OtherModel, TestModel, SwappableLogModel, CustomSerializer
 )
@@ -36,7 +35,7 @@ class BaseTestCaseMixin(object):
     namespace = ''
 
     def setUp(self):
-        middleware._thread_locals = local()
+        del_thread_variable('request')
         with disable_logging():
             User.objects.create_superuser('user', 'test@example.com', 'pass')
             OtherModel.objects.create(char_field='other')
@@ -416,6 +415,17 @@ class BaseTestCaseMixin(object):
         with isolate_lru_cache(get_serializer):
             self.assertEqual(get_serializer(TestModel), CustomSerializer)
 
+    @mock.patch.object(
+        TestModel,
+        'simple_log_model',
+        new_callable=mock.PropertyMock,
+        create=True,
+        return_value=CustomLogModel
+    )
+    def test_concrete_model_log_model(self, mocked):
+        with isolate_lru_cache(get_log_model):
+            self.assertEqual(get_log_model(TestModel), CustomLogModel)
+
     def test_log_bad_ip(self):
         initial_count = SimpleLog.objects.count()
         params = {
@@ -671,7 +681,7 @@ class CustomViewTestCase(BaseTestCaseMixin, TransactionTestCase):
 
 class SystemTestCase(BaseTestCaseMixin, TransactionTestCase):
     def setUp(self):
-        middleware._thread_locals = local()
+        del_thread_variable('request')
         with disable_logging():
             OtherModel.objects.create(char_field='other')
         self.user = None
@@ -929,25 +939,17 @@ class SystemTestCase(BaseTestCaseMixin, TransactionTestCase):
 class SettingsTestCase(TransactionTestCase):
     @override_settings(SIMPLE_LOG_MODEL_LIST=('test_app.OtherModel',))
     def test_model_list_add(self):
-        initial_count = SimpleLog.objects.count()
-        other_obj = OtherModel.objects.create(char_field='test')
-        self.assertEqual(SimpleLog.objects.count(), initial_count + 1)
-        self.assertListEqual(get_model_list(), [OtherModel])
-
-        initial_count = SimpleLog.objects.count()
-        obj = TestModel.objects.create(char_field='test')
-        obj.m2m_field.add(other_obj)
-        self.assertEqual(SimpleLog.objects.count(), initial_count)
+        with isolate_lru_cache(get_model_list):
+            self.assertListEqual(get_model_list(), [OtherModel])
 
     @override_settings(SIMPLE_LOG_EXCLUDE_MODEL_LIST=('test_app.OtherModel',))
     def test_model_exclude_list_add(self):
-        initial_count = SimpleLog.objects.count()
-        TestModel.objects.create(char_field='test')
-        self.assertEqual(SimpleLog.objects.count(), initial_count + 1)
-
-        initial_count = SimpleLog.objects.count()
-        OtherModel.objects.create(char_field='test')
-        self.assertEqual(SimpleLog.objects.count(), initial_count)
+        model_list = [
+            x for x in apps.get_models()
+            if not issubclass(x, SimpleLogAbstract) and x is not OtherModel
+        ]
+        with isolate_lru_cache(get_model_list):
+            self.assertListEqual(get_model_list(), model_list)
 
     def test_model_serializer(self):
         custom_serializer = 'tests.test_app.models.CustomSerializer'
@@ -1078,7 +1080,8 @@ class SettingsTestCase(TransactionTestCase):
     def test_log_all_models(self):
         all_models = [x for x in apps.get_models()
                       if not issubclass(x, SimpleLogAbstract)]
-        self.assertListEqual(get_model_list(), all_models)
+        with isolate_lru_cache(get_model_list):
+            self.assertListEqual(get_model_list(), all_models)
 
     @override_settings(SIMPLE_LOG_OLD_INSTANCE_ATTR_NAME='old')
     def test_old_instance_attr_name(self):
@@ -1093,7 +1096,7 @@ class SettingsTestCase(TransactionTestCase):
 
 class LogModelTestCase(TransactionTestCase):
     def setUp(self):
-        middleware._thread_locals = local()
+        del_thread_variable('request')
 
     def test_log_get_edited_obj(self):
         obj = TestModel.objects.create(char_field='test')

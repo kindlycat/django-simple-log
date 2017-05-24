@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-from simple_log.utils import get_serializer, get_log_model
+from simple_log.utils import get_serializer, get_log_model, get_thread_variable
 from simple_log.conf import settings
-from simple_log.middleware import _thread_locals
 
 from django.db import connection
 
@@ -38,13 +37,13 @@ def set_initial(instance):
 
 
 def log_pre_save_delete(sender, instance, **kwargs):
-    if getattr(_thread_locals, 'disable_logging', False):
+    if get_thread_variable('disable_logging'):
         return
     set_initial(instance)
 
 
 def log_post_save(sender, instance, created, **kwargs):
-    if getattr(_thread_locals, 'disable_logging', False):
+    if get_thread_variable('disable_logging'):
         return
     SimpleLog = get_log_model(sender)
     if not hasattr(instance, '_log'):
@@ -59,7 +58,7 @@ def log_post_save(sender, instance, created, **kwargs):
 
 
 def log_post_delete(sender, instance, **kwargs):
-    if getattr(_thread_locals, 'disable_logging', False):
+    if get_thread_variable('disable_logging'):
         return
     SimpleLog = get_log_model(instance.__class__)
     instance._log = SimpleLog.log(
@@ -75,7 +74,7 @@ def log_post_delete(sender, instance, **kwargs):
 
 
 def log_m2m_change(sender, instance, action, **kwargs):
-    if getattr(_thread_locals, 'disable_logging', False):
+    if get_thread_variable('disable_logging'):
         return
 
     if action in ('pre_add', 'pre_remove', 'pre_clear'):
