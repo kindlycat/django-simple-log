@@ -122,21 +122,21 @@ class BaseTestCaseMixin(object):
                 'fk_field': {
                     'label': 'Fk field',
                     'value': {
-                        'db': force_text(self.other_model.pk),
+                        'db': self.other_model.pk,
                         'repr': force_text(self.other_model),
                     }
                 },
                 'm2m_field': {
                     'label': 'M2m field',
                     'value': [{
-                        'db': force_text(self.other_model.pk),
+                        'db': self.other_model.pk,
                         'repr': force_text(self.other_model),
                     }]
                 },
                 'choice_field': {
                     'label': 'Choice field',
                     'value': {
-                        'db': force_text(TestModel.TWO),
+                        'db': TestModel.TWO,
                         'repr': 'Two'
                     }
                 }
@@ -179,21 +179,21 @@ class BaseTestCaseMixin(object):
                 'fk_field': {
                     'label': 'Fk field',
                     'value': {
-                        'db': force_text(self.other_model.pk),
+                        'db': self.other_model.pk,
                         'repr': force_text(self.other_model),
                     }
                 },
                 'm2m_field': {
                     'label': 'M2m field',
                     'value': [{
-                        'db': force_text(self.other_model.pk),
+                        'db': self.other_model.pk,
                         'repr': force_text(self.other_model),
                     }]
                 },
                 'choice_field': {
                     'label': 'Choice field',
                     'value': {
-                        'db': force_text(TestModel.ONE),
+                        'db': TestModel.ONE,
                         'repr': 'One'
                     }
                 }
@@ -220,7 +220,7 @@ class BaseTestCaseMixin(object):
                 'choice_field': {
                     'label': 'Choice field',
                     'value': {
-                        'db': force_text(TestModel.TWO),
+                        'db': TestModel.TWO,
                         'repr': 'Two'
                     }
                 }
@@ -259,21 +259,21 @@ class BaseTestCaseMixin(object):
                 'fk_field': {
                     'label': 'Fk field',
                     'value': {
-                        'db': force_text(self.other_model.pk),
+                        'db': self.other_model.pk,
                         'repr': force_text(self.other_model),
                     }
                 },
                 'm2m_field': {
                     'label': 'M2m field',
                     'value': [{
-                        'db': force_text(self.other_model.pk),
+                        'db': self.other_model.pk,
                         'repr': force_text(self.other_model),
                     }]
                 },
                 'choice_field': {
                     'label': 'Choice field',
                     'value': {
-                        'db': force_text(TestModel.TWO),
+                        'db': TestModel.TWO,
                         'repr': 'Two'
                     }
                 }
@@ -311,21 +311,21 @@ class BaseTestCaseMixin(object):
                 'fk_field': {
                     'label': 'Fk field',
                     'value': {
-                        'db': force_text(other.pk),
+                        'db': other.pk,
                         'repr': force_text(other),
                     }
                 },
                 'm2m_field': {
                     'label': 'M2m field',
                     'value': [{
-                        'db': force_text(other.pk),
+                        'db': other.pk,
                         'repr': force_text(other),
                     }]
                 },
                 'choice_field': {
                     'label': 'Choice field',
                     'value': {
-                        'db': force_text(TestModel.ONE),
+                        'db': TestModel.ONE,
                         'repr': 'One'
                     }
                 }
@@ -394,7 +394,7 @@ class BaseTestCaseMixin(object):
                     'fk_field': {
                         'label': 'Fk field',
                         'value': {
-                            'db': force_text(other_model.pk),
+                            'db': other_model.pk,
                             'repr': force_text(other_model)
                         }
                     },
@@ -506,21 +506,21 @@ class CustomViewTestCase(BaseTestCaseMixin, TransactionTestCase):
                 'fk_field': {
                     'label': 'Fk field',
                     'value': {
-                        'db': force_text(self.other_model.pk),
+                        'db': self.other_model.pk,
                         'repr': force_text(self.other_model),
                     }
                 },
                 'm2m_field': {
                     'label': 'M2m field',
                     'value': [{
-                        'db': force_text(self.other_model.pk),
+                        'db': self.other_model.pk,
                         'repr': force_text(self.other_model),
                     }]
                 },
                 'choice_field': {
                     'label': 'Choice field',
                     'value': {
-                        'db': force_text(TestModel.TWO),
+                        'db': TestModel.TWO,
                         'repr': 'Two'
                     }
                 }
@@ -564,21 +564,21 @@ class CustomViewTestCase(BaseTestCaseMixin, TransactionTestCase):
                 'fk_field': {
                     'label': 'Fk field',
                     'value': {
-                        'db': force_text(self.other_model.pk),
+                        'db': self.other_model.pk,
                         'repr': force_text(self.other_model),
                     }
                 },
                 'm2m_field': {
                     'label': 'M2m field',
                     'value': [{
-                        'db': force_text(self.other_model.pk),
+                        'db': self.other_model.pk,
                         'repr': force_text(self.other_model),
                     }]
                 },
                 'choice_field': {
                     'label': 'Choice field',
                     'value': {
-                        'db': force_text(TestModel.ONE),
+                        'db': TestModel.ONE,
                         'repr': 'One'
                     }
                 }
@@ -605,7 +605,7 @@ class CustomViewTestCase(BaseTestCaseMixin, TransactionTestCase):
                 'choice_field': {
                     'label': 'Choice field',
                     'value': {
-                        'db': force_text(TestModel.TWO),
+                        'db': TestModel.TWO,
                         'repr': 'Two'
                     }
                 }
@@ -644,21 +644,21 @@ class CustomViewTestCase(BaseTestCaseMixin, TransactionTestCase):
                 'fk_field': {
                     'label': 'Fk field',
                     'value': {
-                        'db': force_text(self.other_model.pk),
+                        'db': self.other_model.pk,
                         'repr': force_text(self.other_model),
                     }
                 },
                 'm2m_field': {
                     'label': 'M2m field',
                     'value': [{
-                        'db': force_text(self.other_model.pk),
+                        'db': self.other_model.pk,
                         'repr': force_text(self.other_model),
                     }]
                 },
                 'choice_field': {
                     'label': 'Choice field',
                     'value': {
-                        'db': force_text(TestModel.TWO),
+                        'db': TestModel.TWO,
                         'repr': 'Two'
                     }
                 }
@@ -767,14 +767,14 @@ class SystemTestCase(BaseTestCaseMixin, TransactionTestCase):
                 'm2m_field': {
                     'label': 'M2m field',
                     'value': [{
-                        'db': force_text(self.other_model.pk),
+                        'db': self.other_model.pk,
                         'repr': force_text(self.other_model)
                     }]
                 },
                 'choice_field': {
                     'label': 'Choice field',
                     'value': {
-                        'db': '1',
+                        'db': 1,
                         'repr': 'One'
                     }
                 }
@@ -801,7 +801,7 @@ class SystemTestCase(BaseTestCaseMixin, TransactionTestCase):
                 'choice_field': {
                     'label': 'Choice field',
                     'value': {
-                        'db': '1',
+                        'db': 1,
                         'repr': 'One'
                     }
                 }
@@ -835,7 +835,7 @@ class SystemTestCase(BaseTestCaseMixin, TransactionTestCase):
                 'choice_field': {
                     'label': 'Choice field',
                     'value': {
-                        'db': '1',
+                        'db': 1,
                         'repr': 'One'
                     }
                 }
@@ -858,14 +858,14 @@ class SystemTestCase(BaseTestCaseMixin, TransactionTestCase):
                 'm2m_field': {
                     'label': 'M2m field',
                     'value': [{
-                        'db': force_text(self.other_model.pk),
+                        'db': self.other_model.pk,
                         'repr': force_text(self.other_model)
                     }]
                 },
                 'choice_field': {
                     'label': 'Choice field',
                     'value': {
-                        'db': '1',
+                        'db': 1,
                         'repr': 'One'
                     }
                 }
@@ -895,14 +895,14 @@ class SystemTestCase(BaseTestCaseMixin, TransactionTestCase):
                 'm2m_field': {
                     'label': 'M2m field',
                     'value': [{
-                        'db': force_text(self.other_model.pk),
+                        'db': self.other_model.pk,
                         'repr': force_text(self.other_model)
                     }]
                 },
                 'choice_field': {
                     'label': 'Choice field',
                     'value': {
-                        'db': '1',
+                        'db': 1,
                         'repr': 'One'
                     }
                 }
@@ -929,7 +929,7 @@ class SystemTestCase(BaseTestCaseMixin, TransactionTestCase):
                 'choice_field': {
                     'label': 'Choice field',
                     'value': {
-                        'db': '1',
+                        'db': 1,
                         'repr': 'One'
                     }
                 }
@@ -992,7 +992,7 @@ class SettingsTestCase(TransactionTestCase):
                     'fk_field': {
                         'label': 'Fk field',
                         'value': {
-                            'db': force_text(other_model.pk),
+                            'db': other_model.pk,
                             'repr': force_text(other_model)
                         }
                     },
@@ -1028,7 +1028,7 @@ class SettingsTestCase(TransactionTestCase):
                     'fk_field': {
                         'label': 'Fk field',
                         'value': {
-                            'db': force_text(other_model.pk),
+                            'db': other_model.pk,
                             'repr': force_text(other_model),
                         }
                     },
@@ -1039,7 +1039,7 @@ class SettingsTestCase(TransactionTestCase):
                     'choice_field': {
                         'label': 'Choice field',
                         'value': {
-                            'db': force_text(TestModel.ONE),
+                            'db': TestModel.ONE,
                             'repr': 'One'
                         }
                     }
@@ -1174,6 +1174,6 @@ class LogModelTestCase(TransactionTestCase):
         added, removed = sl.m2m_field_diff('m2m_field')
 
         self.assertListEqual(added,
-                             [{'db': str(other_model2.pk), 'repr': 'test2'}])
+                             [{'db': other_model2.pk, 'repr': 'test2'}])
         self.assertListEqual(removed,
-                             [{'db': str(other_model.pk), 'repr': 'test'}])
+                             [{'db': other_model.pk, 'repr': 'test'}])

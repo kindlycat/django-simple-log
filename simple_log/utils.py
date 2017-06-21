@@ -121,10 +121,6 @@ def get_model_list():
     return model_list
 
 
-def str_or_none(value):
-    return None if value is None else force_text(value)
-
-
 @contextmanager
 def disable_logging():
     set_thread_variable('disable_logging', True)
