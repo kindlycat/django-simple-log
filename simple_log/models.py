@@ -8,7 +8,6 @@ from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_ipv46_address
 from django.db import models
-from django.urls import reverse, NoReverseMatch
 from django.utils import timezone
 from django.utils.encoding import force_text, python_2_unicode_compatible
 from django.utils.functional import cached_property
@@ -18,6 +17,11 @@ from .conf import settings
 from .utils import (
     get_current_request, get_current_user, get_fields, str_or_none
 )
+
+try:
+    from django.urls import reverse, NoReverseMatch
+except ImportError:
+    from django.core.urlresolvers import reverse, NoReverseMatch
 
 try:
     from django.contrib.postgres.fields.jsonb import JSONField

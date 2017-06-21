@@ -2,6 +2,7 @@
 from __future__ import unicode_literals
 
 from django.apps import apps
+from django.contrib.admin.utils import quote
 from django.contrib.auth.models import User
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ImproperlyConfigured
@@ -1111,6 +1112,17 @@ class LogModelTestCase(TransactionTestCase):
         obj = TestModel.objects.create(char_field='test')
         sl = SimpleLog.objects.latest('pk')
         self.assertEqual(sl.get_edited_object(), obj)
+
+    def test_get_admin_url(self):
+        obj = TestModel.objects.create(char_field='test')
+        sl = SimpleLog.objects.latest('pk')
+        expected_url = reverse('admin:test_app_testmodel_change',
+                               args=(quote(obj.pk),))
+        self.assertEqual(sl.get_admin_url(), expected_url)
+        self.assertIn(sl.get_admin_url(),
+                      '/admin/test_app/testmodel/%d/change/' % obj.pk)
+        sl.content_type.model = "nonexistent"
+        self.assertIsNone(sl.get_admin_url())
 
     def test_log_str(self):
         TestModel.objects.create(char_field='test')
