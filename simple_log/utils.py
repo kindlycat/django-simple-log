@@ -7,7 +7,6 @@ from contextlib import contextmanager
 from django.apps import apps as django_apps
 from django.core.exceptions import ImproperlyConfigured
 from django.utils import lru_cache, six
-from django.utils.encoding import force_text
 from django.utils.module_loading import import_string
 
 from simple_log.conf import settings
