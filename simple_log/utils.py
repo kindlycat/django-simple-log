@@ -7,7 +7,6 @@ from contextlib import contextmanager
 from django.apps import apps as django_apps
 from django.core.exceptions import ImproperlyConfigured
 from django.utils import lru_cache, six
-from django.utils.encoding import force_text
 from django.utils.module_loading import import_string
 
 from simple_log.conf import settings
@@ -119,10 +118,6 @@ def get_model_list():
         model_list = [m for m in model_list
                       if get_label(m) not in settings.EXCLUDE_MODEL_LIST]
     return model_list
-
-
-def str_or_none(value):
-    return None if value is None else force_text(value)
 
 
 @contextmanager

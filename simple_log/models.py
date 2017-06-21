@@ -14,9 +14,7 @@ from django.utils.functional import cached_property
 from django.utils.translation import ugettext_lazy as _
 
 from .conf import settings
-from .utils import (
-    get_current_request, get_current_user, get_fields, str_or_none
-)
+from .utils import get_current_request, get_current_user, get_fields
 
 try:
     from django.urls import reverse, NoReverseMatch
@@ -188,29 +186,33 @@ class ModelSerializer(object):
             return self.get_choice_value(instance, field)
         return self.get_other_value(instance, field)
 
-    @staticmethod
-    def get_m2m_value(instance, field):
+    def get_m2m_value(self, instance, field):
         return [{
-            'db': force_text(x.pk),
+            'db': self.get_value_for_type(x.pk),
             'repr': force_text(x)
         } for x in getattr(instance, field.name).iterator()]
 
-    @staticmethod
-    def get_fk_value(instance, field):
+    def get_fk_value(self, instance, field):
         return {
-            'db': str_or_none(field.value_from_object(instance)),
-            'repr': str_or_none(getattr(instance, field.name)) or '',
+            'db': self.get_value_for_type(field.value_from_object(instance)),
+            'repr': self.get_value_for_type(
+                getattr(instance, field.name)
+            ) or '',
         }
 
-    @staticmethod
-    def get_choice_value(instance, field):
+    def get_choice_value(self, instance, field):
         return {
-            'db': str_or_none(field.value_from_object(instance)),
-            'repr': str_or_none(
+            'db': self.get_value_for_type(field.value_from_object(instance)),
+            'repr': self.get_value_for_type(
                 instance._get_FIELD_display(field=field)
             ) or '',
         }
 
+    def get_other_value(self, instance, field):
+        return self.get_value_for_type(field.value_from_object(instance))
+
     @staticmethod
-    def get_other_value(instance, field):
-        return str_or_none(field.value_from_object(instance))
+    def get_value_for_type(value):
+        if value is None or isinstance(value, (int, bool, dict, list)):
+            return value
+        return force_text(value)
