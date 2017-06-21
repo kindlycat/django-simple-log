@@ -3,10 +3,12 @@ from __future__ import absolute_import, unicode_literals
 
 from django.conf import settings as django_settings
 from django.contrib.admin.options import get_content_type_for_model
+from django.contrib.admin.utils import quote
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_ipv46_address
 from django.db import models
+from django.urls import reverse, NoReverseMatch
 from django.utils import timezone
 from django.utils.encoding import force_text, python_2_unicode_compatible
 from django.utils.functional import cached_property
@@ -79,6 +81,16 @@ class SimpleLogAbstract(models.Model):
 
     def get_edited_object(self):
         return self.content_type.get_object_for_this_type(pk=self.object_id)
+
+    def get_admin_url(self):
+        if self.content_type and self.object_id:
+            url_name = 'admin:%s_%s_change' % (self.content_type.app_label,
+                                               self.content_type.model)
+            try:
+                return reverse(url_name, args=(quote(self.object_id),))
+            except NoReverseMatch:
+                pass
+        return None
 
     @classmethod
     def log(cls, instance, commit=True, **kwargs):
