@@ -146,9 +146,11 @@ class SimpleLogAbstract(models.Model):
     def get_ip():
         request = get_current_request()
         if request:
-            ip = request.META.get('HTTP_X_REAL_IP') or \
-                 request.META.get('REMOTE_ADDR') or \
-                 request.META.get('HTTP_X_FORWARDED_FOR')
+            ip = request.META.get('HTTP_X_FORWARDED_FOR')
+            if ip:
+                ip = ip.split(',')[0].strip()
+            else:
+                ip = request.META.get('REMOTE_ADDR')
             try:
                 validate_ipv46_address(ip)
                 return ip

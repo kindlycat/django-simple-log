@@ -432,7 +432,8 @@ class BaseTestCaseMixin(object):
         params = {
             'char_field': 'test'
         }
-        self.add_object(TestModel, params, headers={'HTTP_X_REAL_IP': '123'})
+        self.add_object(TestModel, params,
+                        headers={'HTTP_X_FORWARDED_FOR': '123'})
         sl = SimpleLog.objects.latest('pk')
         self.assertEqual(SimpleLog.objects.count(), initial_count + 1)
         self.assertIsNone(sl.user_ip)
