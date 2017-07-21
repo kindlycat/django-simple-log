@@ -1,23 +1,42 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-from simple_log.utils import get_serializer, get_log_model, get_thread_variable
+from simple_log.utils import (
+    get_serializer, get_log_model, get_thread_variable, set_thread_variable,
+    del_thread_variable
+)
 from simple_log.conf import settings
 
 from django.db import connection
 
 
+def save_related():
+    logs = get_thread_variable('logs', [])
+    for log in logs:
+        log.related_logs.add(*[x for x in logs if x != log])
+
+
 def save_log(instance, force_save=False):
     serializer = get_serializer(instance.__class__)()
+    logs = get_thread_variable('logs', [])
     if force_save:
+        if settings.SAVE_RELATED and instance._log not in logs:
+            set_thread_variable('logs', logs + [instance._log])
         instance._log.save()
     else:
         new_values = serializer(instance)
         if instance._old_values != new_values:
+            if settings.SAVE_RELATED and instance._log not in logs:
+                set_thread_variable('logs', logs + [instance._log])
             instance._log.old = instance._old_values or None
             instance._log.new = new_values or None
             instance._log.save()
     instance._on_commit = False
+    if not connection.run_on_commit:
+        if settings.SAVE_RELATED:
+            save_related()
+        del_thread_variable('logs')
+        del_thread_variable('request')
 
 
 def set_initial(instance):

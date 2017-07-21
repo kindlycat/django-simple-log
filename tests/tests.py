@@ -12,8 +12,7 @@ from django.utils.encoding import force_text
 from simple_log.conf import settings
 from simple_log.models import SimpleLog, SimpleLogAbstract
 from simple_log.utils import (
-    get_fields, get_log_model, disable_logging, get_serializer, get_model_list,
-    del_thread_variable
+    get_fields, get_log_model, disable_logging, get_serializer, get_model_list
 )
 from .test_app.models import CustomLogModel
 from .test_app.models import (
@@ -36,7 +35,6 @@ class BaseTestCaseMixin(object):
     namespace = ''
 
     def setUp(self):
-        del_thread_variable('request')
         with disable_logging():
             User.objects.create_superuser('user', 'test@example.com', 'pass')
             OtherModel.objects.create(char_field='other')
@@ -683,7 +681,6 @@ class CustomViewTestCase(BaseTestCaseMixin, TransactionTestCase):
 
 class SystemTestCase(BaseTestCaseMixin, TransactionTestCase):
     def setUp(self):
-        del_thread_variable('request')
         with disable_logging():
             OtherModel.objects.create(char_field='other')
         self.user = None
@@ -1106,9 +1103,6 @@ class SettingsTestCase(TransactionTestCase):
 
 
 class LogModelTestCase(TransactionTestCase):
-    def setUp(self):
-        del_thread_variable('request')
-
     def test_log_get_edited_obj(self):
         obj = TestModel.objects.create(char_field='test')
         sl = SimpleLog.objects.latest('pk')

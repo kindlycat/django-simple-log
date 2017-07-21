@@ -78,3 +78,6 @@ USE_L10N = True
 USE_TZ = True
 
 STATIC_URL = '/static/'
+
+# SIMPLE_LOG_MODEL = 'simple_log.SimpleLog'
+# SIMPLE_LOG_SAVE_RELATED = True

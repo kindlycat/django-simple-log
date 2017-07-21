@@ -28,6 +28,7 @@ DEFAULTS = {
     'NONE_USER_REPR': _('System'),
     'GET_CURRENT_REQUEST': 'simple_log.utils.get_current_request_default',
     'OLD_INSTANCE_ATTR_NAME': '_old_instance',
+    'SAVE_RELATED': False,
 }
 
 
@@ -63,6 +64,9 @@ class Settings(object):
         else:
             delattr(self, setting)
 
+
+if not hasattr(dj_settings, 'SIMPLE_LOG_MODEL'):
+    setattr(dj_settings, 'SIMPLE_LOG_MODEL', DEFAULTS['MODEL'])
 
 settings = Settings()
 setting_changed.connect(settings.change_setting)
