@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
+from functools import partial
+
 from simple_log.utils import (
     get_serializer, get_log_model, get_thread_variable, set_thread_variable,
     del_thread_variable
@@ -10,8 +12,9 @@ from simple_log.conf import settings
 from django.db import connection
 
 
-def save_related():
-    logs = get_thread_variable('logs', [])
+def save_related(logs):
+    for log in [x for x in logs if not x.pk]:
+        log.save()
     for log in logs:
         log.related_logs.add(*[x for x in logs if x != log])
 
@@ -19,22 +22,22 @@ def save_related():
 def save_log(instance, force_save=False):
     serializer = get_serializer(instance.__class__)()
     logs = get_thread_variable('logs', [])
+    if instance._log not in logs:
+        logs.append(instance._log)
+        set_thread_variable('logs', logs)
     if force_save:
-        if settings.SAVE_RELATED and instance._log not in logs:
-            set_thread_variable('logs', logs + [instance._log])
         instance._log.save()
     else:
         new_values = serializer(instance)
+        instance._log.old = instance._old_values or None
+        instance._log.new = new_values or None
         if instance._old_values != new_values:
-            if settings.SAVE_RELATED and instance._log not in logs:
-                set_thread_variable('logs', logs + [instance._log])
-            instance._log.old = instance._old_values or None
-            instance._log.new = new_values or None
             instance._log.save()
     instance._on_commit = False
-    if not connection.run_on_commit:
-        if settings.SAVE_RELATED:
-            save_related()
+    if not [x for x in connection.run_on_commit
+            if getattr(x, 'func', None) == save_log]:
+        if settings.SAVE_RELATED and any([x.pk for x in logs]):
+            save_related(logs)
         del_thread_variable('logs')
         del_thread_variable('request')
 
@@ -73,7 +76,7 @@ def log_post_save(sender, instance, created, **kwargs):
         )
     if not instance._on_commit:
         instance._on_commit = True
-        connection.on_commit(lambda: save_log(instance))
+        connection.on_commit(partial(save_log, instance))
 
 
 def log_post_delete(sender, instance, **kwargs):
@@ -89,7 +92,7 @@ def log_post_delete(sender, instance, **kwargs):
     )
     if not instance._on_commit:
         instance._on_commit = True
-        connection.on_commit(lambda: save_log(instance, True))
+        connection.on_commit(partial(save_log, instance, True))
 
 
 def log_m2m_change(sender, instance, action, **kwargs):
@@ -110,4 +113,4 @@ def log_m2m_change(sender, instance, action, **kwargs):
             )
         if not instance._on_commit:
             instance._on_commit = True
-            connection.on_commit(lambda: save_log(instance))
+            connection.on_commit(partial(save_log, instance))

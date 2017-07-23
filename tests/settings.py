@@ -80,3 +80,4 @@ USE_TZ = True
 STATIC_URL = '/static/'
 
 SIMPLE_LOG_SAVE_RELATED = True
+SAVE_ONE_TO_MANY = True

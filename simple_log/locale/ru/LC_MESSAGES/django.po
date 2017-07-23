@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2017-03-06 17:42+0300\n"
+"POT-Creation-Date: 2017-07-21 22:52+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -20,75 +20,78 @@ msgstr ""
 "%10<=4 && (n%100<12 || n%100>14) ? 1 : n%10==0 || (n%10>=5 && n%10<=9) || (n"
 "%100>=11 && n%100<=14)? 2 : 3);\n"
 
-#: simple_log/apps.py:8
+#: simple_log/apps.py:19
 msgid "Logs"
 msgstr "Журнал"
 
-#: simple_log/models.py:26
-msgid "added"
-msgstr "добавлен"
-
-#: simple_log/models.py:27
-msgid "changed"
-msgstr "изменён"
-
-#: simple_log/models.py:28
-msgid "deleted"
-msgstr "удалён"
-
-#: simple_log/models.py:31
-msgid "action time"
-msgstr "время действия"
-
-#: simple_log/models.py:38
-msgid "content type"
-msgstr "тип содержимого"
-
-#: simple_log/models.py:44
-msgid "user"
-msgstr "пользователь"
-
-#: simple_log/models.py:47
-msgid "user repr"
-msgstr "представление пользователя"
-
-#: simple_log/models.py:48
-msgid "IP address"
-msgstr "IP адрес"
-
-#: simple_log/models.py:49
-msgid "object id"
-msgstr "идентификатор объекта"
-
-#: simple_log/models.py:50
-msgid "object repr"
-msgstr "представление объекта"
-
-#: simple_log/models.py:52
-msgid "action flag"
-msgstr "тип действия"
-
-#: simple_log/models.py:55
-msgid "old values"
-msgstr "старые значения"
-
-#: simple_log/models.py:56
-msgid "new values"
-msgstr "новые значения"
-
-#: simple_log/models.py:63
-msgid "log entry"
-msgstr "запись в журнале"
-
-#: simple_log/models.py:64
-msgid "logs entries"
-msgstr "записи в журнале"
-
-#: simple_log/settings.py:19
+#: simple_log/conf.py:27
 msgid "Anonymous"
 msgstr "Аноним"
 
-#: simple_log/settings.py:20
+#: simple_log/conf.py:28
 msgid "System"
 msgstr "Система"
 
+#: simple_log/models.py:39
+msgid "added"
+msgstr "добавлен"
+
+#: simple_log/models.py:40
+msgid "changed"
+msgstr "изменён"
+
+#: simple_log/models.py:41
+msgid "deleted"
+msgstr "удалён"
+
+#: simple_log/models.py:44
+msgid "action time"
+msgstr "время действия"
+
+#: simple_log/models.py:51
+msgid "content type"
+msgstr "тип содержимого"
+
+#: simple_log/models.py:58
+msgid "user"
+msgstr "пользователь"
+
+#: simple_log/models.py:61
+msgid "user repr"
+msgstr "представление пользователя"
+
+#: simple_log/models.py:62
+msgid "IP address"
+msgstr "IP адрес"
+
+#: simple_log/models.py:63
+msgid "object id"
+msgstr "идентификатор объекта"
+
+#: simple_log/models.py:64
+msgid "object repr"
+msgstr "представление объекта"
+
+#: simple_log/models.py:66
+msgid "action flag"
+msgstr "тип действия"
+
+#: simple_log/models.py:69
+msgid "old values"
+msgstr "старые значения"
+
+#: simple_log/models.py:70
+msgid "new values"
+msgstr "новые значения"
+
+#: simple_log/models.py:74
+msgid "related log"
+msgstr "связаные записи"
+
+#: simple_log/models.py:83
+msgid "log entry"
+msgstr "запись в журнале"
+
+#: simple_log/models.py:84
+msgid "logs entries"
+msgstr "записи в журнале"

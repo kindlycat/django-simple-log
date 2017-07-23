@@ -97,7 +97,7 @@ def get_fields(klass):
         fields = [f for f in fields
                   if f.name not in settings.EXCLUDE_FIELD_LIST]
     return [f for f in fields if f.concrete or
-            (settings.SAVE_RELATED and f.one_to_many and f.related_name)]
+            (settings.SAVE_ONE_TO_MANY and f.one_to_many and f.related_name)]
 
 
 def get_label(m):

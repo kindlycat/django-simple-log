@@ -29,6 +29,7 @@ DEFAULTS = {
     'GET_CURRENT_REQUEST': 'simple_log.utils.get_current_request_default',
     'OLD_INSTANCE_ATTR_NAME': '_old_instance',
     'SAVE_RELATED': False,
+    'SAVE_ONE_TO_MANY': False,
 }
 
 
