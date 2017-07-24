@@ -6,6 +6,7 @@ from django.contrib.admin.utils import quote
 from django.contrib.auth.models import User
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ImproperlyConfigured
+from django.db.transaction import atomic
 from django.test import override_settings, TransactionTestCase
 from django.utils.encoding import force_text
 
@@ -54,6 +55,7 @@ class BaseTestCaseMixin(object):
 
     def add_object(self, model, params, **kwargs):
         params = self.prepare_params(model, params)
+        params.update(kwargs.get('additional_params', {}))
         headers = kwargs.get('headers', {})
         self.client.post(self.get_add_url(model), data=params, **headers)
         return model.objects.latest('pk')
@@ -471,6 +473,24 @@ class BaseTestCaseMixin(object):
 
 class AdminTestCase(BaseTestCaseMixin, TransactionTestCase):
     namespace = 'admin:'
+
+    def test_add_object_with_formset(self):
+        initial_count = SimpleLog.objects.count()
+        params = {'char_field': 'test'}
+        additional_params = {
+            'test_entries_fk-TOTAL_FORMS': 1,
+            'test_entries_fk-INITIAL_FORMS': 0,
+            'test_entries_fk-MIN_NUM_FORMS': 0,
+            'test_entries_fk-MAX_NUM_FORMS': 1000,
+            'test_entries_fk-0-char_field': 'test_inline'
+        }
+        with atomic():
+            self.add_object(OtherModel, params, additional_params=additional_params)
+        self.assertEqual(SimpleLog.objects.count(), initial_count + 2)
+        first_sl = SimpleLog.objects.all()[0]
+        second_sl = SimpleLog.objects.all()[1]
+        self.assertQuerysetEqual(first_sl.related_logs.all(), [second_sl])
+        self.assertQuerysetEqual(second_sl.related_logs.all(), [first_sl])
 
 
 class CustomViewTestCase(BaseTestCaseMixin, TransactionTestCase):

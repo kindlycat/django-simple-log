@@ -4,6 +4,10 @@ from django.contrib.admin import register
 from tests.test_app.models import OtherModel, TestModel
 
 
+class TestModelInline(admin.TabularInline):
+    model = TestModel
+
+
 @register(TestModel)
 class TestModelAdmin(admin.ModelAdmin):
     pass
@@ -11,4 +15,4 @@ class TestModelAdmin(admin.ModelAdmin):
 
 @register(OtherModel)
 class OtherModelAdmin(admin.ModelAdmin):
-    pass
+    inlines = [TestModelInline]
