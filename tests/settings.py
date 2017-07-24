@@ -8,7 +8,7 @@ import django
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = '!+_(r+32d!u$y6c*28p0+^3zy7)j033=69h@0yd=#bh2e-y_02'
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = ['*']
 
