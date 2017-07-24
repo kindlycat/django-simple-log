@@ -128,3 +128,12 @@ def disable_logging():
         yield
     finally:
         del_thread_variable('disable_logging')
+
+
+@contextmanager
+def disable_related():
+    set_thread_variable('disable_related', True)
+    try:
+        yield
+    finally:
+        del_thread_variable('disable_related')

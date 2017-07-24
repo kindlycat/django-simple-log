@@ -13,8 +13,8 @@ from django.utils.encoding import force_text
 from simple_log.conf import settings
 from simple_log.models import SimpleLog, SimpleLogAbstract
 from simple_log.utils import (
-    get_fields, get_log_model, disable_logging, get_serializer, get_model_list
-)
+    get_fields, get_log_model, disable_logging, get_serializer, get_model_list,
+    disable_related)
 from .test_app.models import CustomLogModel
 from .test_app.models import (
     OtherModel, TestModel, SwappableLogModel, CustomSerializer
@@ -470,6 +470,30 @@ class BaseTestCaseMixin(object):
             self.delete_object(obj)
         self.assertEqual(SimpleLog.objects.count(), initial_count)
 
+    def test_disable_related(self):
+        initial_count = SimpleLog.objects.count()
+        with atomic():
+            with disable_related():
+                params = {
+                    'char_field': 'test',
+                    'fk_field': self.other_model,
+                    'm2m_field': [self.other_model],
+                    'choice_field': TestModel.TWO
+                }
+                obj = self.add_object(TestModel, params)
+                params = {
+                    'char_field': 'test2',
+                    'fk_field': '',
+                    'm2m_field': [],
+                    'choice_field': TestModel.ONE
+                }
+                self.change_object(obj, params)
+        self.assertEqual(SimpleLog.objects.count(), initial_count + 2)
+        first_sl = SimpleLog.objects.all()[0]
+        second_sl = SimpleLog.objects.all()[1]
+        self.assertQuerysetEqual(first_sl.related_logs.all(), [])
+        self.assertQuerysetEqual(second_sl.related_logs.all(), [])
+
 
 class AdminTestCase(BaseTestCaseMixin, TransactionTestCase):
     namespace = 'admin:'
@@ -484,13 +508,43 @@ class AdminTestCase(BaseTestCaseMixin, TransactionTestCase):
             'test_entries_fk-MAX_NUM_FORMS': 1000,
             'test_entries_fk-0-char_field': 'test_inline'
         }
-        with atomic():
-            self.add_object(OtherModel, params, additional_params=additional_params)
+        self.add_object(OtherModel, params,
+                        additional_params=additional_params)
         self.assertEqual(SimpleLog.objects.count(), initial_count + 2)
         first_sl = SimpleLog.objects.all()[0]
         second_sl = SimpleLog.objects.all()[1]
-        self.assertQuerysetEqual(first_sl.related_logs.all(), [second_sl])
-        self.assertQuerysetEqual(second_sl.related_logs.all(), [first_sl])
+        self.assertQuerysetEqual(first_sl.related_logs.all(),
+                                 [repr(second_sl)])
+        self.assertQuerysetEqual(second_sl.related_logs.all(),
+                                 [repr(first_sl)])
+
+    def test_change_object_only_formset(self):
+        params = {'char_field': 'test'}
+        additional_params = {
+            'test_entries_fk-TOTAL_FORMS': 1,
+            'test_entries_fk-INITIAL_FORMS': 0,
+            'test_entries_fk-MIN_NUM_FORMS': 0,
+            'test_entries_fk-MAX_NUM_FORMS': 1000,
+            'test_entries_fk-0-char_field': 'test_inline'
+        }
+        obj = self.add_object(OtherModel, params,
+                              additional_params=additional_params)
+        initial_count = SimpleLog.objects.count()
+        additional_params = {
+            'test_entries_fk-TOTAL_FORMS': 1,
+            'test_entries_fk-INITIAL_FORMS': 1,
+            'test_entries_fk-MIN_NUM_FORMS': 0,
+            'test_entries_fk-MAX_NUM_FORMS': 1000,
+            'test_entries_fk-0-char_field': 'changed_title'
+        }
+        self.change_object(obj, params, additional_params=additional_params)
+        self.assertEqual(SimpleLog.objects.count(), initial_count + 2)
+        first_sl = SimpleLog.objects.all()[0]
+        second_sl = SimpleLog.objects.all()[1]
+        self.assertQuerysetEqual(first_sl.related_logs.all(),
+                                 [repr(second_sl)])
+        self.assertQuerysetEqual(second_sl.related_logs.all(),
+                                 [repr(first_sl)])
 
 
 class CustomViewTestCase(BaseTestCaseMixin, TransactionTestCase):
