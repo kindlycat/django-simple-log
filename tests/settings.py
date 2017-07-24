@@ -78,3 +78,6 @@ USE_L10N = True
 USE_TZ = True
 
 STATIC_URL = '/static/'
+
+SIMPLE_LOG_SAVE_RELATED = True
+SIMPLE_LOG_SAVE_ONE_TO_MANY = True

@@ -49,7 +49,8 @@ class SimpleLogAbstract(models.Model):
         ContentType,
         on_delete=models.SET_NULL,
         verbose_name=_('content type'),
-        blank=True, null=True,
+        blank=True,
+        null=True,
     )
     user = models.ForeignKey(
         django_settings.AUTH_USER_MODEL,
@@ -67,6 +68,12 @@ class SimpleLogAbstract(models.Model):
     )
     old = JSONField(_('old values'), null=True)
     new = JSONField(_('new values'), null=True)
+
+    related_logs = models.ManyToManyField(
+        django_settings.SIMPLE_LOG_MODEL,
+        verbose_name=_('related log'),
+        blank=True,
+    )
 
     is_add = property(lambda self: self.action_flag == self.ADD)
     is_change = property(lambda self: self.action_flag == self.CHANGE)
@@ -131,8 +138,7 @@ class SimpleLogAbstract(models.Model):
 
     def m2m_field_diff(self, field_name):
         """
-        :param old: list with old values
-        :param new: list with new values
+        :param field_name: m2m field name
         :return:
             - list with added items
             - list with removed items
@@ -170,18 +176,25 @@ class ModelSerializer(object):
     def serialize(self, instance):
         if not instance:
             return {}
-        fields = get_fields(instance.__class__)
-        ret = {}
-        for field in fields:
-            ret[field.name] = {
-                'label': force_text(field.verbose_name),
+        return {
+            field.name: {
+                'label': self.get_field_label(field),
                 'value': self.get_field_value(instance, field)
-            }
-        return ret
+            } for field in get_fields(instance.__class__)
+        }
+
+    def get_field_label(self, field):
+        if field.one_to_many:
+            return force_text(field.related_model._meta.verbose_name_plural)
+        return force_text(field.verbose_name)
 
     def get_field_value(self, instance, field):
+        if field.name in getattr(instance, '_initial', {}):
+            return self.get_value_for_type(instance._initial[field.name])
         if field.many_to_many:
             return self.get_m2m_value(instance, field)
+        elif field.one_to_many:
+            return self.get_o2m_value(instance, field)
         elif field.is_relation:
             return self.get_fk_value(instance, field)
         elif getattr(field, 'choices', None):
@@ -189,6 +202,12 @@ class ModelSerializer(object):
         return self.get_other_value(instance, field)
 
     def get_m2m_value(self, instance, field):
+        return [{
+            'db': self.get_value_for_type(x.pk),
+            'repr': force_text(x)
+        } for x in getattr(instance, field.name).iterator()]
+
+    def get_o2m_value(self, instance, field):
         return [{
             'db': self.get_value_for_type(x.pk),
             'repr': force_text(x)

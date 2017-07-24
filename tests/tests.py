@@ -6,6 +6,7 @@ from django.contrib.admin.utils import quote
 from django.contrib.auth.models import User
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ImproperlyConfigured
+from django.db.transaction import atomic
 from django.test import override_settings, TransactionTestCase
 from django.utils.encoding import force_text
 
@@ -13,8 +14,7 @@ from simple_log.conf import settings
 from simple_log.models import SimpleLog, SimpleLogAbstract
 from simple_log.utils import (
     get_fields, get_log_model, disable_logging, get_serializer, get_model_list,
-    del_thread_variable
-)
+    disable_related)
 from .test_app.models import CustomLogModel
 from .test_app.models import (
     OtherModel, TestModel, SwappableLogModel, CustomSerializer
@@ -36,7 +36,6 @@ class BaseTestCaseMixin(object):
     namespace = ''
 
     def setUp(self):
-        del_thread_variable('request')
         with disable_logging():
             User.objects.create_superuser('user', 'test@example.com', 'pass')
             OtherModel.objects.create(char_field='other')
@@ -56,6 +55,7 @@ class BaseTestCaseMixin(object):
 
     def add_object(self, model, params, **kwargs):
         params = self.prepare_params(model, params)
+        params.update(kwargs.get('additional_params', {}))
         headers = kwargs.get('headers', {})
         self.client.post(self.get_add_url(model), data=params, **headers)
         return model.objects.latest('pk')
@@ -470,9 +470,81 @@ class BaseTestCaseMixin(object):
             self.delete_object(obj)
         self.assertEqual(SimpleLog.objects.count(), initial_count)
 
+    def test_disable_related(self):
+        initial_count = SimpleLog.objects.count()
+        with atomic():
+            with disable_related():
+                params = {
+                    'char_field': 'test',
+                    'fk_field': self.other_model,
+                    'm2m_field': [self.other_model],
+                    'choice_field': TestModel.TWO
+                }
+                obj = self.add_object(TestModel, params)
+                params = {
+                    'char_field': 'test2',
+                    'fk_field': '',
+                    'm2m_field': [],
+                    'choice_field': TestModel.ONE
+                }
+                self.change_object(obj, params)
+        self.assertEqual(SimpleLog.objects.count(), initial_count + 2)
+        first_sl = SimpleLog.objects.all()[0]
+        second_sl = SimpleLog.objects.all()[1]
+        self.assertQuerysetEqual(first_sl.related_logs.all(), [])
+        self.assertQuerysetEqual(second_sl.related_logs.all(), [])
+
 
 class AdminTestCase(BaseTestCaseMixin, TransactionTestCase):
     namespace = 'admin:'
+
+    def test_add_object_with_formset(self):
+        initial_count = SimpleLog.objects.count()
+        params = {'char_field': 'test'}
+        additional_params = {
+            'test_entries_fk-TOTAL_FORMS': 1,
+            'test_entries_fk-INITIAL_FORMS': 0,
+            'test_entries_fk-MIN_NUM_FORMS': 0,
+            'test_entries_fk-MAX_NUM_FORMS': 1000,
+            'test_entries_fk-0-char_field': 'test_inline'
+        }
+        self.add_object(OtherModel, params,
+                        additional_params=additional_params)
+        self.assertEqual(SimpleLog.objects.count(), initial_count + 2)
+        first_sl = SimpleLog.objects.all()[0]
+        second_sl = SimpleLog.objects.all()[1]
+        self.assertQuerysetEqual(first_sl.related_logs.all(),
+                                 [repr(second_sl)])
+        self.assertQuerysetEqual(second_sl.related_logs.all(),
+                                 [repr(first_sl)])
+
+    def test_change_object_only_formset(self):
+        params = {'char_field': 'test'}
+        additional_params = {
+            'test_entries_fk-TOTAL_FORMS': 1,
+            'test_entries_fk-INITIAL_FORMS': 0,
+            'test_entries_fk-MIN_NUM_FORMS': 0,
+            'test_entries_fk-MAX_NUM_FORMS': 1000,
+            'test_entries_fk-0-char_field': 'test_inline'
+        }
+        obj = self.add_object(OtherModel, params,
+                              additional_params=additional_params)
+        initial_count = SimpleLog.objects.count()
+        additional_params = {
+            'test_entries_fk-TOTAL_FORMS': 1,
+            'test_entries_fk-INITIAL_FORMS': 1,
+            'test_entries_fk-MIN_NUM_FORMS': 0,
+            'test_entries_fk-MAX_NUM_FORMS': 1000,
+            'test_entries_fk-0-char_field': 'changed_title'
+        }
+        self.change_object(obj, params, additional_params=additional_params)
+        self.assertEqual(SimpleLog.objects.count(), initial_count + 2)
+        first_sl = SimpleLog.objects.all()[0]
+        second_sl = SimpleLog.objects.all()[1]
+        self.assertQuerysetEqual(first_sl.related_logs.all(),
+                                 [repr(second_sl)])
+        self.assertQuerysetEqual(second_sl.related_logs.all(),
+                                 [repr(first_sl)])
 
 
 class CustomViewTestCase(BaseTestCaseMixin, TransactionTestCase):
@@ -683,7 +755,6 @@ class CustomViewTestCase(BaseTestCaseMixin, TransactionTestCase):
 
 class SystemTestCase(BaseTestCaseMixin, TransactionTestCase):
     def setUp(self):
-        del_thread_variable('request')
         with disable_logging():
             OtherModel.objects.create(char_field='other')
         self.user = None
@@ -1106,9 +1177,6 @@ class SettingsTestCase(TransactionTestCase):
 
 
 class LogModelTestCase(TransactionTestCase):
-    def setUp(self):
-        del_thread_variable('request')
-
     def test_log_get_edited_obj(self):
         obj = TestModel.objects.create(char_field='test')
         sl = SimpleLog.objects.latest('pk')

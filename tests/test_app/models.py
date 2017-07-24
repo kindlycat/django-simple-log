@@ -69,8 +69,7 @@ class OtherModel(models.Model):
 
 
 class SwappableLogModel(SimpleLogAbstract):
-    class Meta(SimpleLogAbstract.Meta):
-        swappable = 'SIMPLE_LOG_MODEL'
+    pass
 
 
 class CustomLogModel(SimpleLogAbstract):

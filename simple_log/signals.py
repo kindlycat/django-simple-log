@@ -1,10 +1,31 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-from simple_log.utils import get_serializer, get_log_model, get_thread_variable
+from functools import partial
+
+from simple_log.utils import (
+    get_serializer, get_log_model, get_thread_variable, set_thread_variable,
+    del_thread_variable
+)
 from simple_log.conf import settings
 
 from django.db import connection
+
+
+def save_related(logs):
+    for log in [x for x in logs if not x.pk]:
+        log.save()
+    for log in logs:
+        log.related_logs.add(*[x for x in logs if x != log])
+
+
+def save_log_to_thread(instance, force_save=False):
+    logs = get_thread_variable('logs', {})
+    logs[instance] = instance._log
+    set_thread_variable('logs', logs)
+    if not getattr(instance, '_save_logs', False):
+        instance._save_logs = True
+        connection.on_commit(partial(save_log, instance, force_save))
 
 
 def save_log(instance, force_save=False):
@@ -13,11 +34,19 @@ def save_log(instance, force_save=False):
         instance._log.save()
     else:
         new_values = serializer(instance)
+        instance._log.old = instance._old_values or None
+        instance._log.new = new_values or None
         if instance._old_values != new_values:
-            instance._log.old = instance._old_values or None
-            instance._log.new = new_values or None
             instance._log.save()
-    instance._on_commit = False
+    instance._save_logs = False
+    logs = get_thread_variable('logs', {})
+    if not [x for x in logs.keys() if x._save_logs]:
+        if (settings.SAVE_RELATED and
+                not get_thread_variable('disable_related') and
+                any([x.pk for x in logs.values()])):
+            save_related(logs.values())
+        del_thread_variable('logs')
+        del_thread_variable('request')
 
 
 def set_initial(instance):
@@ -33,7 +62,7 @@ def set_initial(instance):
         instance._old_values = serializer(
             getattr(instance, settings.OLD_INSTANCE_ATTR_NAME, None)
         )
-    instance._on_commit = False
+    instance._save_logs = False
 
 
 def log_pre_save_delete(sender, instance, **kwargs):
@@ -45,16 +74,14 @@ def log_pre_save_delete(sender, instance, **kwargs):
 def log_post_save(sender, instance, created, **kwargs):
     if get_thread_variable('disable_logging'):
         return
-    SimpleLog = get_log_model(sender)
     if not hasattr(instance, '_log'):
+        SimpleLog = get_log_model(sender)
         instance._log = SimpleLog.log(
             instance,
             action_flag=SimpleLog.ADD if created else SimpleLog.CHANGE,
             commit=False
         )
-    if not instance._on_commit:
-        instance._on_commit = True
-        connection.on_commit(lambda: save_log(instance))
+    save_log_to_thread(instance)
 
 
 def log_post_delete(sender, instance, **kwargs):
@@ -68,9 +95,7 @@ def log_post_delete(sender, instance, **kwargs):
         new=None,
         commit=False
     )
-    if not instance._on_commit:
-        instance._on_commit = True
-        connection.on_commit(lambda: save_log(instance, True))
+    save_log_to_thread(instance, True)
 
 
 def log_m2m_change(sender, instance, action, **kwargs):
@@ -86,9 +111,6 @@ def log_m2m_change(sender, instance, action, **kwargs):
             instance._log = SimpleLog.log(
                 instance,
                 action_flag=SimpleLog.CHANGE,
-                old=instance._old_values,
                 commit=False
             )
-        if not instance._on_commit:
-            instance._on_commit = True
-            connection.on_commit(lambda: save_log(instance))
+        save_log_to_thread(instance)
