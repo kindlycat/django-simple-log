@@ -121,6 +121,12 @@ def get_model_list():
     return model_list
 
 
+@lru_cache.lru_cache()
+def get_related_models(model):
+    return [x.related_model for x in model._meta.get_fields()
+            if x.many_to_one]
+
+
 @contextmanager
 def disable_logging():
     set_thread_variable('disable_logging', True)

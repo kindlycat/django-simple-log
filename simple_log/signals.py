@@ -5,7 +5,7 @@ from functools import partial
 
 from simple_log.utils import (
     get_serializer, get_log_model, get_thread_variable, set_thread_variable,
-    del_thread_variable
+    del_thread_variable, get_related_models
 )
 from simple_log.conf import settings
 
@@ -13,10 +13,16 @@ from django.db import connection
 
 
 def save_related(logs):
-    for log in [x for x in logs if not x.pk]:
-        log.save()
-    for log in logs:
-        log.related_logs.add(*[x for x in logs if x != log])
+    related_logs = set()
+    for instance, saved_log in [(k, v) for k, v in logs.items() if v.pk]:
+        related_logs.add(saved_log)
+        related_models = get_related_models(instance.__class__)
+        for for_save in [v for k, v in logs.items()
+                         if k.__class__ in related_models and not v.pk]:
+            for_save.save()
+            related_logs.add(for_save)
+    for log in related_logs:
+        log.related_logs.add(*[x for x in related_logs if x != log])
 
 
 def save_log_to_thread(instance, force_save=False):
@@ -44,7 +50,7 @@ def save_log(instance, force_save=False):
         if (settings.SAVE_RELATED and
                 not get_thread_variable('disable_related') and
                 any([x.pk for x in logs.values()])):
-            save_related(logs.values())
+            save_related(logs)
         del_thread_variable('logs')
         del_thread_variable('request')
 
