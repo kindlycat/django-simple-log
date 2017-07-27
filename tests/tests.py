@@ -15,7 +15,7 @@ from simple_log.models import SimpleLog, SimpleLogAbstract
 from simple_log.utils import (
     get_fields, get_log_model, disable_logging, get_serializer, get_model_list,
     disable_related)
-from .test_app.models import CustomLogModel
+from .test_app.models import CustomLogModel, TestModelProxy
 from .test_app.models import (
     OtherModel, TestModel, SwappableLogModel, CustomSerializer
 )
@@ -494,6 +494,30 @@ class BaseTestCaseMixin(object):
         self.assertQuerysetEqual(first_sl.related_logs.all(), [])
         self.assertQuerysetEqual(second_sl.related_logs.all(), [])
 
+    def test_proxy_model(self):
+        initial_count = SimpleLog.objects.count()
+        params = {'char_field': 'test'}
+        self.add_object(TestModelProxy, params)
+        self.assertEqual(SimpleLog.objects.count(), initial_count + 1)
+        sl = SimpleLog.objects.latest('pk')
+        self.assertEqual(sl.content_type,
+                         ContentType.objects.get_for_model(TestModelProxy, False))
+
+    @mock.patch.object(
+        TestModel,
+        'simple_log_proxy_concrete',
+        new_callable=mock.PropertyMock,
+        create=True,
+        return_value=True
+    )
+    def test_concrete_model_proxy_concrete(self, mocked):
+        initial_count = SimpleLog.objects.count()
+        params = {'char_field': 'test'}
+        self.add_object(TestModelProxy, params)
+        self.assertEqual(SimpleLog.objects.count(), initial_count + 1)
+        sl = SimpleLog.objects.latest('pk')
+        self.assertEqual(sl.content_type,
+                         ContentType.objects.get_for_model(TestModelProxy, True))
 
 class AdminTestCase(BaseTestCaseMixin, TransactionTestCase):
     namespace = 'admin:'
@@ -1174,6 +1198,15 @@ class SettingsTestCase(TransactionTestCase):
         obj.save()
         self.assertEqual(SimpleLog.objects.count(), initial_count + 1)
         self.assertEqual(obj.old.pk, obj.pk)
+
+    @override_settings(SIMPLE_LOG_PROXY_CONCRETE=True)
+    def test_proxy_model_concrete(self):
+        initial_count = SimpleLog.objects.count()
+        TestModel.objects.create(char_field='test')
+        self.assertEqual(SimpleLog.objects.count(), initial_count + 1)
+        sl = SimpleLog.objects.latest('pk')
+        self.assertEqual(sl.content_type,
+                         ContentType.objects.get_for_model(TestModelProxy, True))
 
 
 class LogModelTestCase(TransactionTestCase):

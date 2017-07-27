@@ -51,6 +51,11 @@ class TestModel(models.Model):
         return self.char_field
 
 
+class TestModelProxy(TestModel):
+    class Meta:
+        proxy = True
+
+
 @python_2_unicode_compatible
 class OtherModel(models.Model):
     char_field = models.CharField(verbose_name='Char field', max_length=100)

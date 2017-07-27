@@ -30,6 +30,7 @@ DEFAULTS = {
     'OLD_INSTANCE_ATTR_NAME': '_old_instance',
     'SAVE_RELATED': False,
     'SAVE_ONE_TO_MANY': False,
+    'PROXY_CONCRETE': False,
 }
 
 

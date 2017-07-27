@@ -116,7 +116,14 @@ class SimpleLogAbstract(models.Model):
         if 'user_ip' not in kwargs:
             kwargs['user_ip'] = cls.get_ip()
         kwargs.update({
-            'content_type': get_content_type_for_model(instance.__class__),
+            'content_type': ContentType.objects.get_for_model(
+                instance.__class__,
+                for_concrete_model=getattr(
+                    instance,
+                    'simple_log_proxy_concrete',
+                    settings.PROXY_CONCRETE
+                )
+            ),
             'object_id': instance.pk,
             'object_repr': force_text(instance),
             'user': user if user and user.is_authenticated() else None
