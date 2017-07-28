@@ -1,11 +1,10 @@
 from django.contrib import admin
 from django.contrib.admin import register
 
-from tests.test_app.models import OtherModel, TestModel, TestModelProxy
-
-
-class TestModelInline(admin.TabularInline):
-    model = TestModel
+from tests.test_app.models import (
+    OtherModel, TestModel, TestModelProxy, RelatedModel,
+    ThirdModel
+)
 
 
 @register(TestModel)
@@ -14,10 +13,19 @@ class TestModelAdmin(admin.ModelAdmin):
 
 
 @register(TestModelProxy)
-class TestModelAdmin(admin.ModelAdmin):
+class TestModelAdminProxy(admin.ModelAdmin):
     pass
 
 
 @register(OtherModel)
 class OtherModelAdmin(admin.ModelAdmin):
-    inlines = [TestModelInline]
+    pass
+
+
+class RelatedModelInline(admin.TabularInline):
+    model = RelatedModel
+
+
+@register(ThirdModel)
+class ThirdModelAdmin(admin.ModelAdmin):
+    inlines = [RelatedModelInline]

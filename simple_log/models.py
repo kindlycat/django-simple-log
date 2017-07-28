@@ -2,7 +2,6 @@
 from __future__ import absolute_import, unicode_literals
 
 from django.conf import settings as django_settings
-from django.contrib.admin.options import get_content_type_for_model
 from django.contrib.admin.utils import quote
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
