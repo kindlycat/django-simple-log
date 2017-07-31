@@ -15,9 +15,9 @@ from simple_log.models import SimpleLog, SimpleLogAbstract
 from simple_log.utils import (
     get_fields, get_log_model, disable_logging, get_serializer, get_model_list,
     disable_related)
-from .test_app.models import CustomLogModel
 from .test_app.models import (
-    OtherModel, TestModel, SwappableLogModel, CustomSerializer
+    OtherModel, TestModel, SwappableLogModel, CustomSerializer,
+    CustomLogModel, TestModelProxy, ThirdModel, RelatedModel
 )
 from .utils import isolate_lru_cache
 
@@ -36,14 +36,19 @@ class BaseTestCaseMixin(object):
     namespace = ''
 
     def setUp(self):
-        with disable_logging():
-            User.objects.create_superuser('user', 'test@example.com', 'pass')
-            OtherModel.objects.create(char_field='other')
+        self.create_initial_objects()
         self.user = User.objects.all()[0]
         self.user_repr = force_text(self.user)
         self.ip = '127.0.0.1'
         self.other_model = OtherModel.objects.all()[0]
         self.client.login(username='user', password='pass')
+
+    def create_initial_objects(self):
+        with disable_logging():
+            User.objects.create_superuser('user', 'test@example.com', 'pass')
+            OtherModel.objects.create(char_field='other')
+            tm = ThirdModel.objects.create(char_field='third')
+            RelatedModel.objects.create(char_field='related', third_model=tm)
 
     def prepare_params(self, model, params):
         for k, v in params.items():
@@ -494,6 +499,46 @@ class BaseTestCaseMixin(object):
         self.assertQuerysetEqual(first_sl.related_logs.all(), [])
         self.assertQuerysetEqual(second_sl.related_logs.all(), [])
 
+    def test_proxy_model(self):
+        initial_count = SimpleLog.objects.count()
+        params = {'char_field': 'test'}
+        self.add_object(TestModelProxy, params)
+        self.assertEqual(SimpleLog.objects.count(), initial_count + 1)
+        sl = SimpleLog.objects.latest('pk')
+        self.assertEqual(
+            sl.content_type,
+            ContentType.objects.get_for_model(TestModelProxy, False)
+        )
+
+    @mock.patch.object(
+        TestModel,
+        'simple_log_proxy_concrete',
+        new_callable=mock.PropertyMock,
+        create=True,
+        return_value=True
+    )
+    def test_concrete_model_proxy_concrete(self, mocked):
+        initial_count = SimpleLog.objects.count()
+        params = {'char_field': 'test'}
+        self.add_object(TestModelProxy, params)
+        self.assertEqual(SimpleLog.objects.count(), initial_count + 1)
+        sl = SimpleLog.objects.latest('pk')
+        self.assertEqual(
+            sl.content_type,
+            ContentType.objects.get_for_model(TestModelProxy, True)
+        )
+
+    def test_delete_with_related(self):
+        initial_count = SimpleLog.objects.count()
+        self.delete_object(ThirdModel.objects.first())
+        self.assertEqual(SimpleLog.objects.count(), initial_count + 2)
+        first_sl = SimpleLog.objects.all()[0]
+        second_sl = SimpleLog.objects.all()[1]
+        self.assertQuerysetEqual(first_sl.related_logs.all(),
+                                 [repr(second_sl)])
+        self.assertQuerysetEqual(second_sl.related_logs.all(),
+                                 [repr(first_sl)])
+
 
 class AdminTestCase(BaseTestCaseMixin, TransactionTestCase):
     namespace = 'admin:'
@@ -502,13 +547,13 @@ class AdminTestCase(BaseTestCaseMixin, TransactionTestCase):
         initial_count = SimpleLog.objects.count()
         params = {'char_field': 'test'}
         additional_params = {
-            'test_entries_fk-TOTAL_FORMS': 1,
-            'test_entries_fk-INITIAL_FORMS': 0,
-            'test_entries_fk-MIN_NUM_FORMS': 0,
-            'test_entries_fk-MAX_NUM_FORMS': 1000,
-            'test_entries_fk-0-char_field': 'test_inline'
+            'related_entries-TOTAL_FORMS': 1,
+            'related_entries-INITIAL_FORMS': 0,
+            'related_entries-MIN_NUM_FORMS': 0,
+            'related_entries-MAX_NUM_FORMS': 1000,
+            'related_entries-0-char_field': 'test_inline'
         }
-        self.add_object(OtherModel, params,
+        self.add_object(ThirdModel, params,
                         additional_params=additional_params)
         self.assertEqual(SimpleLog.objects.count(), initial_count + 2)
         first_sl = SimpleLog.objects.all()[0]
@@ -521,21 +566,21 @@ class AdminTestCase(BaseTestCaseMixin, TransactionTestCase):
     def test_change_object_only_formset(self):
         params = {'char_field': 'test'}
         additional_params = {
-            'test_entries_fk-TOTAL_FORMS': 1,
-            'test_entries_fk-INITIAL_FORMS': 0,
-            'test_entries_fk-MIN_NUM_FORMS': 0,
-            'test_entries_fk-MAX_NUM_FORMS': 1000,
-            'test_entries_fk-0-char_field': 'test_inline'
+            'related_entries-TOTAL_FORMS': 1,
+            'related_entries-INITIAL_FORMS': 0,
+            'related_entries-MIN_NUM_FORMS': 0,
+            'related_entries-MAX_NUM_FORMS': 1000,
+            'related_entries-0-char_field': 'test_inline'
         }
-        obj = self.add_object(OtherModel, params,
+        obj = self.add_object(ThirdModel, params,
                               additional_params=additional_params)
         initial_count = SimpleLog.objects.count()
         additional_params = {
-            'test_entries_fk-TOTAL_FORMS': 1,
-            'test_entries_fk-INITIAL_FORMS': 1,
-            'test_entries_fk-MIN_NUM_FORMS': 0,
-            'test_entries_fk-MAX_NUM_FORMS': 1000,
-            'test_entries_fk-0-char_field': 'changed_title'
+            'related_entries-TOTAL_FORMS': 1,
+            'related_entries-INITIAL_FORMS': 1,
+            'related_entries-MIN_NUM_FORMS': 0,
+            'related_entries-MAX_NUM_FORMS': 1000,
+            'related_entries-0-char_field': 'changed_title'
         }
         self.change_object(obj, params, additional_params=additional_params)
         self.assertEqual(SimpleLog.objects.count(), initial_count + 2)
@@ -755,8 +800,7 @@ class CustomViewTestCase(BaseTestCaseMixin, TransactionTestCase):
 
 class SystemTestCase(BaseTestCaseMixin, TransactionTestCase):
     def setUp(self):
-        with disable_logging():
-            OtherModel.objects.create(char_field='other')
+        self.create_initial_objects()
         self.user = None
         self.user_repr = 'System'
         self.ip = None
@@ -1174,6 +1218,17 @@ class SettingsTestCase(TransactionTestCase):
         obj.save()
         self.assertEqual(SimpleLog.objects.count(), initial_count + 1)
         self.assertEqual(obj.old.pk, obj.pk)
+
+    @override_settings(SIMPLE_LOG_PROXY_CONCRETE=True)
+    def test_proxy_model_concrete(self):
+        initial_count = SimpleLog.objects.count()
+        TestModel.objects.create(char_field='test')
+        self.assertEqual(SimpleLog.objects.count(), initial_count + 1)
+        sl = SimpleLog.objects.latest('pk')
+        self.assertEqual(
+            sl.content_type,
+            ContentType.objects.get_for_model(TestModelProxy, True)
+        )
 
 
 class LogModelTestCase(TransactionTestCase):

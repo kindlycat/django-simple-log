@@ -7,7 +7,9 @@ from django.views.generic import CreateView
 from django.views.generic import DeleteView
 from django.views.generic import UpdateView
 
-from tests.test_app.models import TestModel, OtherModel
+from tests.test_app.models import (
+    TestModel, OtherModel, TestModelProxy, ThirdModel
+)
 
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
@@ -68,5 +70,25 @@ urlpatterns = [
             success_url='.'
         ),
         name='test_app_othermodel_delete'
+    ),
+
+    url(
+        r'^third_model/(?P<pk>\d+)/delete/$',
+        DeleteView.as_view(
+            model=ThirdModel,
+            success_url='.'
+        ),
+        name='test_app_thirdmodel_delete'
+    ),
+
+    url(
+        r'^test_model_proxy/add/$',
+        CreateView.as_view(
+            model=TestModelProxy,
+            fields='__all__',
+            success_url='.',
+            template_name='form.html'
+        ),
+        name='test_app_testmodelproxy_add'
     ),
 ]

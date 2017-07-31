@@ -51,6 +51,11 @@ class TestModel(models.Model):
         return self.char_field
 
 
+class TestModelProxy(TestModel):
+    class Meta:
+        proxy = True
+
+
 @python_2_unicode_compatible
 class OtherModel(models.Model):
     char_field = models.CharField(verbose_name='Char field', max_length=100)
@@ -66,6 +71,33 @@ class OtherModel(models.Model):
 
     def __str__(self):
         return self.char_field
+
+
+@python_2_unicode_compatible
+class ThirdModel(models.Model):
+    char_field = models.CharField(verbose_name='Char field', max_length=100)
+
+    class Meta:
+        verbose_name = 'third entry'
+        verbose_name_plural = 'third entries'
+        ordering = ['pk']
+
+    def __str__(self):
+        return self.char_field
+
+
+@python_2_unicode_compatible
+class RelatedModel(models.Model):
+    third_model = models.ForeignKey(ThirdModel, related_name='related_entries')
+    char_field = models.CharField(verbose_name='Char field', max_length=100)
+
+    class Meta:
+        verbose_name = 'related entry'
+        verbose_name_plural = 'related entries'
+        ordering = ['pk']
+
+    def __str__(self):
+        return 'Related entry of the "%s"' % self.third_model
 
 
 class SwappableLogModel(SimpleLogAbstract):
