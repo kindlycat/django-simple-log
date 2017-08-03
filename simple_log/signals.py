@@ -66,7 +66,8 @@ def set_initial(instance):
     if not hasattr(instance, '_old_values'):
         serializer = get_serializer(instance.__class__)()
         instance._old_values = serializer(
-            getattr(instance, settings.OLD_INSTANCE_ATTR_NAME, None)
+            getattr(instance, settings.OLD_INSTANCE_ATTR_NAME, None),
+            override=getattr(instance, 'simple_log_override', None)
         )
     instance._save_logs = False
 

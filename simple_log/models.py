@@ -176,16 +176,16 @@ class SimpleLog(SimpleLogAbstract):
 
 
 class ModelSerializer(object):
-    def __call__(self, instance):
-        return self.serialize(instance)
+    def __call__(self, instance, override=None):
+        return self.serialize(instance, override)
 
-    def serialize(self, instance):
+    def serialize(self, instance, override=None):
         if not instance:
             return {}
         return {
             field.name: {
                 'label': self.get_field_label(field),
-                'value': self.get_field_value(instance, field)
+                'value': self.get_field_value(instance, field, override)
             } for field in get_fields(instance.__class__)
         }
 
@@ -194,9 +194,9 @@ class ModelSerializer(object):
             return force_text(field.related_model._meta.verbose_name_plural)
         return force_text(field.verbose_name)
 
-    def get_field_value(self, instance, field):
-        if field.name in getattr(instance, '_initial', {}):
-            return self.get_value_for_type(instance._initial[field.name])
+    def get_field_value(self, instance, field, override=None):
+        if override and field.name in override:
+            return self.get_value_for_type(override[field.name])
         if field.many_to_many:
             return self.get_m2m_value(instance, field)
         elif field.one_to_many:
