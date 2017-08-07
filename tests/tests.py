@@ -534,9 +534,9 @@ class BaseTestCaseMixin(object):
         self.assertEqual(SimpleLog.objects.count(), initial_count + 2)
         first_sl = SimpleLog.objects.all()[0]
         second_sl = SimpleLog.objects.all()[1]
-        self.assertQuerysetEqual(first_sl.related_logs.all(), [])
-        self.assertQuerysetEqual(second_sl.related_logs.all(),
-                                 [repr(first_sl)])
+        self.assertQuerysetEqual(first_sl.related_logs.all(),
+                                 [repr(second_sl)])
+        self.assertQuerysetEqual(second_sl.related_logs.all(), [])
 
 
 class AdminTestCase(BaseTestCaseMixin, TransactionTestCase):
@@ -1225,6 +1225,38 @@ class SettingsTestCase(TransactionTestCase):
         self.assertEqual(
             sl.content_type,
             ContentType.objects.get_for_model(TestModelProxy, True)
+        )
+
+    @override_settings(SIMPLE_LOG_SAVE_ONLY_CHANGED=True)
+    def test_only_changed(self):
+        obj = TestModel.objects.create(
+            char_field='test'
+        )
+        initial_count = SimpleLog.objects.count()
+        obj = TestModel.objects.get(pk=obj.pk)
+        obj.char_field = 'changed'
+        obj.save()
+        self.assertEqual(
+            SimpleLog.objects.count(), initial_count + 1
+        )
+        sl = SimpleLog.objects.latest('pk')
+        self.assertDictEqual(
+            sl.old,
+            {
+                'char_field': {
+                    'label': 'Char field',
+                    'value': 'test'
+                },
+            }
+        )
+        self.assertDictEqual(
+            sl.new,
+            {
+                'char_field': {
+                    'label': 'Char field',
+                    'value': 'changed'
+                },
+            }
         )
 
 
