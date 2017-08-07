@@ -534,8 +534,7 @@ class BaseTestCaseMixin(object):
         self.assertEqual(SimpleLog.objects.count(), initial_count + 2)
         first_sl = SimpleLog.objects.all()[0]
         second_sl = SimpleLog.objects.all()[1]
-        self.assertQuerysetEqual(first_sl.related_logs.all(),
-                                 [repr(second_sl)])
+        self.assertQuerysetEqual(first_sl.related_logs.all(), [])
         self.assertQuerysetEqual(second_sl.related_logs.all(),
                                  [repr(first_sl)])
 
@@ -558,8 +557,7 @@ class AdminTestCase(BaseTestCaseMixin, TransactionTestCase):
         self.assertEqual(SimpleLog.objects.count(), initial_count + 2)
         first_sl = SimpleLog.objects.all()[0]
         second_sl = SimpleLog.objects.all()[1]
-        self.assertQuerysetEqual(first_sl.related_logs.all(),
-                                 [repr(second_sl)])
+        self.assertQuerysetEqual(first_sl.related_logs.all(), [])
         self.assertQuerysetEqual(second_sl.related_logs.all(),
                                  [repr(first_sl)])
 
@@ -586,8 +584,7 @@ class AdminTestCase(BaseTestCaseMixin, TransactionTestCase):
         self.assertEqual(SimpleLog.objects.count(), initial_count + 2)
         first_sl = SimpleLog.objects.all()[0]
         second_sl = SimpleLog.objects.all()[1]
-        self.assertQuerysetEqual(first_sl.related_logs.all(),
-                                 [repr(second_sl)])
+        self.assertQuerysetEqual(first_sl.related_logs.all(), [])
         self.assertQuerysetEqual(second_sl.related_logs.all(),
                                  [repr(first_sl)])
 
