@@ -181,7 +181,7 @@ class ModelSerializer(object):
 
     def serialize(self, instance, override=None):
         if not instance:
-            return {}
+            return None
         return {
             field.name: {
                 'label': self.get_field_label(field),

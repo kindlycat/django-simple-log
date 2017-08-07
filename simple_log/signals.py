@@ -12,17 +12,24 @@ from simple_log.conf import settings
 from django.db import connection
 
 
+def save_log_instance(log):
+    if settings.SAVE_ONLY_CHANGED:
+        changed = log.changed_fields.keys()
+        log.old = {k: v for k, v in (log.old or {}).items()
+                   if k in changed} or None
+        log.new = {k: v for k, v in (log.new or {}).items()
+                   if k in changed} or None
+    log.save()
+
+
 def save_related(logs):
-    related_logs = set()
     for instance, saved_log in [(k, v) for k, v in logs.items() if v.pk]:
-        related_logs.add(saved_log)
         related_models = get_related_models(instance.__class__)
-        for for_save in [v for k, v in logs.items()
-                         if k.__class__ in related_models and not v.pk]:
-            for_save.save()
-            related_logs.add(for_save)
-    for log in related_logs:
-        log.related_logs.add(*[x for x in related_logs if x != log])
+        for related in [v for k, v in logs.items()
+                        if k.__class__ in related_models]:
+            if not related.pk:
+                save_log_instance(related)
+            related.related_logs.add(saved_log)
 
 
 def save_log_to_thread(instance, force_save=False):
@@ -40,10 +47,10 @@ def save_log(instance, force_save=False):
         instance._log.save()
     else:
         new_values = serializer(instance)
-        instance._log.old = instance._old_values or None
-        instance._log.new = new_values or None
+        instance._log.old = instance._old_values
+        instance._log.new = new_values
         if instance._old_values != new_values:
-            instance._log.save()
+            save_log_instance(instance._log)
     instance._save_logs = False
     logs = get_thread_variable('logs', {})
     if not [x for x in logs.keys() if x._save_logs]:
