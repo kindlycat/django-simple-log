@@ -26,4 +26,4 @@ after_script:
   - coveralls
 script:
   - flake8 --exclude=migrations .
-  - coverage run --source=simple_log --omit='simple_log/management/*' manage.py test tests $PARALLEL;
+  - coverage run --source=simple_log --omit='simple_log/management/*' manage.py --settings=tests.test_settings test tests $PARALLEL;
