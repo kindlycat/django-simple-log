@@ -1,6 +1,8 @@
 from django.contrib import admin
 from django.contrib.admin import register
 
+from simple_log.admin import SimpleLogModelAdmin
+from simple_log.models import SimpleLog
 from tests.test_app.models import (
     OtherModel, TestModel, TestModelProxy, RelatedModel,
     ThirdModel
@@ -29,3 +31,6 @@ class RelatedModelInline(admin.TabularInline):
 @register(ThirdModel)
 class ThirdModelAdmin(admin.ModelAdmin):
     inlines = [RelatedModelInline]
+
+
+admin.site.register(SimpleLog, SimpleLogModelAdmin)
