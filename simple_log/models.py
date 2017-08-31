@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, unicode_literals
 
+from itertools import groupby
+from operator import attrgetter
+
 from django.conf import settings as django_settings
 from django.contrib.admin.utils import quote
 from django.contrib.contenttypes.models import ContentType
@@ -168,6 +171,15 @@ class SimpleLogAbstract(models.Model):
                 return ip
             except ValidationError:
                 pass
+
+    def get_differences(self, with_related=True):
+        old = self.old or {}
+        new = self.new or {}
+        return [{
+            'label': value,
+            'old': old.get(key),
+            'new': new.get(key)
+        } for key, value in self.changed_fields.items()]
 
 
 class SimpleLog(SimpleLogAbstract):

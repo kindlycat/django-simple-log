@@ -1,0 +1,23 @@
+{% load i18n %}
+<table id="change-history">
+    <thead>
+    <tr>
+        <th scope="col" style="width: 15%">{% trans 'Field name' %}</th>
+        <th scope="col" style="width: 42.5%">{% trans 'Old value' %}</th>
+        <th scope="col" style="width: 42.5%">{% trans 'New value' %}</th>
+    </tr>
+    </thead>
+    <tbody>
+        {% for field in object.get_differences %}
+            <tr>
+                <th>{{ field.label }}</th>
+                <td>
+                    {{ field.old.value|default:'—' }}
+                </td>
+                <td>
+                    {{ field.new.value|default:'—' }}
+                </td>
+            </tr>
+        {% endfor %}
+    </tbody>
+</table>
