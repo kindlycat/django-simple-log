@@ -10,8 +10,8 @@
     </div>
     {% regroup original.related_logs.all by content_type as related_list %}
     {% for related in related_list %}
-        <h1>{{ related.grouper }}</h1>
         {% for log in related.list %}
+            <h1>{{ log }}</h1>
             <div class="module">
                 {% include 'simple_log/changes_table.html' with object=log %}
             </div>

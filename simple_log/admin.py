@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from __future__ import unicode_literals
+
 from django.contrib import admin
 
 
@@ -14,3 +16,10 @@ class SimpleLogModelAdmin(admin.ModelAdmin):
 
     def has_add_permission(self, request):
         return False
+
+    def get_actions(self, request):
+        return []
+
+
+class HistoryModelAdmin(admin.ModelAdmin):
+    pass
