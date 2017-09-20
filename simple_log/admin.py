@@ -72,3 +72,12 @@ class HistoryModelAdmin(admin.ModelAdmin):
         admin_model = SimpleLogModelAdmin(get_log_model(), self.admin_site)
         admin_model.history_for_model = self.model
         return admin_model.changelist_view(request)
+
+    def history_view(self, request, object_id, extra_context=None):
+        if not self.has_change_permission(request):
+            raise PermissionDenied
+
+        admin_model = SimpleLogModelAdmin(get_log_model(), self.admin_site)
+        admin_model.history_for_model = self.model
+        admin_model.history_for_object = object_id
+        return admin_model.changelist_view(request)
