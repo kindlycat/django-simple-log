@@ -41,7 +41,8 @@ class BaseTestCaseMixin(object):
         self.user_repr = force_text(self.user)
         self.ip = '127.0.0.1'
         self.other_model = OtherModel.objects.all()[0]
-        self.client.login(username='user', password='pass')
+        with disable_logging():
+            self.client.login(username='user', password='pass')
 
     def create_initial_objects(self):
         with disable_logging():
@@ -477,15 +478,15 @@ class BaseTestCaseMixin(object):
 
     def test_disable_related(self):
         initial_count = SimpleLog.objects.count()
+        params = {
+            'char_field': 'test',
+            'fk_field': self.other_model,
+            'm2m_field': [self.other_model],
+            'choice_field': TestModel.TWO
+        }
+        obj = self.add_object(TestModel, params)
         with atomic():
             with disable_related():
-                params = {
-                    'char_field': 'test',
-                    'fk_field': self.other_model,
-                    'm2m_field': [self.other_model],
-                    'choice_field': TestModel.TWO
-                }
-                obj = self.add_object(TestModel, params)
                 params = {
                     'char_field': 'test2',
                     'fk_field': '',
