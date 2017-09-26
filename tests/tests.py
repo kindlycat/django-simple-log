@@ -41,7 +41,8 @@ class BaseTestCaseMixin(object):
         self.user_repr = force_text(self.user)
         self.ip = '127.0.0.1'
         self.other_model = OtherModel.objects.all()[0]
-        self.client.login(username='user', password='pass')
+        with disable_logging():
+            self.client.login(username='user', password='pass')
 
     def create_initial_objects(self):
         with disable_logging():
@@ -477,15 +478,15 @@ class BaseTestCaseMixin(object):
 
     def test_disable_related(self):
         initial_count = SimpleLog.objects.count()
+        params = {
+            'char_field': 'test',
+            'fk_field': self.other_model,
+            'm2m_field': [self.other_model],
+            'choice_field': TestModel.TWO
+        }
+        obj = self.add_object(TestModel, params)
         with atomic():
             with disable_related():
-                params = {
-                    'char_field': 'test',
-                    'fk_field': self.other_model,
-                    'm2m_field': [self.other_model],
-                    'choice_field': TestModel.TWO
-                }
-                obj = self.add_object(TestModel, params)
                 params = {
                     'char_field': 'test2',
                     'fk_field': '',
@@ -536,8 +537,7 @@ class BaseTestCaseMixin(object):
         second_sl = SimpleLog.objects.all()[1]
         self.assertQuerysetEqual(first_sl.related_logs.all(),
                                  [repr(second_sl)])
-        self.assertQuerysetEqual(second_sl.related_logs.all(),
-                                 [repr(first_sl)])
+        self.assertQuerysetEqual(second_sl.related_logs.all(), [])
 
 
 class AdminTestCase(BaseTestCaseMixin, TransactionTestCase):
@@ -558,8 +558,7 @@ class AdminTestCase(BaseTestCaseMixin, TransactionTestCase):
         self.assertEqual(SimpleLog.objects.count(), initial_count + 2)
         first_sl = SimpleLog.objects.all()[0]
         second_sl = SimpleLog.objects.all()[1]
-        self.assertQuerysetEqual(first_sl.related_logs.all(),
-                                 [repr(second_sl)])
+        self.assertQuerysetEqual(first_sl.related_logs.all(), [])
         self.assertQuerysetEqual(second_sl.related_logs.all(),
                                  [repr(first_sl)])
 
@@ -586,8 +585,7 @@ class AdminTestCase(BaseTestCaseMixin, TransactionTestCase):
         self.assertEqual(SimpleLog.objects.count(), initial_count + 2)
         first_sl = SimpleLog.objects.all()[0]
         second_sl = SimpleLog.objects.all()[1]
-        self.assertQuerysetEqual(first_sl.related_logs.all(),
-                                 [repr(second_sl)])
+        self.assertQuerysetEqual(first_sl.related_logs.all(), [])
         self.assertQuerysetEqual(second_sl.related_logs.all(),
                                  [repr(first_sl)])
 
@@ -1228,6 +1226,38 @@ class SettingsTestCase(TransactionTestCase):
         self.assertEqual(
             sl.content_type,
             ContentType.objects.get_for_model(TestModelProxy, True)
+        )
+
+    @override_settings(SIMPLE_LOG_SAVE_ONLY_CHANGED=True)
+    def test_only_changed(self):
+        obj = TestModel.objects.create(
+            char_field='test'
+        )
+        initial_count = SimpleLog.objects.count()
+        obj = TestModel.objects.get(pk=obj.pk)
+        obj.char_field = 'changed'
+        obj.save()
+        self.assertEqual(
+            SimpleLog.objects.count(), initial_count + 1
+        )
+        sl = SimpleLog.objects.latest('pk')
+        self.assertDictEqual(
+            sl.old,
+            {
+                'char_field': {
+                    'label': 'Char field',
+                    'value': 'test'
+                },
+            }
+        )
+        self.assertDictEqual(
+            sl.new,
+            {
+                'char_field': {
+                    'label': 'Char field',
+                    'value': 'changed'
+                },
+            }
         )
 
 

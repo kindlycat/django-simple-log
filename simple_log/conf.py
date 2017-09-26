@@ -31,6 +31,7 @@ DEFAULTS = {
     'SAVE_RELATED': False,
     'SAVE_ONE_TO_MANY': False,
     'PROXY_CONCRETE': False,
+    'SAVE_ONLY_CHANGED': False,
 }
 
 
