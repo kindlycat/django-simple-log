@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-from django.db.transaction import atomic
+from collections import defaultdict
 
 from simple_log.utils import (
     get_serializer, get_log_model, get_thread_variable, set_thread_variable,
@@ -23,32 +23,38 @@ def save_log_instance(log):
 
 
 def save_related(logs):
+    map_related = defaultdict(list)
     for instance, saved_log in [(k, v) for k, v in logs.items() if v.pk]:
         related_models = get_related_models(instance.__class__)
         for related in [v for k, v in logs.items()
-                        if k.__class__ in related_models]:
+                        if k.__class__ in related_models and
+                        v != saved_log]:
             if not related.pk:
                 save_log_instance(related)
-            related.related_logs.add(saved_log)
+            map_related[related].append(saved_log)
+    for instance, related in map_related.items():
+        instance.related_logs.add(*related)
 
 
-@atomic
 def save_logs_on_commit():
     logs = get_thread_variable('logs', {})
+    log_saved = False
     for instance, log in logs.items():
         serializer = get_serializer(instance.__class__)()
         if getattr(instance._log, '_force_save', False):
             instance._log.save()
+            log_saved = True
         else:
             new_values = serializer(instance)
             instance._log.old = instance._old_values
             instance._log.new = new_values
             if instance._old_values != new_values:
                 save_log_instance(instance._log)
+                log_saved = True
 
     if (settings.SAVE_RELATED and
             not get_thread_variable('disable_related') and
-            any([x.pk for x in logs.values()])):
+            log_saved):
         save_related(logs)
 
     del_thread_variable('logs')
