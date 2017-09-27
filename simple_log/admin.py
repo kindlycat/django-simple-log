@@ -6,6 +6,7 @@ from functools import update_wrapper
 from django.contrib import admin
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import PermissionDenied
+from django.utils.translation import ugettext_lazy as _
 
 from simple_log.utils import get_log_model
 
@@ -46,6 +47,7 @@ class SimpleLogModelAdmin(admin.ModelAdmin):
 
 class HistoryModelAdmin(admin.ModelAdmin):
     change_list_template = 'simple_log/change_list.html'
+    history_change_list_template = 'simple_log/history_change_list.html'
 
     def get_urls(self):
         from django.conf.urls import url
@@ -65,19 +67,32 @@ class HistoryModelAdmin(admin.ModelAdmin):
         ]
         return custom_urlpatterns + urlpatterns
 
+    def get_simple_log_model_admin(self, model=None, object_id=None):
+        admin_model = SimpleLogModelAdmin(get_log_model(), self.admin_site)
+        admin_model.change_list_template = self.history_change_list_template
+        admin_model.history_for_model = model
+        admin_model.history_for_object = object_id
+        return admin_model
+
     def model_history_view(self, request, extra_context=None):
         if not self.has_change_permission(request, None):
             raise PermissionDenied
 
-        admin_model = SimpleLogModelAdmin(get_log_model(), self.admin_site)
-        admin_model.history_for_model = self.model
-        return admin_model.changelist_view(request)
+        admin_model = self.get_simple_log_model_admin(model=self.model)
+        extra_context = {
+            'history_model_opts': self.model._meta
+        }
+        return admin_model.changelist_view(request, extra_context)
 
     def history_view(self, request, object_id, extra_context=None):
         if not self.has_change_permission(request):
             raise PermissionDenied
 
-        admin_model = SimpleLogModelAdmin(get_log_model(), self.admin_site)
-        admin_model.history_for_model = self.model
-        admin_model.history_for_object = object_id
-        return admin_model.changelist_view(request)
+        obj = self.get_object(request, object_id, extra_context)
+        admin_model = self.get_simple_log_model_admin(model=self.model,
+                                                      object_id=object_id)
+        extra_context = {
+            'history_model_opts': self.model._meta,
+            'history_object': obj
+        }
+        return admin_model.changelist_view(request, extra_context)

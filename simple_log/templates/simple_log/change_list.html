@@ -8,3 +8,5 @@
     {% endif %}
     {{ block.super }}
 {% endblock %}
+
+{% block content_title %}{% if history_model_opts %}qwe{% else %}{{ block.super }}{% endif %}{% endblock %}
