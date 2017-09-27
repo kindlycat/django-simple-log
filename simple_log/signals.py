@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-from functools import partial
+from collections import defaultdict
 
 from simple_log.utils import (
     get_serializer, get_log_model, get_thread_variable, set_thread_variable,
@@ -23,43 +23,52 @@ def save_log_instance(log):
 
 
 def save_related(logs):
+    map_related = defaultdict(list)
     for instance, saved_log in [(k, v) for k, v in logs.items() if v.pk]:
         related_models = get_related_models(instance.__class__)
         for related in [v for k, v in logs.items()
-                        if k.__class__ in related_models]:
+                        if k.__class__ in related_models and
+                        v != saved_log]:
             if not related.pk:
                 save_log_instance(related)
-            related.related_logs.add(saved_log)
+            map_related[related].append(saved_log)
+    for instance, related in map_related.items():
+        instance.related_logs.add(*related)
 
 
-def save_log_to_thread(instance, force_save=False):
+def save_logs_on_commit():
+    logs = get_thread_variable('logs', {})
+    log_saved = False
+    for instance, log in logs.items():
+        serializer = get_serializer(instance.__class__)()
+        if getattr(instance._log, '_force_save', False):
+            instance._log.save()
+            log_saved = True
+        else:
+            new_values = serializer(instance)
+            instance._log.old = instance._old_values
+            instance._log.new = new_values
+            if instance._old_values != new_values:
+                save_log_instance(instance._log)
+                log_saved = True
+
+    if (settings.SAVE_RELATED and
+            not get_thread_variable('disable_related') and
+            log_saved):
+        save_related(logs)
+
+    del_thread_variable('logs')
+    del_thread_variable('request')
+    del_thread_variable('save_logs_on_commit')
+
+
+def save_log_to_thread(instance):
     logs = get_thread_variable('logs', {})
     logs[instance] = instance._log
     set_thread_variable('logs', logs)
-    if not getattr(instance, '_save_logs', False):
-        instance._save_logs = True
-        connection.on_commit(partial(save_log, instance, force_save))
-
-
-def save_log(instance, force_save=False):
-    serializer = get_serializer(instance.__class__)()
-    if force_save:
-        instance._log.save()
-    else:
-        new_values = serializer(instance)
-        instance._log.old = instance._old_values
-        instance._log.new = new_values
-        if instance._old_values != new_values:
-            save_log_instance(instance._log)
-    instance._save_logs = False
-    logs = get_thread_variable('logs', {})
-    if not [x for x in logs.keys() if x._save_logs]:
-        if (settings.SAVE_RELATED and
-                not get_thread_variable('disable_related') and
-                any([x.pk for x in logs.values()])):
-            save_related(logs)
-        del_thread_variable('logs')
-        del_thread_variable('request')
+    if not get_thread_variable('save_logs_on_commit'):
+        set_thread_variable('save_logs_on_commit', True)
+        connection.on_commit(save_logs_on_commit)
 
 
 def set_initial(instance):
@@ -76,7 +85,6 @@ def set_initial(instance):
             getattr(instance, settings.OLD_INSTANCE_ATTR_NAME, None),
             override=getattr(instance, 'simple_log_override', None)
         )
-    instance._save_logs = False
 
 
 def log_pre_save_delete(sender, instance, **kwargs):
@@ -109,7 +117,8 @@ def log_post_delete(sender, instance, **kwargs):
         new=None,
         commit=False
     )
-    save_log_to_thread(instance, True)
+    instance._log._force_save = True
+    save_log_to_thread(instance)
 
 
 def log_m2m_change(sender, instance, action, **kwargs):

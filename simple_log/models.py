@@ -1,9 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, unicode_literals
 
-from itertools import groupby
-from operator import attrgetter
-
 from django.conf import settings as django_settings
 from django.contrib.admin.utils import quote
 from django.contrib.contenttypes.models import ContentType
