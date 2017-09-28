@@ -8,8 +8,13 @@
 {% block breadcrumbs %}
 <div class="breadcrumbs">
 <a href="{% url 'admin:index' %}">{% trans 'Home' %}</a>
-&rsaquo; <a href="{% url 'admin:app_list' app_label=history_model_opts.app_label %}">{{ history_model_opts.app_config.verbose_name }}</a>
-&rsaquo; <a href="{% url history_model_opts|admin_urlname:'changelist' %}">{{ history_model_opts.verbose_name_plural|capfirst }}</a>
+{% if history_model_opts %}
+    &rsaquo; <a href="{% url 'admin:app_list' app_label=history_model_opts.app_label %}">{{ history_model_opts.app_config.verbose_name }}</a>
+    &rsaquo; <a href="{% url history_model_opts|admin_urlname:'changelist' %}">{{ history_model_opts.verbose_name_plural|capfirst }}</a>
+{% else %}
+    &rsaquo; <a href="{% url 'admin:app_list' app_label=opts.app_label %}">{{ opts.app_config.verbose_name }}</a>
+    &rsaquo; {% if has_change_permission %}<a href="{% url opts|admin_urlname:'changelist' %}">{{ opts.verbose_name_plural|capfirst }}</a>{% else %}{{ opts.verbose_name_plural|capfirst }}{% endif %}
+{% endif %}
 {% if history_object %}
     &rsaquo; <a href="{% url history_model_opts|admin_urlname:'change' history_object.pk|admin_urlquote %}">{{ history_object|truncatewords:"18" }}</a>
     &rsaquo; <a href="{% url history_model_opts|admin_urlname:'history' history_object.pk|admin_urlquote %}">{% trans 'History' %}</a>

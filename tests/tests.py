@@ -1087,7 +1087,7 @@ class SettingsTestCase(TransactionTestCase):
 
     @override_settings(
         SIMPLE_LOG_EXCLUDE_FIELD_LIST=(
-            'id', 'char_field', 'choice_field'
+                'id', 'char_field', 'choice_field'
         )
     )
     def test_field_list_add(self):
@@ -1331,3 +1331,29 @@ class LogModelTestCase(TransactionTestCase):
                              [{'db': other_model2.pk, 'repr': 'test2'}])
         self.assertListEqual(removed,
                              [{'db': other_model.pk, 'repr': 'test'}])
+
+    def test_log_get_differences(self):
+        TestModel.objects.create(char_field='test')
+        obj = TestModel.objects.latest('pk')
+        other_model = OtherModel.objects.create(char_field='test')
+        params = {
+            'char_field': 'test2',
+            'fk_field': other_model,
+            'choice_field': TestModel.TWO
+        }
+        for param, value in params.items():
+            setattr(obj, param, value)
+        obj.save()
+        sl = SimpleLog.objects.latest('pk')
+        self.assertListEqual(
+            sl.get_differences(),
+            [{'label': 'Char field',
+              'old': 'test',
+              'new': 'test2'},
+             {'label': 'Fk field',
+              'old': {'db': None, 'repr': ''},
+              'new': {'db': other_model.pk, 'repr': str(other_model)}},
+             {'label': 'Choice field',
+              'old': {'db': TestModel.ONE, 'repr': 'One'},
+              'new': {'db': TestModel.TWO, 'repr': 'Two'}}]
+        )
