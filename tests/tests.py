@@ -1345,15 +1345,23 @@ class LogModelTestCase(TransactionTestCase):
             setattr(obj, param, value)
         obj.save()
         sl = SimpleLog.objects.latest('pk')
-        self.assertListEqual(
-            sl.get_differences(),
-            [{'label': 'Char field',
-              'old': 'test',
-              'new': 'test2'},
-             {'label': 'Fk field',
-              'old': {'db': None, 'repr': ''},
-              'new': {'db': other_model.pk, 'repr': str(other_model)}},
-             {'label': 'Choice field',
-              'old': {'db': TestModel.ONE, 'repr': 'One'},
-              'new': {'db': TestModel.TWO, 'repr': 'Two'}}]
+        differences = sl.get_differences()
+        self.assertEqual(len(differences), 3)
+        self.assertDictEqual(
+            [x for x in differences if x['label'] == 'Char field'][0],
+            {'label': 'Char field',
+             'old': 'test',
+             'new': 'test2'},
+        )
+        self.assertDictEqual(
+            [x for x in differences if x['label'] == 'Fk field'][0],
+            {'label': 'Fk field',
+             'old': {'db': None, 'repr': ''},
+             'new': {'db': other_model.pk, 'repr': str(other_model)}},
+        )
+        self.assertDictEqual(
+            [x for x in differences if x['label'] == 'Choice field'][0],
+            {'label': 'Choice field',
+             'old': {'db': TestModel.ONE, 'repr': 'One'},
+             'new': {'db': TestModel.TWO, 'repr': 'Two'}}
         )
