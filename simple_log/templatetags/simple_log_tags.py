@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 
 from django.template import Library
 from django.utils import six
+from django.utils.encoding import force_text
 
 register = Library()
 
@@ -21,4 +22,4 @@ def get_type(value):
         return 'list'
     if isinstance(value, int):
         return 'int'
-    return type(value)
+    return force_text(type(value))

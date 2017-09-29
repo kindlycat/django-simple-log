@@ -12,6 +12,7 @@ from django.utils.encoding import force_text
 
 from simple_log.conf import settings
 from simple_log.models import SimpleLog, SimpleLogAbstract
+from simple_log.templatetags.simple_log_tags import get_type
 from simple_log.utils import (
     get_fields, get_log_model, disable_logging, get_serializer, get_model_list,
     disable_related)
@@ -1365,3 +1366,18 @@ class LogModelTestCase(TransactionTestCase):
              'old': {'db': TestModel.ONE, 'repr': 'One'},
              'new': {'db': TestModel.TWO, 'repr': 'Two'}}
         )
+
+
+class UtilsTestCase(TransactionTestCase):
+    def test_get_type_templatetag(self):
+        params = (
+            ('string', 'str'),
+            (None, 'None'),
+            ({'a': 1}, 'dict'),
+            (True, 'bool'),
+            ([1, 2, 3], 'list'),
+            (1, 'int'),
+            (TestModel, str(type(TestModel))),
+        )
+        for value, type_of in params:
+            self.assertEqual(get_type(value), type_of)
