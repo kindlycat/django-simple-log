@@ -12,6 +12,7 @@ from django.utils.encoding import force_text
 
 from simple_log.conf import settings
 from simple_log.models import SimpleLog, SimpleLogAbstract
+from simple_log.templatetags.simple_log_tags import get_type
 from simple_log.utils import (
     get_fields, get_log_model, disable_logging, get_serializer, get_model_list,
     disable_related)
@@ -1087,7 +1088,7 @@ class SettingsTestCase(TransactionTestCase):
 
     @override_settings(
         SIMPLE_LOG_EXCLUDE_FIELD_LIST=(
-            'id', 'char_field', 'choice_field'
+                'id', 'char_field', 'choice_field'
         )
     )
     def test_field_list_add(self):
@@ -1331,3 +1332,52 @@ class LogModelTestCase(TransactionTestCase):
                              [{'db': other_model2.pk, 'repr': 'test2'}])
         self.assertListEqual(removed,
                              [{'db': other_model.pk, 'repr': 'test'}])
+
+    def test_log_get_differences(self):
+        TestModel.objects.create(char_field='test')
+        obj = TestModel.objects.latest('pk')
+        other_model = OtherModel.objects.create(char_field='test')
+        params = {
+            'char_field': 'test2',
+            'fk_field': other_model,
+            'choice_field': TestModel.TWO
+        }
+        for param, value in params.items():
+            setattr(obj, param, value)
+        obj.save()
+        sl = SimpleLog.objects.latest('pk')
+        differences = sl.get_differences()
+        self.assertEqual(len(differences), 3)
+        self.assertDictEqual(
+            [x for x in differences if x['label'] == 'Char field'][0],
+            {'label': 'Char field',
+             'old': 'test',
+             'new': 'test2'},
+        )
+        self.assertDictEqual(
+            [x for x in differences if x['label'] == 'Fk field'][0],
+            {'label': 'Fk field',
+             'old': {'db': None, 'repr': ''},
+             'new': {'db': other_model.pk, 'repr': str(other_model)}},
+        )
+        self.assertDictEqual(
+            [x for x in differences if x['label'] == 'Choice field'][0],
+            {'label': 'Choice field',
+             'old': {'db': TestModel.ONE, 'repr': 'One'},
+             'new': {'db': TestModel.TWO, 'repr': 'Two'}}
+        )
+
+
+class UtilsTestCase(TransactionTestCase):
+    def test_get_type_templatetag(self):
+        params = (
+            ('string', 'str'),
+            (None, 'None'),
+            ({'a': 1}, 'dict'),
+            (True, 'bool'),
+            ([1, 2, 3], 'list'),
+            (1, 'int'),
+            (TestModel, str(type(TestModel))),
+        )
+        for value, type_of in params:
+            self.assertEqual(get_type(value), type_of)

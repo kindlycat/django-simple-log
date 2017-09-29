@@ -2,3 +2,4 @@ include MANIFEST.in
 include README.md
 
 recursive-include simple_log/locale *.mo *.po
+recursive-include simple_log/templates *

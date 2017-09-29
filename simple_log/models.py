@@ -169,6 +169,15 @@ class SimpleLogAbstract(models.Model):
             except ValidationError:
                 pass
 
+    def get_differences(self):
+        old = self.old or {}
+        new = self.new or {}
+        return [{
+            'label': value,
+            'old': old.get(key, {}).get('value'),
+            'new': new.get(key, {}).get('value')
+        } for key, value in self.changed_fields.items()]
+
 
 class SimpleLog(SimpleLogAbstract):
     class Meta(SimpleLogAbstract.Meta):

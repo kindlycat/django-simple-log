@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2017-03-06 17:39+0300\n"
+"POT-Creation-Date: 2017-09-29 12:27+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,74 +17,68 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: simple_log/apps.py:8
 msgid "Logs"
 msgstr ""
 
-#: simple_log/models.py:26
-msgid "added"
-msgstr ""
-
-#: simple_log/models.py:27
-msgid "changed"
-msgstr ""
-
-#: simple_log/models.py:28
-msgid "deleted"
-msgstr ""
-
-#: simple_log/models.py:31
-msgid "action time"
-msgstr ""
-
-#: simple_log/models.py:38
-msgid "content type"
-msgstr ""
-
-#: simple_log/models.py:44
-msgid "user"
-msgstr ""
-
-#: simple_log/models.py:47
-msgid "user repr"
-msgstr ""
-
-#: simple_log/models.py:48
-msgid "IP address"
-msgstr ""
-
-#: simple_log/models.py:49
-msgid "object id"
-msgstr ""
-
-#: simple_log/models.py:50
-msgid "object repr"
-msgstr ""
-
-#: simple_log/models.py:52
-msgid "action flag"
-msgstr ""
-
-#: simple_log/models.py:55
-msgid "old values"
-msgstr ""
-
-#: simple_log/models.py:56
-msgid "new values"
-msgstr ""
-
-#: simple_log/models.py:63
-msgid "log"
-msgstr ""
-
-#: simple_log/models.py:64
-msgid "logs"
-msgstr ""
-
-#: simple_log/settings.py:19
 msgid "Anonymous"
 msgstr ""
 
-#: simple_log/settings.py:20
 msgid "System"
+msgstr ""
+
+msgid "added"
+msgstr ""
+
+msgid "changed"
+msgstr ""
+
+msgid "deleted"
+msgstr ""
+
+msgid "action time"
+msgstr ""
+
+msgid "content type"
+msgstr ""
+
+msgid "user"
+msgstr ""
+
+msgid "user repr"
+msgstr ""
+
+msgid "IP address"
+msgstr ""
+
+msgid "object id"
+msgstr ""
+
+msgid "object repr"
+msgstr ""
+
+msgid "action flag"
+msgstr ""
+
+msgid "old values"
+msgstr ""
+
+msgid "new values"
+msgstr ""
+
+msgid "related log"
+msgstr ""
+
+msgid "log entry"
+msgstr ""
+
+msgid "logs entries"
+msgstr ""
+
+msgid "History"
+msgstr ""
+
+msgid "field name"
+msgstr ""
+
+msgid "Home"
 msgstr ""
