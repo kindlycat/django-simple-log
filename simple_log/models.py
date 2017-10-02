@@ -74,6 +74,7 @@ class SimpleLogAbstract(models.Model):
         'self',
         verbose_name=_('related log'),
         blank=True,
+        symmetrical=False,
     )
 
     is_add = property(lambda self: self.action_flag == self.ADD)

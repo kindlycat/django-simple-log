@@ -29,7 +29,7 @@ class TestModel(models.Model):
         blank=True
     )
     m2m_field = models.ManyToManyField(
-        'test_app.OtherModel',
+        'self',
         verbose_name='M2m field',
         related_name='test_entries_m2m',
         blank=True
