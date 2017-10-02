@@ -12,6 +12,7 @@ from django.utils.encoding import force_text, python_2_unicode_compatible
 from django.utils.functional import cached_property
 from django.utils.translation import ugettext_lazy as _
 
+from simple_log.fields import SimpleManyToManyField
 from .conf import settings
 from .utils import get_current_request, get_current_user, get_fields
 
@@ -69,7 +70,7 @@ class SimpleLogAbstract(models.Model):
     new = JSONField(_('new values'), null=True)
     change_message = models.TextField(_('change message'), blank=True)
 
-    related_logs = models.ManyToManyField(
+    related_logs = SimpleManyToManyField(
         'self',
         verbose_name=_('related log'),
         blank=True,
