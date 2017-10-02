@@ -12,7 +12,7 @@ from django.utils.encoding import force_text, python_2_unicode_compatible
 from django.utils.functional import cached_property
 from django.utils.translation import ugettext_lazy as _
 
-from simple_log.fields import SimpleManyToManyField
+from simple_log.fields import SimpleManyToManyField, SimpleJSONField
 from .conf import settings
 from .utils import get_current_request, get_current_user, get_fields
 
@@ -20,11 +20,6 @@ try:
     from django.urls import reverse, NoReverseMatch
 except ImportError:
     from django.core.urlresolvers import reverse, NoReverseMatch
-
-try:
-    from django.contrib.postgres.fields.jsonb import JSONField
-except ImportError:
-    from jsonfield import JSONField
 
 
 __all__ = ['SimpleLogAbstract', 'SimpleLog', 'ModelSerializer']
@@ -66,8 +61,8 @@ class SimpleLogAbstract(models.Model):
         _('action flag'),
         choices=ACTION_CHOICES
     )
-    old = JSONField(_('old values'), null=True)
-    new = JSONField(_('new values'), null=True)
+    old = SimpleJSONField(_('old values'), null=True)
+    new = SimpleJSONField(_('new values'), null=True)
     change_message = models.TextField(_('change message'), blank=True)
 
     related_logs = SimpleManyToManyField(
