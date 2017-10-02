@@ -102,7 +102,7 @@ class Migration(migrations.Migration):
                 ('char_field', models.CharField(max_length=100, verbose_name='Char field', blank=True)),
                 ('choice_field', models.PositiveSmallIntegerField(default=1, null=True, verbose_name='Choice field', blank=True, choices=[(1, 'One'), (2, 'Two')])),
                 ('fk_field', models.ForeignKey(related_name='test_entries_fk', verbose_name='Fk field', blank=True, to='test_app.OtherModel', null=True)),
-                ('m2m_field', models.ManyToManyField(related_name='m2m_field_rel_+', verbose_name='M2m field', to='test_app.TestModel', blank=True)),
+                ('m2m_field', models.ManyToManyField(related_name='test_entries_m2m', verbose_name='M2m field', to='test_app.OtherModel', blank=True)),
             ],
             options={
                 'ordering': ['pk'],
