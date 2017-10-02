@@ -67,9 +67,10 @@ class SimpleLogAbstract(models.Model):
     )
     old = JSONField(_('old values'), null=True)
     new = JSONField(_('new values'), null=True)
+    change_message = models.TextField(_('change message'), blank=True)
 
     related_logs = models.ManyToManyField(
-        django_settings.SIMPLE_LOG_MODEL,
+        'self',
         verbose_name=_('related log'),
         blank=True,
     )

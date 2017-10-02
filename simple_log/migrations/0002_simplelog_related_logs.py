@@ -16,6 +16,6 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='simplelog',
             name='related_logs',
-            field=models.ManyToManyField(to=settings.SIMPLE_LOG_MODEL, verbose_name='related log', blank=True),
+            field=models.ManyToManyField(to='self', verbose_name='related log', blank=True),
         ),
     ]

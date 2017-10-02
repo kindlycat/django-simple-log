@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2017-09-29 12:27+0300\n"
+"POT-Creation-Date: 2017-10-02 09:55+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -68,6 +68,9 @@ msgstr "старые значения"
 msgid "new values"
 msgstr "новые значения"
 
+msgid "change message"
+msgstr "сообщение об изменении"
+
 msgid "related log"
 msgstr "связаные записи"
 
@@ -81,7 +84,7 @@ msgid "History"
 msgstr "История"
 
 msgid "field name"
-msgstr "Наименование поля"
+msgstr "наименование поля"
 
 msgid "Home"
 msgstr "Начало"
