@@ -34,8 +34,8 @@ def del_thread_variable(key):
 
 
 def check_log_model(model):
-    from simple_log.models import SimpleLogAbstract
-    if not issubclass(model, SimpleLogAbstract):
+    from simple_log.models import SimpleLogAbstractBase
+    if not issubclass(model, SimpleLogAbstractBase):
         raise ImproperlyConfigured('Log model should be subclass of '
                                    'SimpleLogAbstract.')
     return model
@@ -110,9 +110,9 @@ def get_label(m):
 
 @lru_cache.lru_cache(maxsize=None)
 def get_model_list():
-    from simple_log.models import SimpleLogAbstract
+    from simple_log.models import SimpleLogAbstractBase
     model_list = [m for m in django_apps.get_models()
-                  if not issubclass(m, SimpleLogAbstract)]
+                  if not issubclass(m, SimpleLogAbstractBase)]
     if settings.MODEL_LIST:
         model_list = [m for m in model_list
                       if get_label(m) in settings.MODEL_LIST]

@@ -22,11 +22,12 @@ except ImportError:
     from django.core.urlresolvers import reverse, NoReverseMatch
 
 
-__all__ = ['SimpleLogAbstract', 'SimpleLog', 'ModelSerializer']
+__all__ = ['SimpleLogAbstractBase', 'SimpleLogAbstract', 'SimpleLog',
+           'ModelSerializer']
 
 
 @python_2_unicode_compatible
-class SimpleLogAbstract(models.Model):
+class SimpleLogAbstractBase(models.Model):
     ADD = 1
     CHANGE = 2
     DELETE = 3
@@ -57,10 +58,6 @@ class SimpleLogAbstract(models.Model):
     user_ip = models.GenericIPAddressField(_('IP address'), null=True)
     object_id = models.TextField(_('object id'), blank=True, null=True)
     object_repr = models.CharField(_('object repr'), max_length=1000)
-    action_flag = models.PositiveSmallIntegerField(
-        _('action flag'),
-        choices=ACTION_CHOICES
-    )
     old = SimpleJSONField(_('old values'), null=True)
     new = SimpleJSONField(_('new values'), null=True)
     change_message = models.TextField(_('change message'), blank=True)
@@ -83,7 +80,7 @@ class SimpleLogAbstract(models.Model):
         abstract = True
 
     def __str__(self):
-        return '%s: %s' % (self.object_repr, self.get_action_flag_display())
+        return '%s' % self.object_repr
 
     def get_edited_object(self):
         return self.content_type.get_object_for_this_type(pk=self.object_id)
@@ -99,21 +96,10 @@ class SimpleLogAbstract(models.Model):
         return None
 
     @classmethod
-    def log(cls, instance, commit=True, **kwargs):
-        user = kwargs.get('user')
-        if 'user' not in kwargs:
-            user = get_current_user()
-        if 'user_repr' not in kwargs:
-            if user is None:
-                kwargs['user_repr'] = settings.NONE_USER_REPR
-            elif user.is_authenticated():
-                kwargs['user_repr'] = force_text(user)
-            else:
-                kwargs['user_repr'] = settings.ANONYMOUS_REPR
-        if 'user_ip' not in kwargs:
-            kwargs['user_ip'] = cls.get_ip()
-        kwargs.update({
-            'content_type': ContentType.objects.get_for_model(
+    def get_log_params(cls, instance, **kwargs):
+        user = kwargs.get('user') or get_current_user()
+        params = dict(
+            content_type=ContentType.objects.get_for_model(
                 instance.__class__,
                 for_concrete_model=getattr(
                     instance,
@@ -121,11 +107,18 @@ class SimpleLogAbstract(models.Model):
                     settings.PROXY_CONCRETE
                 )
             ),
-            'object_id': instance.pk,
-            'object_repr': force_text(instance),
-            'user': user if user and user.is_authenticated() else None
-        })
-        obj = cls(**kwargs)
+            object_id=instance.pk,
+            object_repr=force_text(instance),
+            user=user if user and user.is_authenticated() else None,
+            user_repr=cls.get_user_repr(user),
+            user_ip=cls.get_ip()
+        )
+        params.update(kwargs)
+        return params
+
+    @classmethod
+    def log(cls, instance, commit=True, **kwargs):
+        obj = cls(**cls.get_log_params(instance, **kwargs))
         if commit:
             obj.save()
         return obj
@@ -167,6 +160,15 @@ class SimpleLogAbstract(models.Model):
             except ValidationError:
                 pass
 
+    @classmethod
+    def get_user_repr(cls, user):
+        if user is None:
+            return settings.NONE_USER_REPR
+        elif user.is_authenticated():
+            return force_text(user)
+        else:
+            return settings.ANONYMOUS_REPR
+
     def get_differences(self):
         old = self.old or {}
         new = self.new or {}
@@ -175,6 +177,19 @@ class SimpleLogAbstract(models.Model):
             'old': old.get(key, {}).get('value'),
             'new': new.get(key, {}).get('value')
         } for key, value in self.changed_fields.items()]
+
+
+class SimpleLogAbstract(SimpleLogAbstractBase):
+    action_flag = models.PositiveSmallIntegerField(
+        _('action flag'),
+        choices=SimpleLogAbstractBase.ACTION_CHOICES
+    )
+
+    class Meta(SimpleLogAbstractBase.Meta):
+        abstract = True
+
+    def __str__(self):
+        return '%s: %s' % (self.object_repr, self.get_action_flag_display())
 
 
 class SimpleLog(SimpleLogAbstract):
