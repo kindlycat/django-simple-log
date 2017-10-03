@@ -4,8 +4,8 @@ from __future__ import unicode_literals
 from collections import defaultdict
 
 from simple_log.utils import (
-    get_serializer, get_log_model, get_thread_variable, set_thread_variable,
-    del_thread_variable, get_related_models
+    get_serializer, get_thread_variable, set_thread_variable,
+    del_thread_variable, get_related_models, get_log_model
 )
 from simple_log.conf import settings
 
@@ -97,7 +97,7 @@ def log_post_save(sender, instance, created, **kwargs):
     if get_thread_variable('disable_logging'):
         return
     if not hasattr(instance, '_log'):
-        SimpleLog = get_log_model(sender)
+        SimpleLog = get_log_model()
         instance._log = SimpleLog.log(
             instance,
             action_flag=SimpleLog.ADD if created else SimpleLog.CHANGE,
@@ -109,7 +109,7 @@ def log_post_save(sender, instance, created, **kwargs):
 def log_post_delete(sender, instance, **kwargs):
     if get_thread_variable('disable_logging'):
         return
-    SimpleLog = get_log_model(instance.__class__)
+    SimpleLog = get_log_model()
     instance._log = SimpleLog.log(
         instance,
         action_flag=SimpleLog.DELETE,
@@ -129,7 +129,7 @@ def log_m2m_change(sender, instance, action, **kwargs):
         set_initial(instance)
 
     if action in ('post_add', 'post_remove', 'post_clear'):
-        SimpleLog = get_log_model(instance.__class__)
+        SimpleLog = get_log_model()
         if not hasattr(instance, '_log'):
             instance._log = SimpleLog.log(
                 instance,

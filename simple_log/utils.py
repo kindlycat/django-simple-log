@@ -41,10 +41,8 @@ def check_log_model(model):
     return model
 
 
-@lru_cache.lru_cache(maxsize=None)
-def get_log_model(model=None):
-    if model and hasattr(model, 'simple_log_model'):
-        return model.simple_log_model
+@lru_cache.lru_cache()
+def get_log_model():
     try:
         return check_log_model(django_apps.get_model(settings.MODEL))
     except (ValueError, AttributeError):

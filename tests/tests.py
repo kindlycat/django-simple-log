@@ -15,10 +15,11 @@ from simple_log.models import SimpleLog, SimpleLogAbstract
 from simple_log.templatetags.simple_log_tags import get_type
 from simple_log.utils import (
     get_fields, get_log_model, disable_logging, get_serializer, get_model_list,
-    disable_related)
+    disable_related
+)
 from .test_app.models import (
     OtherModel, TestModel, SwappableLogModel, CustomSerializer,
-    CustomLogModel, TestModelProxy, ThirdModel, RelatedModel
+    TestModelProxy, ThirdModel, RelatedModel
 )
 from .utils import isolate_lru_cache
 
@@ -422,17 +423,6 @@ class BaseTestCaseMixin(object):
     def test_concrete_model_serializer(self, mocked):
         with isolate_lru_cache(get_serializer):
             self.assertEqual(get_serializer(TestModel), CustomSerializer)
-
-    @mock.patch.object(
-        TestModel,
-        'simple_log_model',
-        new_callable=mock.PropertyMock,
-        create=True,
-        return_value=CustomLogModel
-    )
-    def test_concrete_model_log_model(self, mocked):
-        with isolate_lru_cache(get_log_model):
-            self.assertEqual(get_log_model(TestModel), CustomLogModel)
 
     def test_log_bad_ip(self):
         initial_count = SimpleLog.objects.count()
