@@ -32,6 +32,9 @@ DEFAULTS = {
     'SAVE_ONE_TO_MANY': False,
     'PROXY_CONCRETE': False,
     'SAVE_ONLY_CHANGED': False,
+    'DATETIME_FORMAT': None,
+    'DATE_FORMAT': None,
+    'TIME_FORMAT': None,
 }
 
 

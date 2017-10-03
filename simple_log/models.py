@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, unicode_literals
 
+import datetime
 from django.conf import settings as django_settings
 from django.contrib.admin.utils import quote
 from django.contrib.contenttypes.models import ContentType
@@ -264,4 +265,10 @@ class ModelSerializer(object):
     def get_value_for_type(value):
         if value is None or isinstance(value, (int, bool, dict, list)):
             return value
+        if isinstance(value, datetime.datetime) and settings.DATETIME_FORMAT:
+            return value.strftime(settings.DATETIME_FORMAT)
+        if isinstance(value, datetime.date) and settings.DATE_FORMAT:
+            return value.strftime(settings.DATE_FORMAT)
+        if isinstance(value, datetime.time) and settings.TIME_FORMAT:
+            return value.strftime(settings.TIME_FORMAT)
         return force_text(value)

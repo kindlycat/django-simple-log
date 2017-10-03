@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
+import datetime
 from django.apps import apps
 from django.contrib.admin.utils import quote
 from django.contrib.auth.models import User
@@ -1247,6 +1248,49 @@ class SettingsTestCase(TransactionTestCase):
                 'char_field': {
                     'label': 'Char field',
                     'value': 'changed'
+                },
+            }
+        )
+
+    @override_settings(
+        SIMPLE_LOG_DATETIME_FORMAT='%d.%m.%Y [%H:%M]',
+        SIMPLE_LOG_DATE_FORMAT='%d|%m|%Y',
+        SIMPLE_LOG_TIME_FORMAT='%H/%M',
+    )
+    def test_dates_format(self):
+        obj = OtherModel.objects.create(
+            char_field='test',
+            date_time_field=datetime.datetime.now(),
+            date_field=datetime.date.today(),
+            time_field=datetime.datetime.now().time(),
+        )
+        sl = SimpleLog.objects.latest('pk')
+        self.assertDictEqual(
+            sl.new,
+            {
+                'char_field': {
+                    'label': 'Char field',
+                    'value': 'test'
+                },
+                'date_time_field': {
+                    'label': 'Date time field',
+                    'value': obj.date_time_field.strftime('%d.%m.%Y [%H:%M]')
+                },
+                'date_field': {
+                    'label': 'Date field',
+                    'value': obj.date_field.strftime('%d|%m|%Y')
+                },
+                'time_field': {
+                    'label': 'Time field',
+                    'value': obj.time_field.strftime('%H/%M')
+                },
+                'm2m_field': {
+                    'label': 'm2m field',
+                    'value': []
+                },
+                'test_entries_fk': {
+                    'label': 'test entries',
+                    'value': []
                 },
             }
         )
