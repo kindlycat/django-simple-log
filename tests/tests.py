@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-import datetime
 from django.apps import apps
 from django.contrib.admin.utils import quote
 from django.contrib.auth.models import User
@@ -9,6 +8,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ImproperlyConfigured
 from django.db.transaction import atomic
 from django.test import override_settings, TransactionTestCase
+from django.utils import timezone
 from django.utils.encoding import force_text
 
 from simple_log.conf import settings
@@ -62,6 +62,7 @@ class BaseTestCaseMixin(object):
                 params[k] = v.pk
         return params
 
+    @atomic
     def add_object(self, model, params, **kwargs):
         params = self.prepare_params(model, params)
         params.update(kwargs.get('additional_params', {}))
@@ -69,6 +70,7 @@ class BaseTestCaseMixin(object):
         self.client.post(self.get_add_url(model), data=params, **headers)
         return model.objects.latest('pk')
 
+    @atomic
     def change_object(self, obj, params, **kwargs):
         headers = kwargs.get('headers', {})
         self.client.post(
@@ -77,6 +79,7 @@ class BaseTestCaseMixin(object):
         )
         return obj._meta.model.objects.get(pk=obj.pk)
 
+    @atomic
     def delete_object(self, obj):
         self.client.post(self.get_delete_url(obj._meta.model, obj.pk),
                          data={'post': 'yes'})
@@ -808,6 +811,7 @@ class SystemTestCase(BaseTestCaseMixin, TransactionTestCase):
                 new_params[k] = v
         return new_params, m2m
 
+    @atomic
     def add_object(self, model, params, **kwargs):
         params, m2m = self.prepare_params(model, params)
         obj = model.objects.create(**params)
@@ -815,6 +819,7 @@ class SystemTestCase(BaseTestCaseMixin, TransactionTestCase):
             getattr(obj, k).add(*v)
         return model.objects.latest('pk')
 
+    @atomic
     def change_object(self, obj, params, **kwargs):
         params, m2m = self.prepare_params(obj._meta.model, params)
         for k, v in params.items():
@@ -827,6 +832,7 @@ class SystemTestCase(BaseTestCaseMixin, TransactionTestCase):
                 getattr(obj, k).add(*v)
         return obj._meta.model.objects.get(pk=obj.pk)
 
+    @atomic
     def delete_object(self, obj):
         obj.delete()
 
@@ -1042,6 +1048,7 @@ class SystemTestCase(BaseTestCaseMixin, TransactionTestCase):
             }
         )
 
+    @atomic
     def test_create_log_commit(self):
         initial_count = SimpleLog.objects.count()
         SimpleLog.log(self.other_model, action_flag=1, commit=False)
@@ -1260,9 +1267,9 @@ class SettingsTestCase(TransactionTestCase):
     def test_dates_format(self):
         obj = OtherModel.objects.create(
             char_field='test',
-            date_time_field=datetime.datetime.now(),
-            date_field=datetime.date.today(),
-            time_field=datetime.datetime.now().time(),
+            date_time_field=timezone.now(),
+            date_field=timezone.now().date(),
+            time_field=timezone.now().time(),
         )
         sl = SimpleLog.objects.latest('pk')
         self.assertDictEqual(
@@ -1357,11 +1364,12 @@ class LogModelTestCase(TransactionTestCase):
         obj = TestModel.objects.create(char_field='test')
         obj.m2m_field.add(other_model)
         obj = TestModel.objects.get(pk=obj.pk)
-        obj.m2m_field.add(other_model2)
-        obj.m2m_field.remove(other_model)
+        with atomic():
+            obj.m2m_field.add(other_model2)
+            obj.m2m_field.remove(other_model)
+
         sl = SimpleLog.objects.latest('pk')
         added, removed = sl.m2m_field_diff('m2m_field')
-
         self.assertListEqual(added,
                              [{'db': other_model2.pk, 'repr': 'test2'}])
         self.assertListEqual(removed,

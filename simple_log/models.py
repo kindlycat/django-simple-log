@@ -7,15 +7,18 @@ from django.contrib.admin.utils import quote
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_ipv46_address
-from django.db import models
+from django.db import models, connection
 from django.utils import timezone
 from django.utils.encoding import force_text, python_2_unicode_compatible
 from django.utils.functional import cached_property
 from django.utils.translation import ugettext_lazy as _
 
 from simple_log.fields import SimpleManyToManyField, SimpleJSONField
+from simple_log.signals import save_logs_on_commit
 from .conf import settings
-from .utils import get_current_request, get_current_user, get_fields
+from .utils import (
+    get_current_request, get_current_user, get_fields,
+    get_thread_variable, set_thread_variable)
 
 try:
     from django.urls import reverse, NoReverseMatch
@@ -83,6 +86,15 @@ class SimpleLogAbstractBase(models.Model):
     def __str__(self):
         return '%s' % self.object_repr
 
+    def save(self, *args, **kwargs):
+        if settings.SAVE_ONLY_CHANGED:
+            changed = self.changed_fields.keys()
+            self.old = {k: v for k, v in (self.old or {}).items()
+                        if k in changed} or None
+            self.new = {k: v for k, v in (self.new or {}).items()
+                        if k in changed} or None
+        super(SimpleLogAbstractBase, self).save(*args, **kwargs)
+
     def get_edited_object(self):
         return self.content_type.get_object_for_this_type(pk=self.object_id)
 
@@ -114,15 +126,23 @@ class SimpleLogAbstractBase(models.Model):
             user_repr=cls.get_user_repr(user),
             user_ip=cls.get_ip()
         )
+        params.update(getattr(instance, 'simple_log_params', {}))
         params.update(kwargs)
         return params
 
     @classmethod
     def log(cls, instance, commit=True, **kwargs):
-        obj = cls(**cls.get_log_params(instance, **kwargs))
+        instance._log = cls(**cls.get_log_params(instance, **kwargs))
+        instance._log.instance = instance
+        logs = get_thread_variable('logs', [])
+        logs.append(instance._log)
+        set_thread_variable('logs', logs)
+        if not get_thread_variable('save_logs_on_commit'):
+            set_thread_variable('save_logs_on_commit', True)
+            connection.on_commit(save_logs_on_commit)
         if commit:
-            obj.save()
-        return obj
+            instance._log.save()
+        return instance._log
 
     @cached_property
     def changed_fields(self):
@@ -203,7 +223,7 @@ class ModelSerializer(object):
         return self.serialize(instance, override)
 
     def serialize(self, instance, override=None):
-        if not instance:
+        if not (instance and instance.pk):
             return None
         return {
             field.name: {
