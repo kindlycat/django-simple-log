@@ -102,7 +102,7 @@ class HistoryModelAdmin(admin.ModelAdmin):
         model_admin = admin.site._registry.get(simple_log_model,
                                                SimpleLogModelAdmin)
         return model_admin.__class__(
-            get_log_model(),
+            simple_log_model,
             self.admin_site,
             self.history_change_list_template,
             model,

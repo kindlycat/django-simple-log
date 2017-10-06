@@ -7,11 +7,7 @@ from django.db import migrations, models
 import django.db.models.deletion
 import django.utils.timezone
 
-try:
-    from django.contrib.postgres.fields.jsonb import JSONField
-except ImportError:
-    # django 1.8
-    from jsonfield import JSONField
+from simple_log.fields import SimpleJSONField
 
 
 class Migration(migrations.Migration):
@@ -34,8 +30,8 @@ class Migration(migrations.Migration):
                 ('object_id', models.TextField(blank=True, null=True, verbose_name='object id')),
                 ('object_repr', models.CharField(max_length=1000, verbose_name='object repr')),
                 ('action_flag', models.PositiveSmallIntegerField(choices=[(1, 'added'), (2, 'changed'), (3, 'deleted')], verbose_name='action flag')),
-                ('old', JSONField(null=True, verbose_name='old values')),
-                ('new', JSONField(null=True, verbose_name='new values')),
+                ('old', SimpleJSONField(null=True, verbose_name='old values')),
+                ('new', SimpleJSONField(null=True, verbose_name='new values')),
                 ('content_type', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='contenttypes.ContentType', verbose_name='content type')),
                 ('user', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to=settings.AUTH_USER_MODEL, verbose_name='user')),
             ],

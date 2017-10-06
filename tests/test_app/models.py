@@ -63,6 +63,21 @@ class OtherModel(models.Model):
         'test_app.TestModel',
         blank=True
     )
+    date_field = models.DateField(
+        verbose_name='Date field',
+        blank=True,
+        null=True
+    )
+    date_time_field = models.DateTimeField(
+        verbose_name='Date time field',
+        blank=True,
+        null=True
+    )
+    time_field = models.TimeField(
+        verbose_name='Time field',
+        blank=True,
+        null=True
+    )
 
     class Meta:
         verbose_name = 'other entry'
@@ -101,10 +116,6 @@ class RelatedModel(models.Model):
 
 
 class SwappableLogModel(SimpleLogAbstract):
-    pass
-
-
-class CustomLogModel(SimpleLogAbstract):
     pass
 
 

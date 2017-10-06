@@ -1,36 +1,39 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, unicode_literals
 
+import datetime
+
+import os
 from django.conf import settings as django_settings
 from django.contrib.admin.utils import quote
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_ipv46_address
-from django.db import models
+from django.db import models, connection
 from django.utils import timezone
 from django.utils.encoding import force_text, python_2_unicode_compatible
 from django.utils.functional import cached_property
 from django.utils.translation import ugettext_lazy as _
 
+from simple_log.fields import SimpleManyToManyField, SimpleJSONField
+from simple_log.signals import save_logs_on_commit
 from .conf import settings
-from .utils import get_current_request, get_current_user, get_fields
+from .utils import (
+    get_current_request, get_current_user, get_fields,
+    get_thread_variable, set_thread_variable)
 
 try:
     from django.urls import reverse, NoReverseMatch
 except ImportError:
     from django.core.urlresolvers import reverse, NoReverseMatch
 
-try:
-    from django.contrib.postgres.fields.jsonb import JSONField
-except ImportError:
-    from jsonfield import JSONField
 
-
-__all__ = ['SimpleLogAbstract', 'SimpleLog', 'ModelSerializer']
+__all__ = ['SimpleLogAbstractBase', 'SimpleLogAbstract', 'SimpleLog',
+           'ModelSerializer']
 
 
 @python_2_unicode_compatible
-class SimpleLogAbstract(models.Model):
+class SimpleLogAbstractBase(models.Model):
     ADD = 1
     CHANGE = 2
     DELETE = 3
@@ -61,17 +64,15 @@ class SimpleLogAbstract(models.Model):
     user_ip = models.GenericIPAddressField(_('IP address'), null=True)
     object_id = models.TextField(_('object id'), blank=True, null=True)
     object_repr = models.CharField(_('object repr'), max_length=1000)
-    action_flag = models.PositiveSmallIntegerField(
-        _('action flag'),
-        choices=ACTION_CHOICES
-    )
-    old = JSONField(_('old values'), null=True)
-    new = JSONField(_('new values'), null=True)
+    old = SimpleJSONField(_('old values'), null=True)
+    new = SimpleJSONField(_('new values'), null=True)
+    change_message = models.TextField(_('change message'), blank=True)
 
-    related_logs = models.ManyToManyField(
-        django_settings.SIMPLE_LOG_MODEL,
+    related_logs = SimpleManyToManyField(
+        'self',
         verbose_name=_('related log'),
         blank=True,
+        symmetrical=False,
     )
 
     is_add = property(lambda self: self.action_flag == self.ADD)
@@ -85,7 +86,16 @@ class SimpleLogAbstract(models.Model):
         abstract = True
 
     def __str__(self):
-        return '%s: %s' % (self.object_repr, self.get_action_flag_display())
+        return '%s' % self.object_repr
+
+    def save(self, *args, **kwargs):
+        if settings.SAVE_ONLY_CHANGED:
+            changed = self.changed_fields.keys()
+            self.old = {k: v for k, v in (self.old or {}).items()
+                        if k in changed} or None
+            self.new = {k: v for k, v in (self.new or {}).items()
+                        if k in changed} or None
+        super(SimpleLogAbstractBase, self).save(*args, **kwargs)
 
     def get_edited_object(self):
         return self.content_type.get_object_for_this_type(pk=self.object_id)
@@ -101,21 +111,13 @@ class SimpleLogAbstract(models.Model):
         return None
 
     @classmethod
-    def log(cls, instance, commit=True, **kwargs):
-        user = kwargs.get('user')
-        if 'user' not in kwargs:
+    def get_log_params(cls, instance, **kwargs):
+        if 'user' in kwargs:
+            user = kwargs['user']
+        else:
             user = get_current_user()
-        if 'user_repr' not in kwargs:
-            if user is None:
-                kwargs['user_repr'] = settings.NONE_USER_REPR
-            elif user.is_authenticated():
-                kwargs['user_repr'] = force_text(user)
-            else:
-                kwargs['user_repr'] = settings.ANONYMOUS_REPR
-        if 'user_ip' not in kwargs:
-            kwargs['user_ip'] = cls.get_ip()
-        kwargs.update({
-            'content_type': ContentType.objects.get_for_model(
+        params = dict(
+            content_type=ContentType.objects.get_for_model(
                 instance.__class__,
                 for_concrete_model=getattr(
                     instance,
@@ -123,11 +125,26 @@ class SimpleLogAbstract(models.Model):
                     settings.PROXY_CONCRETE
                 )
             ),
-            'object_id': instance.pk,
-            'object_repr': force_text(instance),
-            'user': user if user and user.is_authenticated() else None
-        })
-        obj = cls(**kwargs)
+            object_id=instance.pk,
+            object_repr=force_text(instance),
+            user=user if user and user.is_authenticated() else None,
+            user_repr=cls.get_user_repr(user),
+            user_ip=cls.get_ip()
+        )
+        params.update(getattr(instance, 'simple_log_params', {}))
+        params.update(kwargs)
+        return params
+
+    @classmethod
+    def log(cls, instance, commit=True, **kwargs):
+        obj = cls(**cls.get_log_params(instance, **kwargs))
+        obj.instance = instance
+        logs = get_thread_variable('logs', [])
+        logs.append(obj)
+        set_thread_variable('logs', logs)
+        if not get_thread_variable('save_logs_on_commit'):
+            set_thread_variable('save_logs_on_commit', True)
+            connection.on_commit(save_logs_on_commit)
         if commit:
             obj.save()
         return obj
@@ -169,6 +186,15 @@ class SimpleLogAbstract(models.Model):
             except ValidationError:
                 pass
 
+    @classmethod
+    def get_user_repr(cls, user):
+        if user is None:
+            return settings.NONE_USER_REPR
+        elif user.is_authenticated():
+            return force_text(user)
+        else:
+            return settings.ANONYMOUS_REPR
+
     def get_differences(self):
         old = self.old or {}
         new = self.new or {}
@@ -177,6 +203,19 @@ class SimpleLogAbstract(models.Model):
             'old': old.get(key, {}).get('value'),
             'new': new.get(key, {}).get('value')
         } for key, value in self.changed_fields.items()]
+
+
+class SimpleLogAbstract(SimpleLogAbstractBase):
+    action_flag = models.PositiveSmallIntegerField(
+        _('action flag'),
+        choices=SimpleLogAbstractBase.ACTION_CHOICES
+    )
+
+    class Meta(SimpleLogAbstractBase.Meta):
+        abstract = True
+
+    def __str__(self):
+        return '%s: %s' % (self.object_repr, self.get_action_flag_display())
 
 
 class SimpleLog(SimpleLogAbstract):
@@ -189,7 +228,7 @@ class ModelSerializer(object):
         return self.serialize(instance, override)
 
     def serialize(self, instance, override=None):
-        if not instance:
+        if not (instance and instance.pk):
             return None
         return {
             field.name: {
@@ -214,6 +253,8 @@ class ModelSerializer(object):
             return self.get_fk_value(instance, field)
         elif getattr(field, 'choices', None):
             return self.get_choice_value(instance, field)
+        elif isinstance(field, models.FileField):
+            return self.get_file_value(instance, field)
         return self.get_other_value(instance, field)
 
     def get_m2m_value(self, instance, field):
@@ -244,6 +285,12 @@ class ModelSerializer(object):
             ) or '',
         }
 
+    def get_file_value(self, instance, field):
+        value = self.get_value_for_type(field.value_from_object(instance))
+        if settings.FILE_NAME_ONLY or instance.simple_log_file_name_only:
+            value = os.path.basename(value)
+        return value
+
     def get_other_value(self, instance, field):
         return self.get_value_for_type(field.value_from_object(instance))
 
@@ -251,4 +298,10 @@ class ModelSerializer(object):
     def get_value_for_type(value):
         if value is None or isinstance(value, (int, bool, dict, list)):
             return value
+        if isinstance(value, datetime.datetime) and settings.DATETIME_FORMAT:
+            return value.strftime(settings.DATETIME_FORMAT)
+        if isinstance(value, datetime.date) and settings.DATE_FORMAT:
+            return value.strftime(settings.DATE_FORMAT)
+        if isinstance(value, datetime.time) and settings.TIME_FORMAT:
+            return value.strftime(settings.TIME_FORMAT)
         return force_text(value)

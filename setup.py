@@ -13,10 +13,10 @@ def readme():
 
 setup(
     name='django-simple-log',
-    version='0.1.11',
+    version='0.1.12',
     description='Logging django models changes.',
     long_description=readme(),
-    keywords='django log audit history',
+    keywords=['django', 'log', 'audit', 'history'],
     author='Grigory Mishchenko',
     author_email='grishkokot@gmail.com',
     url='https://github.com/kindlycat/django-simple-log/',

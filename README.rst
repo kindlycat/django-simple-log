@@ -139,8 +139,6 @@ Default: ``'simple_log.SimpleLog'``
 Model for writing logs. If you want to define your own model, you should
 inheritance from ``simple_log.SimpleLogAbstract`` and change this setting.
 
-If you need to define log model for concrete model, you can property to model:
-``simple_log_model = 'simple_log.SimpleLog'``.
 
 SIMPLE_LOG_MODEL_SERIALIZER
 ---------------------------

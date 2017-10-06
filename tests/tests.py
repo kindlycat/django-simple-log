@@ -8,6 +8,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ImproperlyConfigured
 from django.db.transaction import atomic
 from django.test import override_settings, TransactionTestCase
+from django.utils import timezone
 from django.utils.encoding import force_text
 
 from simple_log.conf import settings
@@ -15,10 +16,11 @@ from simple_log.models import SimpleLog, SimpleLogAbstract
 from simple_log.templatetags.simple_log_tags import get_type
 from simple_log.utils import (
     get_fields, get_log_model, disable_logging, get_serializer, get_model_list,
-    disable_related)
+    disable_related
+)
 from .test_app.models import (
     OtherModel, TestModel, SwappableLogModel, CustomSerializer,
-    CustomLogModel, TestModelProxy, ThirdModel, RelatedModel
+    TestModelProxy, ThirdModel, RelatedModel
 )
 from .utils import isolate_lru_cache
 
@@ -60,6 +62,7 @@ class BaseTestCaseMixin(object):
                 params[k] = v.pk
         return params
 
+    @atomic
     def add_object(self, model, params, **kwargs):
         params = self.prepare_params(model, params)
         params.update(kwargs.get('additional_params', {}))
@@ -67,6 +70,7 @@ class BaseTestCaseMixin(object):
         self.client.post(self.get_add_url(model), data=params, **headers)
         return model.objects.latest('pk')
 
+    @atomic
     def change_object(self, obj, params, **kwargs):
         headers = kwargs.get('headers', {})
         self.client.post(
@@ -75,6 +79,7 @@ class BaseTestCaseMixin(object):
         )
         return obj._meta.model.objects.get(pk=obj.pk)
 
+    @atomic
     def delete_object(self, obj):
         self.client.post(self.get_delete_url(obj._meta.model, obj.pk),
                          data={'post': 'yes'})
@@ -422,17 +427,6 @@ class BaseTestCaseMixin(object):
     def test_concrete_model_serializer(self, mocked):
         with isolate_lru_cache(get_serializer):
             self.assertEqual(get_serializer(TestModel), CustomSerializer)
-
-    @mock.patch.object(
-        TestModel,
-        'simple_log_model',
-        new_callable=mock.PropertyMock,
-        create=True,
-        return_value=CustomLogModel
-    )
-    def test_concrete_model_log_model(self, mocked):
-        with isolate_lru_cache(get_log_model):
-            self.assertEqual(get_log_model(TestModel), CustomLogModel)
 
     def test_log_bad_ip(self):
         initial_count = SimpleLog.objects.count()
@@ -817,6 +811,7 @@ class SystemTestCase(BaseTestCaseMixin, TransactionTestCase):
                 new_params[k] = v
         return new_params, m2m
 
+    @atomic
     def add_object(self, model, params, **kwargs):
         params, m2m = self.prepare_params(model, params)
         obj = model.objects.create(**params)
@@ -824,6 +819,7 @@ class SystemTestCase(BaseTestCaseMixin, TransactionTestCase):
             getattr(obj, k).add(*v)
         return model.objects.latest('pk')
 
+    @atomic
     def change_object(self, obj, params, **kwargs):
         params, m2m = self.prepare_params(obj._meta.model, params)
         for k, v in params.items():
@@ -836,6 +832,7 @@ class SystemTestCase(BaseTestCaseMixin, TransactionTestCase):
                 getattr(obj, k).add(*v)
         return obj._meta.model.objects.get(pk=obj.pk)
 
+    @atomic
     def delete_object(self, obj):
         obj.delete()
 
@@ -1051,6 +1048,7 @@ class SystemTestCase(BaseTestCaseMixin, TransactionTestCase):
             }
         )
 
+    @atomic
     def test_create_log_commit(self):
         initial_count = SimpleLog.objects.count()
         SimpleLog.log(self.other_model, action_flag=1, commit=False)
@@ -1261,6 +1259,49 @@ class SettingsTestCase(TransactionTestCase):
             }
         )
 
+    @override_settings(
+        SIMPLE_LOG_DATETIME_FORMAT='%d.%m.%Y [%H:%M]',
+        SIMPLE_LOG_DATE_FORMAT='%d|%m|%Y',
+        SIMPLE_LOG_TIME_FORMAT='%H/%M',
+    )
+    def test_dates_format(self):
+        obj = OtherModel.objects.create(
+            char_field='test',
+            date_time_field=timezone.now(),
+            date_field=timezone.now().date(),
+            time_field=timezone.now().time(),
+        )
+        sl = SimpleLog.objects.latest('pk')
+        self.assertDictEqual(
+            sl.new,
+            {
+                'char_field': {
+                    'label': 'Char field',
+                    'value': 'test'
+                },
+                'date_time_field': {
+                    'label': 'Date time field',
+                    'value': obj.date_time_field.strftime('%d.%m.%Y [%H:%M]')
+                },
+                'date_field': {
+                    'label': 'Date field',
+                    'value': obj.date_field.strftime('%d|%m|%Y')
+                },
+                'time_field': {
+                    'label': 'Time field',
+                    'value': obj.time_field.strftime('%H/%M')
+                },
+                'm2m_field': {
+                    'label': 'm2m field',
+                    'value': []
+                },
+                'test_entries_fk': {
+                    'label': 'test entries',
+                    'value': []
+                },
+            }
+        )
+
 
 class LogModelTestCase(TransactionTestCase):
     def test_log_get_edited_obj(self):
@@ -1323,11 +1364,12 @@ class LogModelTestCase(TransactionTestCase):
         obj = TestModel.objects.create(char_field='test')
         obj.m2m_field.add(other_model)
         obj = TestModel.objects.get(pk=obj.pk)
-        obj.m2m_field.add(other_model2)
-        obj.m2m_field.remove(other_model)
+        with atomic():
+            obj.m2m_field.add(other_model2)
+            obj.m2m_field.remove(other_model)
+
         sl = SimpleLog.objects.latest('pk')
         added, removed = sl.m2m_field_diff('m2m_field')
-
         self.assertListEqual(added,
                              [{'db': other_model2.pk, 'repr': 'test2'}])
         self.assertListEqual(removed,
