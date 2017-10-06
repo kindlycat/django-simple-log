@@ -72,7 +72,7 @@ def log_post_save(sender, instance, created, **kwargs):
         return
     if not hasattr(instance, '_log'):
         SimpleLog = get_log_model()
-        SimpleLog.log(
+        instance._log = SimpleLog.log(
             instance,
             action_flag=SimpleLog.ADD if created else SimpleLog.CHANGE,
             commit=False
@@ -83,7 +83,7 @@ def log_post_delete(sender, instance, **kwargs):
     if get_thread_variable('disable_logging'):
         return
     SimpleLog = get_log_model()
-    SimpleLog.log(
+    instance._log = SimpleLog.log(
         instance,
         action_flag=SimpleLog.DELETE,
         old=instance._old_values,
@@ -101,7 +101,7 @@ def log_m2m_change(sender, instance, action, **kwargs):
     if action in ('post_add', 'post_remove', 'post_clear'):
         SimpleLog = get_log_model()
         if not hasattr(instance, '_log'):
-            SimpleLog.log(
+            instance._log = SimpleLog.log(
                 instance,
                 action_flag=SimpleLog.CHANGE,
                 commit=False
