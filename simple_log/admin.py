@@ -67,7 +67,7 @@ class SimpleLogModelAdmin(admin.ModelAdmin):
             qs = qs.filter(content_type=ct)
             if self.history_for_object:
                 qs = qs.filter(object_id=self.history_for_object)
-        return qs
+        return qs.select_related('content_type', 'user')
 
     def get_changelist(self, request, **kwargs):
         return SimpleLogChangeList
