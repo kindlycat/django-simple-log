@@ -110,7 +110,10 @@ class SimpleLogAbstractBase(models.Model):
 
     @classmethod
     def get_log_params(cls, instance, **kwargs):
-        user = kwargs.get('user') or get_current_user()
+        if 'user' in kwargs:
+            user = kwargs['user']
+        else:
+            user = get_current_user()
         params = dict(
             content_type=ContentType.objects.get_for_model(
                 instance.__class__,
