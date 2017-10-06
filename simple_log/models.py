@@ -2,6 +2,8 @@
 from __future__ import absolute_import, unicode_literals
 
 import datetime
+
+import os
 from django.conf import settings as django_settings
 from django.contrib.admin.utils import quote
 from django.contrib.contenttypes.models import ContentType
@@ -135,17 +137,17 @@ class SimpleLogAbstractBase(models.Model):
 
     @classmethod
     def log(cls, instance, commit=True, **kwargs):
-        instance._log = cls(**cls.get_log_params(instance, **kwargs))
-        instance._log.instance = instance
+        obj = cls(**cls.get_log_params(instance, **kwargs))
+        obj.instance = instance
         logs = get_thread_variable('logs', [])
-        logs.append(instance._log)
+        logs.append(obj)
         set_thread_variable('logs', logs)
         if not get_thread_variable('save_logs_on_commit'):
             set_thread_variable('save_logs_on_commit', True)
             connection.on_commit(save_logs_on_commit)
         if commit:
-            instance._log.save()
-        return instance._log
+            obj.save()
+        return obj
 
     @cached_property
     def changed_fields(self):
@@ -251,6 +253,8 @@ class ModelSerializer(object):
             return self.get_fk_value(instance, field)
         elif getattr(field, 'choices', None):
             return self.get_choice_value(instance, field)
+        elif isinstance(field, models.FileField):
+            return self.get_file_value(instance, field)
         return self.get_other_value(instance, field)
 
     def get_m2m_value(self, instance, field):
@@ -280,6 +284,12 @@ class ModelSerializer(object):
                 instance._get_FIELD_display(field=field)
             ) or '',
         }
+
+    def get_file_value(self, instance, field):
+        value = self.get_value_for_type(field.value_from_object(instance))
+        if settings.FILE_NAME_ONLY or instance.simple_log_file_name_only:
+            value = os.path.basename(value)
+        return value
 
     def get_other_value(self, instance, field):
         return self.get_value_for_type(field.value_from_object(instance))

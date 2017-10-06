@@ -35,6 +35,7 @@ DEFAULTS = {
     'DATETIME_FORMAT': None,
     'DATE_FORMAT': None,
     'TIME_FORMAT': None,
+    'FILE_NAME_ONLY': True,
 }
 
 
