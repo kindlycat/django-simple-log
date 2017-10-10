@@ -7,6 +7,7 @@ from contextlib import contextmanager
 from django.apps import apps as django_apps
 from django.core.exceptions import ImproperlyConfigured
 from django.utils import lru_cache, six
+from django.utils.encoding import force_text
 from django.utils.module_loading import import_string
 
 from simple_log.conf import settings
@@ -14,7 +15,7 @@ from simple_log.conf import settings
 __all__ = ['set_thread_variable', 'get_thread_variable', 'del_thread_variable',
            'get_log_model', 'get_current_user', 'get_current_request',
            'get_serializer', 'disable_logging', 'get_model_list',
-           'disable_related']
+           'disable_related', 'get_obj_repr']
 
 
 _thread_locals = local()
@@ -142,3 +143,9 @@ def disable_related():
         yield
     finally:
         del_thread_variable('disable_related')
+
+
+def get_obj_repr(obj):
+    if hasattr(obj, 'simple_log_repr'):
+        return force_text(obj.simple_log_repr())
+    return force_text(obj)

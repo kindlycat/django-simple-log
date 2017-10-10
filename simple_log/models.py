@@ -20,7 +20,7 @@ from simple_log.signals import save_logs_on_commit
 from .conf import settings
 from .utils import (
     get_current_request, get_current_user, get_fields,
-    get_thread_variable, set_thread_variable)
+    get_thread_variable, set_thread_variable, get_obj_repr)
 
 try:
     from django.urls import reverse, NoReverseMatch
@@ -126,7 +126,7 @@ class SimpleLogAbstractBase(models.Model):
                 )
             ),
             object_id=instance.pk,
-            object_repr=force_text(instance),
+            object_repr=get_obj_repr(instance),
             user=user if user and user.is_authenticated() else None,
             user_repr=cls.get_user_repr(user),
             user_ip=cls.get_ip()
@@ -260,13 +260,13 @@ class ModelSerializer(object):
     def get_m2m_value(self, instance, field):
         return [{
             'db': self.get_value_for_type(x.pk),
-            'repr': force_text(x)
+            'repr': get_obj_repr(x)
         } for x in getattr(instance, field.name).iterator()]
 
     def get_o2m_value(self, instance, field):
         return [{
             'db': self.get_value_for_type(x.pk),
-            'repr': force_text(x)
+            'repr': get_obj_repr(x)
         } for x in getattr(instance, field.name).iterator()]
 
     def get_fk_value(self, instance, field):
