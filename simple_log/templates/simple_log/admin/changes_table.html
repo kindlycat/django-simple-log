@@ -1,0 +1,24 @@
+{% load i18n %}
+
+<table id="change-history" style="width:100%">
+    <thead>
+    <tr>
+        <th scope="col" style="width: 16%">{% trans 'field name'|capfirst %}</th>
+        <th scope="col" style="width: 42%">{% trans 'old values'|capfirst %}</th>
+        <th scope="col" style="width: 42%">{% trans 'new values'|capfirst %}</th>
+    </tr>
+    </thead>
+    <tbody>
+        {% for field in object.get_differences %}
+            <tr>
+                <th>{{ field.label }}</th>
+                <td>
+                    {% include 'simple_log/admin/field_value.html' with value=field.old %}
+                </td>
+                <td>
+                    {% include 'simple_log/admin/field_value.html' with value=field.new %}
+                </td>
+            </tr>
+        {% endfor %}
+    </tbody>
+</table>

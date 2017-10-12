@@ -10,14 +10,14 @@
     <dl>
         {% for k, v in value.items %}
             <dt>{{ k }}</dt>
-            <dd>{% include 'simple_log/field_value.html' with value=v %}</dd>
+            <dd>{% include 'simple_log/admin/field_value.html' with value=v %}</dd>
         {% endfor %}
     </dl>
 {% elif value_type == 'list' %}
     {% if value %}
         <ul>
             {% for val in value %}
-                <li>{% include 'simple_log/field_value.html' with value=val %}</li>
+                <li>{% include 'simple_log/admin/field_value.html' with value=val %}</li>
             {% endfor %}
         </ul>
     {% else %}

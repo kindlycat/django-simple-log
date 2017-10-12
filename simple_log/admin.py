@@ -35,7 +35,7 @@ class SimpleLogModelAdmin(admin.ModelAdmin):
                     'action_time', 'user_repr', 'user_ip')
     list_filter = ('action_flag', 'content_type')
     search_fields = ('object_repr', 'user_repr', 'user_ip')
-    change_form_template = 'simple_log/detail.html'
+    change_form_template = 'simple_log/admin/detail.html'
 
     def __init__(self, model, admin_site, change_list_template=None,
                  history_for_model=None, history_for_object=None):
@@ -74,8 +74,8 @@ class SimpleLogModelAdmin(admin.ModelAdmin):
 
 
 class HistoryModelAdmin(admin.ModelAdmin):
-    change_list_template = 'simple_log/change_list.html'
-    history_change_list_template = 'simple_log/history_change_list.html'
+    change_list_template = 'simple_log/admin/change_list.html'
+    history_change_list_template = 'simple_log/admin/history_change_list.html'
 
     def get_urls(self):
         from django.conf.urls import url

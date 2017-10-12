@@ -24,18 +24,19 @@
 </div>
 {% endblock %}
 
+{% block object-tools %}{% endblock %}
 
 {% block content %}
 <div id="content-main">
     <div class="module">
-        {% include 'simple_log/changes_table.html' with object=original %}
+        {% include 'simple_log/admin/changes_table.html' with object=original %}
     </div>
     {% regroup original.related_logs.all by content_type as related_list %}
     {% for related in related_list %}
         {% for log in related.list %}
             <h1>{{ log }}</h1>
             <div class="module">
-                {% include 'simple_log/changes_table.html' with object=log %}
+                {% include 'simple_log/admin/changes_table.html' with object=log %}
             </div>
         {% endfor %}
     {% endfor %}
