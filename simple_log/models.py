@@ -195,7 +195,6 @@ class SimpleLogAbstractBase(models.Model):
         else:
             return settings.ANONYMOUS_REPR
 
-    @cached_property
     def get_differences(self):
         old = self.old or {}
         new = self.new or {}
