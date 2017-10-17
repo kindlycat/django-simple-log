@@ -122,10 +122,10 @@ class HistoryModelAdmin(admin.ModelAdmin):
         )
 
     def history_view(self, request, object_id, extra_context=None):
-        if not self.has_change_permission(request):
-            raise PermissionDenied
-
         obj = self.get_object(request, object_id, extra_context)
+
+        if not self.has_change_permission(request, obj):
+            raise PermissionDenied
 
         admin_model = self.get_simple_log_admin_model(
             model=self.model,
@@ -141,10 +141,11 @@ class HistoryModelAdmin(admin.ModelAdmin):
 
     def history_detail_view(self, request, object_id, history_id,
                             extra_context=None):
-        if not self.has_change_permission(request):
+        obj = self.get_object(request, object_id, extra_context)
+
+        if not self.has_change_permission(request, obj):
             raise PermissionDenied
 
-        obj = self.get_object(request, object_id, extra_context)
         admin_model = self.get_simple_log_admin_model(
             model=self.model,
             object_id=object_id
