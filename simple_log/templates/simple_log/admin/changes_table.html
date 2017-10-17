@@ -12,10 +12,10 @@
             <tr>
                 <th>{{ field.label }}</th>
                 <td>
-                    {% include 'simple_log/field_value.html' with value=field.old %}
+                    {% include 'simple_log/admin/field_value.html' with value=field.old %}
                 </td>
                 <td>
-                    {% include 'simple_log/field_value.html' with value=field.new %}
+                    {% include 'simple_log/admin/field_value.html' with value=field.new %}
                 </td>
             </tr>
         {% endfor %}
