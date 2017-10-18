@@ -4,8 +4,7 @@ from __future__ import unicode_literals
 from collections import defaultdict
 
 from simple_log.utils import (
-    get_serializer, get_thread_variable, del_thread_variable,
-    get_related_models, get_log_model,
+    get_serializer, get_thread_variable, get_related_models, get_log_model
 )
 from simple_log.conf import settings
 
@@ -39,10 +38,6 @@ def save_logs_on_commit():
             not get_thread_variable('disable_related') and
             any([x.pk for x in logs])):
         save_related(logs)
-
-    del_thread_variable('logs')
-    del_thread_variable('request')
-    del_thread_variable('save_logs_on_commit')
 
 
 def set_initial(instance):

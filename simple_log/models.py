@@ -20,7 +20,9 @@ from simple_log.signals import save_logs_on_commit
 from .conf import settings
 from .utils import (
     get_current_request, get_current_user, get_fields,
-    get_thread_variable, set_thread_variable, get_obj_repr)
+    get_thread_variable, set_thread_variable, get_obj_repr,
+    del_thread_variable
+)
 
 try:
     from django.urls import reverse, NoReverseMatch
@@ -136,17 +138,25 @@ class SimpleLogAbstractBase(models.Model):
         return params
 
     @classmethod
+    def add_to_thread(cls, obj):
+        in_commit = save_logs_on_commit in \
+                    [f[1] for f in connection.run_on_commit]
+        if not in_commit:
+            del_thread_variable('logs')
+            del_thread_variable('request')
+        logs = get_thread_variable('logs', [])
+        logs.append(obj)
+        set_thread_variable('logs', logs)
+        if not in_commit:
+            connection.on_commit(save_logs_on_commit)
+
+    @classmethod
     def log(cls, instance, commit=True, **kwargs):
         obj = cls(**cls.get_log_params(instance, **kwargs))
         obj.instance = instance
         if commit:
             obj.save()
-        logs = get_thread_variable('logs', [])
-        logs.append(obj)
-        set_thread_variable('logs', logs)
-        if not get_thread_variable('save_logs_on_commit'):
-            set_thread_variable('save_logs_on_commit', True)
-            connection.on_commit(save_logs_on_commit)
+        cls.add_to_thread(obj)
         return obj
 
     @cached_property
