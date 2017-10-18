@@ -139,14 +139,14 @@ class SimpleLogAbstractBase(models.Model):
     def log(cls, instance, commit=True, **kwargs):
         obj = cls(**cls.get_log_params(instance, **kwargs))
         obj.instance = instance
+        if commit:
+            obj.save()
         logs = get_thread_variable('logs', [])
         logs.append(obj)
         set_thread_variable('logs', logs)
         if not get_thread_variable('save_logs_on_commit'):
             set_thread_variable('save_logs_on_commit', True)
             connection.on_commit(save_logs_on_commit)
-        if commit:
-            obj.save()
         return obj
 
     @cached_property
