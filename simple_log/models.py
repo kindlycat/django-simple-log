@@ -21,7 +21,7 @@ from .conf import settings
 from .utils import (
     get_current_request, get_current_user, get_fields,
     get_thread_variable, set_thread_variable, get_obj_repr,
-    del_thread_variable
+    del_thread_variable, get_serializer
 )
 
 try:
@@ -151,7 +151,26 @@ class SimpleLogAbstractBase(models.Model):
             connection.on_commit(save_logs_on_commit)
 
     @classmethod
-    def log(cls, instance, commit=True, **kwargs):
+    def set_initial(cls, instance):
+        if instance.pk and \
+                not hasattr(instance, settings.OLD_INSTANCE_ATTR_NAME):
+            setattr(
+                instance,
+                settings.OLD_INSTANCE_ATTR_NAME,
+                instance.__class__.objects.filter(pk=instance.pk)
+                                          .select_related().first()
+            )
+        if not hasattr(instance, '_old_values'):
+            serializer = get_serializer(instance.__class__)()
+            instance._old_values = serializer(
+                getattr(instance, settings.OLD_INSTANCE_ATTR_NAME, None),
+                override=getattr(instance, 'simple_log_override', None)
+            )
+
+    @classmethod
+    def log(cls, instance, commit=True, with_initial=False, **kwargs):
+        if with_initial:
+            cls.set_initial(instance)
         obj = cls(**cls.get_log_params(instance, **kwargs))
         obj.instance = instance
         if commit:

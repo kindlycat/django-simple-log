@@ -40,26 +40,11 @@ def save_logs_on_commit():
         save_related(logs)
 
 
-def set_initial(instance):
-    if instance.pk and not hasattr(instance, settings.OLD_INSTANCE_ATTR_NAME):
-        setattr(
-            instance,
-            settings.OLD_INSTANCE_ATTR_NAME,
-            instance.__class__.objects.filter(pk=instance.pk)
-                                      .select_related().first()
-        )
-    if not hasattr(instance, '_old_values'):
-        serializer = get_serializer(instance.__class__)()
-        instance._old_values = serializer(
-            getattr(instance, settings.OLD_INSTANCE_ATTR_NAME, None),
-            override=getattr(instance, 'simple_log_override', None)
-        )
-
-
 def log_pre_save_delete(sender, instance, **kwargs):
     if get_thread_variable('disable_logging'):
         return
-    set_initial(instance)
+    SimpleLog = get_log_model()
+    SimpleLog.set_initial(instance)
 
 
 def log_post_save(sender, instance, created, **kwargs):
@@ -89,12 +74,12 @@ def log_post_delete(sender, instance, **kwargs):
 def log_m2m_change(sender, instance, action, **kwargs):
     if get_thread_variable('disable_logging'):
         return
+    SimpleLog = get_log_model()
 
     if action in ('pre_add', 'pre_remove', 'pre_clear'):
-        set_initial(instance)
+        SimpleLog.set_initial(instance)
 
     if action in ('post_add', 'post_remove', 'post_clear'):
-        SimpleLog = get_log_model()
         if not hasattr(instance, '_log'):
             instance._log = SimpleLog.log(
                 instance,
