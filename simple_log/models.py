@@ -168,10 +168,12 @@ class SimpleLogAbstractBase(models.Model):
             )
 
     @classmethod
-    def log(cls, instance, commit=True, with_initial=False, **kwargs):
+    def log(cls, instance, commit=True, with_initial=False,
+            force_save=False, **kwargs):
         if with_initial:
             cls.set_initial(instance)
         obj = cls(**cls.get_log_params(instance, **kwargs))
+        obj.force_save = force_save
         obj.instance = instance
         if commit:
             obj.save()

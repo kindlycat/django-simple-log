@@ -31,7 +31,7 @@ def save_logs_on_commit():
         serializer = get_serializer(instance.__class__)()
         log.old = getattr(instance, '_old_values', None)
         log.new = serializer(instance)
-        if log.old != log.new:
+        if log.force_save or log.old != log.new:
             log.save()
 
     if (settings.SAVE_RELATED and
