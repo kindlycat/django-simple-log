@@ -141,9 +141,6 @@ class SimpleLogAbstractBase(models.Model):
     def add_to_thread(cls, obj):
         in_commit = save_logs_on_commit in \
                     [f[1] for f in connection.run_on_commit]
-        if not in_commit:
-            del_thread_variable('logs')
-            del_thread_variable('request')
         logs = get_thread_variable('logs', [])
         logs.append(obj)
         set_thread_variable('logs', logs)
