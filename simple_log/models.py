@@ -21,7 +21,7 @@ from .conf import settings
 from .utils import (
     get_current_request, get_current_user, get_fields,
     get_thread_variable, set_thread_variable, get_obj_repr,
-    del_thread_variable, get_serializer
+    get_serializer
 )
 
 try:
