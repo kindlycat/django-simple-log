@@ -556,6 +556,7 @@ class AdminTestCase(BaseTestCaseMixin, TransactionTestCase):
         self.assertQuerysetEqual(first_sl.related_logs.all(), [])
         self.assertQuerysetEqual(second_sl.related_logs.all(),
                                  [repr(first_sl)])
+        self.assertEqual(first_sl.user, second_sl.user)
 
     def test_change_object_only_formset(self):
         params = {'char_field': 'test'}
@@ -583,6 +584,7 @@ class AdminTestCase(BaseTestCaseMixin, TransactionTestCase):
         self.assertQuerysetEqual(first_sl.related_logs.all(), [])
         self.assertQuerysetEqual(second_sl.related_logs.all(),
                                  [repr(first_sl)])
+        self.assertEqual(first_sl.user, second_sl.user)
 
 
 class CustomViewTestCase(BaseTestCaseMixin, TransactionTestCase):

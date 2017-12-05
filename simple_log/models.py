@@ -21,7 +21,7 @@ from .conf import settings
 from .utils import (
     get_current_request, get_current_user, get_fields,
     get_thread_variable, set_thread_variable, get_obj_repr,
-    get_serializer
+    get_serializer, del_thread_variable
 )
 
 try:
@@ -142,6 +142,11 @@ class SimpleLogAbstractBase(models.Model):
         in_commit = save_logs_on_commit in \
                     [f[1] for f in connection.run_on_commit]
         logs = get_thread_variable('logs', [])
+        # prevent memory usage in non transaction test cases
+        if not in_commit and logs:
+            del_thread_variable('logs')
+            del_thread_variable('request')
+            logs = []
         logs.append(obj)
         set_thread_variable('logs', logs)
         if not in_commit:
