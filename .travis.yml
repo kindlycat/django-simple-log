@@ -19,7 +19,7 @@ env:
     - DJANGO_VERSION='django>=1.11.0,<2.0'
     - DJANGO_VERSION='django>=2.0.0,<2.1'
 install:
-  - pip install -q $DJANGO_VERSION
+  - pip install $DJANGO_VERSION
   - pip install -r tests/requirements.pip
   - pip install coveralls
   - pip install flake8
