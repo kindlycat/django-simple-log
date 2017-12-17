@@ -117,7 +117,6 @@ class Migration(migrations.Migration):
             ],
             options={
                 'proxy': True,
-                'indexes': [],
             },
             bases=('test_app.testmodel',),
         ),
