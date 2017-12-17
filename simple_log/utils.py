@@ -149,3 +149,11 @@ def get_obj_repr(obj):
     if hasattr(obj, 'simple_log_repr'):
         return force_text(obj.simple_log_repr())
     return force_text(obj)
+
+
+def user_is_authenticated(user):
+    try:
+        return user.is_authenticated()
+    except TypeError:
+        # In django==2.0 is_authenticated is boolean
+        return user.is_authenticated

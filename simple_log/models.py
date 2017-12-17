@@ -21,7 +21,7 @@ from .conf import settings
 from .utils import (
     get_current_request, get_current_user, get_fields,
     get_thread_variable, set_thread_variable, get_obj_repr,
-    get_serializer, del_thread_variable
+    get_serializer, del_thread_variable, user_is_authenticated,
 )
 
 try:
@@ -129,7 +129,7 @@ class SimpleLogAbstractBase(models.Model):
             ),
             object_id=instance.pk,
             object_repr=get_obj_repr(instance),
-            user=user if user and user.is_authenticated() else None,
+            user=user if user and user_is_authenticated(user) else None,
             user_repr=cls.get_user_repr(user),
             user_ip=cls.get_ip()
         )
@@ -223,7 +223,7 @@ class SimpleLogAbstractBase(models.Model):
     def get_user_repr(cls, user):
         if user is None:
             return settings.NONE_USER_REPR
-        elif user.is_authenticated():
+        elif user_is_authenticated(user):
             return force_text(user)
         else:
             return settings.ANONYMOUS_REPR

@@ -8,7 +8,14 @@ from django.utils.encoding import force_text
 register = Library()
 
 
-@register.assignment_tag()
+try:
+    assignment = register.assignment_tag
+except AttributeError:
+    # In django==2.0 use simple_tag
+    assignment = register.simple_tag
+
+
+@assignment()
 def get_type(value):
     if isinstance(value, six.string_types):
         return 'str'

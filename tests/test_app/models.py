@@ -26,7 +26,8 @@ class TestModel(models.Model):
         verbose_name='Fk field',
         related_name='test_entries_fk',
         null=True,
-        blank=True
+        blank=True,
+        on_delete=models.SET_NULL,
     )
     m2m_field = models.ManyToManyField(
         'test_app.OtherModel',
@@ -103,7 +104,11 @@ class ThirdModel(models.Model):
 
 @python_2_unicode_compatible
 class RelatedModel(models.Model):
-    third_model = models.ForeignKey(ThirdModel, related_name='related_entries')
+    third_model = models.ForeignKey(
+        ThirdModel,
+        related_name='related_entries',
+        on_delete=models.CASCADE,
+    )
     char_field = models.CharField(verbose_name='Char field', max_length=100)
 
     class Meta:
