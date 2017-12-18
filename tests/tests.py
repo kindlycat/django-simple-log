@@ -65,14 +65,15 @@ class BaseTestCaseMixin(object):
     @atomic
     def add_object(self, model, params, **kwargs):
         params = self.prepare_params(model, params)
-        params.update(kwargs.get('additional_params', {}))
+        params.update(**kwargs.get('additional_params', {}))
         headers = kwargs.get('headers', {})
         self.client.post(self.get_add_url(model), data=params, **headers)
         return model.objects.latest('pk')
 
     @atomic
     def change_object(self, obj, params, **kwargs):
-        headers = kwargs.get('headers', {})
+        headers = kwargs.pop('headers', {})
+        params.update(**kwargs.get('additional_params', {}))
         self.client.post(
             self.get_change_url(obj._meta.model, obj.pk),
             data=params, **headers
@@ -544,8 +545,6 @@ class AdminTestCase(BaseTestCaseMixin, TransactionTestCase):
         additional_params = {
             'related_entries-TOTAL_FORMS': 1,
             'related_entries-INITIAL_FORMS': 0,
-            'related_entries-MIN_NUM_FORMS': 0,
-            'related_entries-MAX_NUM_FORMS': 1000,
             'related_entries-0-char_field': 'test_inline'
         }
         self.add_object(ThirdModel, params,
@@ -563,19 +562,17 @@ class AdminTestCase(BaseTestCaseMixin, TransactionTestCase):
         additional_params = {
             'related_entries-TOTAL_FORMS': 1,
             'related_entries-INITIAL_FORMS': 0,
-            'related_entries-MIN_NUM_FORMS': 0,
-            'related_entries-MAX_NUM_FORMS': 1000,
             'related_entries-0-char_field': 'test_inline'
         }
         obj = self.add_object(ThirdModel, params,
                               additional_params=additional_params)
+        related = obj.related_entries.latest('pk')
         initial_count = SimpleLog.objects.count()
         additional_params = {
             'related_entries-TOTAL_FORMS': 1,
             'related_entries-INITIAL_FORMS': 1,
-            'related_entries-MIN_NUM_FORMS': 0,
-            'related_entries-MAX_NUM_FORMS': 1000,
-            'related_entries-0-char_field': 'changed_title'
+            'related_entries-0-id': related.pk,
+            'related_entries-0-char_field': 'changed_title',
         }
         self.change_object(obj, params, additional_params=additional_params)
         self.assertEqual(SimpleLog.objects.count(), initial_count + 2)

@@ -15,7 +15,7 @@ from simple_log.conf import settings
 __all__ = ['set_thread_variable', 'get_thread_variable', 'del_thread_variable',
            'get_log_model', 'get_current_user', 'get_current_request',
            'get_serializer', 'disable_logging', 'get_model_list',
-           'disable_related', 'get_obj_repr']
+           'disable_related', 'get_obj_repr', 'get_related_models']
 
 
 _thread_locals = local()
