@@ -14,7 +14,8 @@ def save_related(logs):
     map_related = defaultdict(list)
     for saved_log in [x for x in logs if x.pk]:
         instance = saved_log.instance
-        for related in [k for k in logs if is_related_to(instance, k.instance)]:
+        for related in [k for k in logs if
+                        is_related_to(instance, k.instance)]:
             if not related.pk:
                 related.save()
             map_related[related].append(saved_log)

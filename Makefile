@@ -1,8 +1,11 @@
-.PHONY: clean, build
+.PHONY: clean, build, flake
 
 clean:
-	rm -r build dist *.egg-info
+	rm -rf build dist *.egg-info
 
 build:
 	python setup.py sdist
 	python setup.py bdist_wheel
+
+flake:
+	flake8 --exclude=migrations .
