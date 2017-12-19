@@ -15,7 +15,7 @@ from simple_log.conf import settings
 __all__ = ['set_thread_variable', 'get_thread_variable', 'del_thread_variable',
            'get_log_model', 'get_current_user', 'get_current_request',
            'get_serializer', 'disable_logging', 'get_model_list',
-           'disable_related', 'get_obj_repr', 'get_related_models']
+           'disable_related', 'get_obj_repr', 'is_related_to']
 
 
 _thread_locals = local()
@@ -121,10 +121,16 @@ def get_model_list():
     return model_list
 
 
-@lru_cache.lru_cache()
-def get_related_models(model):
-    return [x.related_model for x in model._meta.get_fields()
-            if x.many_to_one or x.one_to_one]
+def is_related_to(instance, to_instance):
+    to_instance_pk = to_instance.pk
+    if not to_instance_pk:
+        old = getattr(to_instance, settings.OLD_INSTANCE_ATTR_NAME, None)
+        to_instance_pk = getattr(old, 'pk', None)
+    for field in [x for x in instance._meta.get_fields()
+                  if x.related_model == to_instance.__class__ and x.concrete]:
+        if getattr(instance, field.attname) == to_instance_pk or \
+              getattr(instance._old_instance, field.attname) == to_instance_pk:
+            return True
 
 
 @contextmanager

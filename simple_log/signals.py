@@ -4,7 +4,7 @@ from __future__ import unicode_literals
 from collections import defaultdict
 
 from simple_log.utils import (
-    get_serializer, get_thread_variable, get_related_models, get_log_model,
+    get_serializer, get_thread_variable, is_related_to, get_log_model,
     del_thread_variable
 )
 from simple_log.conf import settings
@@ -14,10 +14,7 @@ def save_related(logs):
     map_related = defaultdict(list)
     for saved_log in [x for x in logs if x.pk]:
         instance = saved_log.instance
-        related_models = get_related_models(instance.__class__)
-        for related in [k for k in logs
-                        if k.instance.__class__ in related_models and
-                        k != saved_log]:
+        for related in [k for k in logs if is_related_to(instance, k.instance)]:
             if not related.pk:
                 related.save()
             map_related[related].append(saved_log)
