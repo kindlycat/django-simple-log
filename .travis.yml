@@ -9,12 +9,16 @@ python:
   - 2.7
   - 3.5
   - 3.6
-
+env:
+  - DJANGO="1.8"
+  - DJANGO="1.11"
+  - DJANGO="2.0"
+  - DJANGO="master"
 install:
-  - pip install tox-travis
-
-after_script:
-  - coveralls
+  - pip install tox-travis coveralls
 
 script:
   - coverage run --source=simple_log --omit='simple_log/management/*,simple_log/templates/*,simple_log/admin.py' tox
+
+after_script:
+  - coveralls
