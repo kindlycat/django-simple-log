@@ -13,7 +13,7 @@ def readme():
 
 setup(
     name='django-simple-log',
-    version='0.1.27',
+    version='0.1.28',
     description='Logging django models changes.',
     long_description=readme(),
     keywords=['django', 'log', 'audit', 'history'],

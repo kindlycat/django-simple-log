@@ -122,14 +122,18 @@ def get_model_list():
 
 
 def is_related_to(instance, to_instance):
+    if instance == to_instance:
+        return False
+    old_instance = getattr(instance, settings.OLD_INSTANCE_ATTR_NAME, None)
     to_instance_pk = to_instance.pk
     if not to_instance_pk:
-        old = getattr(to_instance, settings.OLD_INSTANCE_ATTR_NAME, None)
-        to_instance_pk = getattr(old, 'pk', None)
+        # If deleted
+        old_to_instance = getattr(to_instance, settings.OLD_INSTANCE_ATTR_NAME, None)
+        to_instance_pk = getattr(old_to_instance, 'pk', None)
     for field in [x for x in instance._meta.get_fields()
                   if x.related_model == to_instance.__class__ and x.concrete]:
         if getattr(instance, field.attname) == to_instance_pk or \
-              getattr(instance._old_instance, field.attname) == to_instance_pk:
+              getattr(old_instance, field.attname) == to_instance_pk:
             return True
 
 
