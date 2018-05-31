@@ -1,11 +1,10 @@
 from django.contrib import admin
 from django.contrib.admin import register
 
-from simple_log.admin import SimpleLogModelAdmin, HistoryModelAdmin
+from simple_log.admin import HistoryModelAdmin, SimpleLogModelAdmin
 from simple_log.models import SimpleLog
 from tests.test_app.models import (
-    OtherModel, TestModel, TestModelProxy, RelatedModel,
-    ThirdModel
+    OtherModel, RelatedModel, TestModel, TestModelProxy, ThirdModel
 )
 
 

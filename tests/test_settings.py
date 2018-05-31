@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
-from .settings import * # noqa
+from .settings import *  # noqa
+
 
 DEBUG = False

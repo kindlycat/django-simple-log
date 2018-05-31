@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-from threading import local
-
 from contextlib import contextmanager
+
+from request_vars.utils import del_variable, get_variable, set_variable
+
 from django.apps import apps as django_apps
 from django.core.exceptions import ImproperlyConfigured
 from django.utils import lru_cache, six
@@ -12,26 +13,10 @@ from django.utils.module_loading import import_string
 
 from simple_log.conf import settings
 
-__all__ = ['set_thread_variable', 'get_thread_variable', 'del_thread_variable',
-           'get_log_model', 'get_current_user', 'get_current_request',
-           'get_serializer', 'disable_logging', 'get_model_list',
-           'disable_related', 'get_obj_repr', 'is_related_to']
 
-
-_thread_locals = local()
-
-
-def set_thread_variable(key, val):
-    setattr(_thread_locals, key, val)
-
-
-def get_thread_variable(key, default=None):
-    return getattr(_thread_locals, key, default)
-
-
-def del_thread_variable(key):
-    if hasattr(_thread_locals, key):
-        return delattr(_thread_locals, key)
+__all__ = ['get_log_model', 'get_current_user', 'get_current_request',
+           'get_serializer', 'disable_logging', 'get_model_list', 'get_label',
+           'disable_related', 'get_obj_repr', 'is_related_to', 'get_fields']
 
 
 def check_log_model(model):
@@ -68,7 +53,7 @@ def get_serializer(model=None):
 
 
 def get_current_request_default():
-    return get_thread_variable('request')
+    return get_variable('request')
 
 
 @lru_cache.lru_cache(maxsize=None)
@@ -141,31 +126,23 @@ def is_related_to(instance, to_instance):
 
 @contextmanager
 def disable_logging():
-    set_thread_variable('disable_logging', True)
+    set_variable('disable_logging', True)
     try:
         yield
     finally:
-        del_thread_variable('disable_logging')
+        del_variable('disable_logging')
 
 
 @contextmanager
 def disable_related():
-    set_thread_variable('disable_related', True)
+    set_variable('disable_related', True)
     try:
         yield
     finally:
-        del_thread_variable('disable_related')
+        del_variable('disable_related')
 
 
 def get_obj_repr(obj):
     if hasattr(obj, 'simple_log_repr'):
         return force_text(obj.simple_log_repr())
     return force_text(obj)
-
-
-def user_is_authenticated(user):
-    try:
-        return user.is_authenticated()
-    except TypeError:
-        # In django==2.0 is_authenticated is boolean
-        return user.is_authenticated

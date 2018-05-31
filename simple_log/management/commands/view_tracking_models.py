@@ -4,7 +4,7 @@ from __future__ import unicode_literals
 from django.apps import apps
 from django.core.management.base import BaseCommand
 
-from simple_log.utils import get_fields, get_model_list, get_label
+from simple_log.utils import get_fields, get_label, get_model_list
 
 
 class Command(BaseCommand):

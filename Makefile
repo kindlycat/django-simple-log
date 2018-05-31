@@ -6,6 +6,3 @@ clean:
 build:
 	python setup.py sdist
 	python setup.py bdist_wheel
-
-flake:
-	flake8 --exclude=migrations .

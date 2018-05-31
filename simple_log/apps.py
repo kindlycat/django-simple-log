@@ -3,14 +3,14 @@ from __future__ import unicode_literals
 
 from django.apps import AppConfig
 from django.db.models.signals import (
-    pre_save, post_save, pre_delete, post_delete, m2m_changed
-)
-from simple_log.signals import (
-    log_pre_save_delete, log_post_save, log_post_delete, log_m2m_change
+    m2m_changed, post_delete, post_save, pre_delete, pre_save
 )
 from django.utils.translation import ugettext_lazy as _
 
 import simple_log
+from simple_log.signals import (
+    log_m2m_change, log_post_delete, log_post_save, log_pre_save_delete
+)
 from simple_log.utils import get_label, get_model_list
 
 

@@ -8,12 +8,9 @@ from django.contrib.admin.utils import quote
 from django.contrib.admin.views.main import ChangeList
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import PermissionDenied
-from simple_log.utils import get_log_model
+from django.urls import reverse
 
-try:
-    from django.urls import reverse
-except ImportError:
-    from django.core.urlresolvers import reverse
+from simple_log.utils import get_log_model
 
 
 class SimpleLogChangeList(ChangeList):

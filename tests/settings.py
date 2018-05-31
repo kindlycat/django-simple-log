@@ -1,12 +1,3 @@
-# -*- coding: utf-8 -*-
-from __future__ import unicode_literals
-
-import os
-from distutils.version import LooseVersion
-
-import django
-
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = '!+_(r+32d!u$y6c*28p0+^3zy7)j033=69h@0yd=#bh2e-y_02'
 DEBUG = True
 
@@ -24,7 +15,7 @@ INSTALLED_APPS = [
     'tests.test_app',
 ]
 
-middleware = [
+MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -33,12 +24,8 @@ middleware = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 
-    'simple_log.middleware.ThreadLocalMiddleware',
+    'request_vars.middleware.RequestVarsMiddleware',
 ]
-if LooseVersion(django.get_version()) < LooseVersion('1.10'):
-    MIDDLEWARE_CLASSES = middleware
-else:
-    MIDDLEWARE = middleware
 
 ROOT_URLCONF = 'tests.urls'
 
@@ -60,13 +47,9 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'tests.wsgi.application'
 
-db_engine = 'django.db.backends.postgresql_psycopg2'
-if LooseVersion(django.get_version()) < LooseVersion('1.9'):
-    db_engine = 'transaction_hooks.backends.postgresql_psycopg2'
-
 DATABASES = {
     'default': {
-        'ENGINE': db_engine,
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
         'NAME': 'test_db',
     }
 }

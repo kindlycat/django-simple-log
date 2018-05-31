@@ -2,32 +2,30 @@
 from __future__ import absolute_import, unicode_literals
 
 import datetime
-
 import os
+
+from request_vars.utils import del_variable, get_variable, set_variable
+
 from django.conf import settings as django_settings
 from django.contrib.admin.utils import quote
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_ipv46_address
-from django.db import models, connection
+from django.db import connection, models
+from django.urls import NoReverseMatch, reverse
 from django.utils import timezone
 from django.utils.encoding import force_text, python_2_unicode_compatible
 from django.utils.functional import cached_property
 from django.utils.translation import ugettext_lazy as _
 
-from simple_log.fields import SimpleManyToManyField, SimpleJSONField
+from simple_log.fields import SimpleJSONField, SimpleManyToManyField
 from simple_log.signals import save_logs_on_commit
+
 from .conf import settings
 from .utils import (
-    get_current_request, get_current_user, get_fields,
-    get_thread_variable, set_thread_variable, get_obj_repr,
-    get_serializer, del_thread_variable, user_is_authenticated,
+    get_current_request, get_current_user, get_fields, get_obj_repr,
+    get_serializer
 )
-
-try:
-    from django.urls import reverse, NoReverseMatch
-except ImportError:
-    from django.core.urlresolvers import reverse, NoReverseMatch
 
 
 __all__ = ['SimpleLogAbstractBase', 'SimpleLogAbstract', 'SimpleLog',
@@ -129,7 +127,7 @@ class SimpleLogAbstractBase(models.Model):
             ),
             object_id=instance.pk,
             object_repr=get_obj_repr(instance),
-            user=user if user and user_is_authenticated(user) else None,
+            user=user if user and user.is_authenticated else None,
             user_repr=cls.get_user_repr(user),
             user_ip=cls.get_ip()
         )
@@ -139,18 +137,20 @@ class SimpleLogAbstractBase(models.Model):
 
     @classmethod
     def add_to_thread(cls, obj):
-        in_commit = save_logs_on_commit in \
-                    [f[1] for f in connection.run_on_commit]
-        logs = get_thread_variable('logs', [])
+        in_commit = 'sl_in_commit' in \
+                    [f[1].__name__ for f in connection.run_on_commit]
+        logs = get_variable('logs', [])
         # prevent memory usage in non transaction test cases
         if not in_commit and logs:
-            del_thread_variable('logs')
-            del_thread_variable('request')
+            del_variable('logs')
             logs = []
         logs.append(obj)
-        set_thread_variable('logs', logs)
+        set_variable('logs', logs)
+
         if not in_commit:
-            connection.on_commit(save_logs_on_commit)
+            def sl_in_commit():
+                save_logs_on_commit(logs)
+            connection.on_commit(sl_in_commit)
 
     @classmethod
     def set_initial(cls, instance):
@@ -223,7 +223,7 @@ class SimpleLogAbstractBase(models.Model):
     def get_user_repr(cls, user):
         if user is None:
             return settings.NONE_USER_REPR
-        elif user_is_authenticated(user):
+        elif user.is_authenticated:
             return force_text(user)
         else:
             return settings.ANONYMOUS_REPR

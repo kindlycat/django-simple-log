@@ -1,24 +1,12 @@
 from contextlib import contextmanager
 
 from django.db.models.signals import (
-    pre_save, post_save, pre_delete, post_delete, m2m_changed
+    m2m_changed, post_delete, post_save, pre_delete, pre_save
 )
 
 from simple_log.signals import (
-    log_pre_save_delete, log_post_save, log_post_delete, log_m2m_change
+    log_m2m_change, log_post_delete, log_post_save, log_pre_save_delete
 )
-
-try:
-    from django.test.utils import isolate_lru_cache
-except ImportError:
-    @contextmanager
-    def isolate_lru_cache(lru_cache_object):
-        """Clear the cache of an LRU cache object on entering and exiting."""
-        lru_cache_object.cache_clear()
-        try:
-            yield
-        finally:
-            lru_cache_object.cache_clear()
 
 
 @contextmanager

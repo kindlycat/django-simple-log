@@ -5,6 +5,7 @@ from django.template import Library
 from django.utils import six
 from django.utils.encoding import force_text
 
+
 register = Library()
 
 

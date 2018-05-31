@@ -41,7 +41,7 @@ Add middleware for detecting user:
 
     MIDDLEWARE = [
         ...
-        'simple_log.middleware.ThreadLocalMiddleware',
+        'request_vars.middleware.RequestVarsMiddleware',
         ...
     ]
 

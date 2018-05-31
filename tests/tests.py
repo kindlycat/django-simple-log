@@ -7,7 +7,9 @@ from django.contrib.auth.models import User
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ImproperlyConfigured
 from django.db.transaction import atomic
-from django.test import override_settings, TransactionTestCase
+from django.test import TransactionTestCase, override_settings
+from django.test.utils import isolate_lru_cache
+from django.urls import reverse
 from django.utils import timezone
 from django.utils.encoding import force_text
 
@@ -15,24 +17,20 @@ from simple_log.conf import settings
 from simple_log.models import SimpleLog, SimpleLogAbstract
 from simple_log.templatetags.simple_log_tags import get_type
 from simple_log.utils import (
-    get_fields, get_log_model, disable_logging, get_serializer, get_model_list,
-    disable_related
+    disable_logging, disable_related, get_fields, get_log_model,
+    get_model_list, get_serializer
 )
+
 from .test_app.models import (
-    OtherModel, TestModel, SwappableLogModel, CustomSerializer,
-    TestModelProxy, ThirdModel, RelatedModel
+    CustomSerializer, OtherModel, RelatedModel, SwappableLogModel, TestModel,
+    TestModelProxy, ThirdModel
 )
-from .utils import isolate_lru_cache
+
 
 try:
     from unittest import mock
 except ImportError:
     import mock
-
-try:
-    from django.urls import reverse
-except ImportError:
-    from django.core.urlresolvers import reverse
 
 
 class BaseTestCaseMixin(object):
@@ -454,21 +452,23 @@ class BaseTestCaseMixin(object):
 
     def test_disable_log(self):
         initial_count = SimpleLog.objects.count()
+        params = {
+            'char_field': 'test',
+            'fk_field': self.other_model,
+            'm2m_field': [self.other_model],
+            'choice_field': TestModel.TWO
+        }
         with disable_logging():
-            params = {
-                'char_field': 'test',
-                'fk_field': self.other_model,
-                'm2m_field': [self.other_model],
-                'choice_field': TestModel.TWO
-            }
             obj = self.add_object(TestModel, params)
-            params = {
-                'char_field': 'test2',
-                'fk_field': '',
-                'm2m_field': [],
-                'choice_field': TestModel.ONE
-            }
+        params = {
+            'char_field': 'test2',
+            'fk_field': '',
+            'm2m_field': [],
+            'choice_field': TestModel.ONE
+        }
+        with disable_logging():
             self.change_object(obj, params)
+        with disable_logging():
             self.delete_object(obj)
         self.assertEqual(SimpleLog.objects.count(), initial_count)
 

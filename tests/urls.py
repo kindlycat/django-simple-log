@@ -1,15 +1,14 @@
 # -*- coding: utf-8 -*-
-from __future__ import unicode_literals, absolute_import
+from __future__ import absolute_import, unicode_literals
 
 from django.conf.urls import url
 from django.contrib import admin
-from django.views.generic import CreateView
-from django.views.generic import DeleteView
-from django.views.generic import UpdateView
+from django.views.generic import CreateView, DeleteView, UpdateView
 
 from tests.test_app.models import (
-    TestModel, OtherModel, TestModelProxy, ThirdModel
+    OtherModel, TestModel, TestModelProxy, ThirdModel
 )
+
 
 urlpatterns = [
     url(r'^admin/', admin.site.urls),

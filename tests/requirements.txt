@@ -1,6 +1,4 @@
 psycopg2
 mock
 django-jsonfield
-django-transaction-hooks
 tblib
-coveralls
