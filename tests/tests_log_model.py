@@ -7,7 +7,8 @@ from django.test import TransactionTestCase
 from django.urls import reverse
 
 from simple_log.models import SimpleLog
-from tests.test_app.models import OtherModel, TestModel
+
+from .test_app.models import OtherModel, TestModel
 
 
 class LogModelTestCase(TransactionTestCase):

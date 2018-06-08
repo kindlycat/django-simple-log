@@ -4,7 +4,8 @@ from __future__ import unicode_literals
 from django.test import TransactionTestCase
 
 from simple_log.templatetags.simple_log_tags import get_type
-from tests.test_app.models import TestModel
+
+from .test_app.models import TestModel
 
 
 class UtilsTestCase(TransactionTestCase):
