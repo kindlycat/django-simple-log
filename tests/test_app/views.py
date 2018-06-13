@@ -5,7 +5,26 @@ from django.db.transaction import atomic
 from django.forms import inlineformset_factory
 from django.views.generic import CreateView, DeleteView, UpdateView
 
+from simple_log.utils import disable_logging, disable_related
 from tests.test_app.models import RelatedModel, ThirdModel
+from tests.utils import noop_ctx
+
+
+class DisableMixin(object):
+    @atomic
+    def dispatch(self, request, *args, **kwargs):
+        dl_ctx = 'disable_logging_context' in request.POST
+        dl_dec = 'disable_logging_decorator' in request.POST
+        dr_ctx = 'disable_related_context' in request.POST
+        dr_dec = 'disable_related_decorator' in request.POST
+        super_dispatch = super(DisableMixin, self).dispatch
+        with disable_logging() if dl_ctx else noop_ctx(),\
+                disable_related() if dr_ctx else noop_ctx():
+            if dl_dec:
+                super_dispatch = disable_logging()(super_dispatch)
+            if dr_dec:
+                super_dispatch = disable_related()(super_dispatch)
+            return super_dispatch(request, *args, **kwargs)
 
 
 class FormsetViewMixin(object):
@@ -46,17 +65,17 @@ class FormsetViewMixin(object):
         return super(FormsetViewMixin, self).form_valid(form)
 
 
-class TestCreateView(FormsetViewMixin, CreateView):
+class TestCreateView(DisableMixin, FormsetViewMixin, CreateView):
     fields = '__all__'
     success_url = '.'
     template_name = 'form.html'
 
 
-class TestUpdateView(FormsetViewMixin, UpdateView):
+class TestUpdateView(DisableMixin, FormsetViewMixin, UpdateView):
     fields = '__all__'
     success_url = '.'
     template_name = 'form.html'
 
 
-class TestDeleteView(DeleteView):
+class TestDeleteView(DisableMixin, DeleteView):
     success_url = '.'

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-from contextlib import contextmanager
+from functools import wraps
 
 from request_vars.utils import del_variable, get_variable, set_variable
 
@@ -16,7 +16,8 @@ from simple_log.conf import settings
 
 __all__ = ['get_log_model', 'get_current_user', 'get_current_request',
            'get_serializer', 'disable_logging', 'get_model_list', 'get_label',
-           'disable_related', 'get_obj_repr', 'is_related_to', 'get_fields']
+           'disable_related', 'get_obj_repr', 'is_related_to', 'get_fields',
+           'ContextDecorator']
 
 
 def check_log_model(model):
@@ -124,21 +125,48 @@ def is_related_to(instance, to_instance):
             return True
 
 
-@contextmanager
-def disable_logging():
-    set_variable('disable_logging', True)
-    try:
-        yield
-    finally:
+class ContextDecorator(object):
+    """
+    A base class or mixin that enables context managers to work as decorators.
+
+    Backport for python 2.7
+    """
+
+    def _recreate_cm(self):
+        """Return a recreated instance of self.
+
+        Allows an otherwise one-shot context manager like
+        _GeneratorContextManager to support use as
+        a decorator via implicit recreation.
+
+        This is a private interface just for _GeneratorContextManager.
+        See issue #11647 for details.
+        """
+        return self
+
+    def __call__(self, func):
+        @wraps(func)
+        def inner(*args, **kwds):
+            with self._recreate_cm():
+                return func(*args, **kwds)
+        return inner
+
+
+class disable_logging(ContextDecorator):
+    def __enter__(self):
+        set_variable('disable_logging', True)
+        return self
+
+    def __exit__(self, *exc):
         del_variable('disable_logging')
 
 
-@contextmanager
-def disable_related():
-    set_variable('disable_related', True)
-    try:
-        yield
-    finally:
+class disable_related(ContextDecorator):
+    def __enter__(self):
+        set_variable('disable_related', True)
+        return self
+
+    def __exit__(self, *exc):
         del_variable('disable_related')
 
 
