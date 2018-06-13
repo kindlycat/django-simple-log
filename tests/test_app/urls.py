@@ -7,7 +7,7 @@ from django.contrib import admin
 from tests.test_app.models import (
     OtherModel, TestModel, TestModelProxy, ThirdModel
 )
-from tests.test_app.views import TestCreateView, TestUpdateView, TestDeleteView
+from tests.test_app.views import TestCreateView, TestDeleteView, TestUpdateView
 
 
 urlpatterns = [

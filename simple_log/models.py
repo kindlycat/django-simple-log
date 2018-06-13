@@ -177,6 +177,7 @@ class SimpleLogAbstractBase(models.Model):
         obj = cls(**cls.get_log_params(instance, **kwargs))
         obj.force_save = force_save
         obj.instance = instance
+        obj.disable_related = get_variable('disable_related', False)
         if commit:
             obj.save()
         cls.add_to_thread(obj)

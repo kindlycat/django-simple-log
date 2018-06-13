@@ -466,30 +466,6 @@ class BaseTestCaseMixin(object):
             self.delete_object(obj)
         self.assertEqual(SimpleLog.objects.count(), initial_count)
 
-    def test_disable_related(self):
-        initial_count = SimpleLog.objects.count()
-        params = {
-            'char_field': 'test',
-            'fk_field': self.other_model,
-            'm2m_field': [self.other_model],
-            'choice_field': TestModel.TWO
-        }
-        obj = self.add_object(TestModel, params)
-        with atomic():
-            with disable_related():
-                params = {
-                    'char_field': 'test2',
-                    'fk_field': '',
-                    'm2m_field': [],
-                    'choice_field': TestModel.ONE
-                }
-                self.change_object(obj, params)
-        self.assertEqual(SimpleLog.objects.count(), initial_count + 2)
-        first_sl = SimpleLog.objects.all()[0]
-        second_sl = SimpleLog.objects.all()[1]
-        self.assertQuerysetEqual(first_sl.related_logs.all(), [])
-        self.assertQuerysetEqual(second_sl.related_logs.all(), [])
-
     def test_proxy_model(self):
         initial_count = SimpleLog.objects.count()
         params = {'char_field': 'test'}
@@ -529,11 +505,7 @@ class BaseTestCaseMixin(object):
                                  [repr(second_sl)])
         self.assertQuerysetEqual(second_sl.related_logs.all(), [])
 
-
-class AdminTestCase(BaseTestCaseMixin, TransactionTestCase):
-    namespace = 'admin:'
-
-    def test_add_object_with_formset(self):
+    def test_add_object_with_related(self):
         initial_count = SimpleLog.objects.count()
         params = {'char_field': 'test'}
         additional_params = {
@@ -541,8 +513,9 @@ class AdminTestCase(BaseTestCaseMixin, TransactionTestCase):
             'related_entries-INITIAL_FORMS': 0,
             'related_entries-0-char_field': 'test_inline'
         }
-        self.add_object(ThirdModel, params,
-                        additional_params=additional_params)
+        self.add_object(
+            ThirdModel, params, additional_params=additional_params
+        )
         self.assertEqual(SimpleLog.objects.count(), initial_count + 2)
         first_sl = SimpleLog.objects.all()[0]
         second_sl = SimpleLog.objects.all()[1]
@@ -551,15 +524,16 @@ class AdminTestCase(BaseTestCaseMixin, TransactionTestCase):
                                  [repr(first_sl)])
         self.assertEqual(first_sl.user, second_sl.user)
 
-    def test_change_object_only_formset(self):
+    def test_change_object_only_related(self):
         params = {'char_field': 'test'}
         additional_params = {
             'related_entries-TOTAL_FORMS': 1,
             'related_entries-INITIAL_FORMS': 0,
             'related_entries-0-char_field': 'test_inline'
         }
-        obj = self.add_object(ThirdModel, params,
-                              additional_params=additional_params)
+        obj = self.add_object(
+            ThirdModel, params, additional_params=additional_params
+        )
         related = obj.related_entries.latest('pk')
         initial_count = SimpleLog.objects.count()
         additional_params = {
@@ -576,6 +550,39 @@ class AdminTestCase(BaseTestCaseMixin, TransactionTestCase):
         self.assertQuerysetEqual(second_sl.related_logs.all(),
                                  [repr(first_sl)])
         self.assertEqual(first_sl.user, second_sl.user)
+
+    def test_disable_related(self):
+        params = {'char_field': 'test'}
+        additional_params = {
+            'related_entries-TOTAL_FORMS': 1,
+            'related_entries-INITIAL_FORMS': 0,
+            'related_entries-0-char_field': 'test_inline'
+        }
+        obj = self.add_object(
+            ThirdModel, params, additional_params=additional_params
+        )
+        related = obj.related_entries.latest('pk')
+        initial_count = SimpleLog.objects.count()
+        with atomic():
+            with disable_related():
+                additional_params = {
+                    'char_field': 'changed_title',
+                    'related_entries-TOTAL_FORMS': 1,
+                    'related_entries-INITIAL_FORMS': 1,
+                    'related_entries-0-id': related.pk,
+                    'related_entries-0-char_field': 'changed_title',
+                }
+                self.change_object(obj, params,
+                                   additional_params=additional_params)
+        self.assertEqual(SimpleLog.objects.count(), initial_count + 2)
+        first_sl = SimpleLog.objects.all()[0]
+        second_sl = SimpleLog.objects.all()[1]
+        self.assertQuerysetEqual(first_sl.related_logs.all(), [])
+        self.assertQuerysetEqual(second_sl.related_logs.all(), [])
+
+
+class AdminTestCase(BaseTestCaseMixin, TransactionTestCase):
+    namespace = 'admin:'
 
 
 class CustomViewTestCase(BaseTestCaseMixin, TransactionTestCase):
@@ -716,7 +723,7 @@ class CustomViewTestCase(BaseTestCaseMixin, TransactionTestCase):
             }
         )
 
-    def test_anonymous_delelte(self):
+    def test_anonymous_delete(self):
         self.client.logout()
         params = {
             'char_field': 'test',
@@ -1050,3 +1057,55 @@ class SystemTestCase(BaseTestCaseMixin, TransactionTestCase):
         initial_count = SimpleLog.objects.count()
         SimpleLog.log(self.other_model, action_flag=1)
         self.assertEqual(SimpleLog.objects.count(), initial_count + 1)
+
+    def test_add_object_with_related(self):
+        initial_count = SimpleLog.objects.count()
+        with atomic():
+            obj = self.add_object(ThirdModel, {'char_field': 'test'})
+            obj.related_entries.add(
+                RelatedModel(char_field='test_related'), bulk=False
+            )
+        self.assertEqual(SimpleLog.objects.count(), initial_count + 2)
+        first_sl = SimpleLog.objects.all()[0]
+        second_sl = SimpleLog.objects.all()[1]
+        self.assertQuerysetEqual(first_sl.related_logs.all(), [])
+        self.assertQuerysetEqual(second_sl.related_logs.all(),
+                                 [repr(first_sl)])
+        self.assertEqual(first_sl.user, second_sl.user)
+
+    def test_change_object_only_related(self):
+        with atomic():
+            obj = self.add_object(ThirdModel, {'char_field': 'test'})
+            obj.related_entries.add(
+                RelatedModel(char_field='test_related'), bulk=False
+            )
+        related = obj.related_entries.latest('pk')
+        initial_count = SimpleLog.objects.count()
+        with atomic():
+            self.change_object(obj, {})
+            self.change_object(related, {'char_field': 'changed_title'})
+        self.assertEqual(SimpleLog.objects.count(), initial_count + 2)
+        first_sl = SimpleLog.objects.all()[0]
+        second_sl = SimpleLog.objects.all()[1]
+        self.assertQuerysetEqual(first_sl.related_logs.all(), [])
+        self.assertQuerysetEqual(second_sl.related_logs.all(),
+                                 [repr(first_sl)])
+        self.assertEqual(first_sl.user, second_sl.user)
+
+    def test_disable_related(self):
+        with atomic():
+            obj = self.add_object(ThirdModel, {'char_field': 'test'})
+            obj.related_entries.add(
+                RelatedModel(char_field='test_related'), bulk=False
+            )
+        related = obj.related_entries.latest('pk')
+        initial_count = SimpleLog.objects.count()
+        with atomic():
+            with disable_related():
+                self.change_object(obj, {'char_field': 'changed_title'})
+                self.change_object(related, {'char_field': 'changed_title'})
+        self.assertEqual(SimpleLog.objects.count(), initial_count + 2)
+        first_sl = SimpleLog.objects.all()[0]
+        second_sl = SimpleLog.objects.all()[1]
+        self.assertQuerysetEqual(first_sl.related_logs.all(), [])
+        self.assertQuerysetEqual(second_sl.related_logs.all(), [])

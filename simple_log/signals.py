@@ -11,9 +11,9 @@ from simple_log.utils import get_log_model, get_serializer, is_related_to
 
 def save_related(logs):
     map_related = defaultdict(list)
-    for saved_log in [x for x in logs if x.pk]:
+    for saved_log in [x for x in logs if x.pk and not x.disable_related]:
         instance = saved_log.instance
-        for related in [k for k in logs if
+        for related in [k for k in logs if not k.disable_related and
                         is_related_to(instance, k.instance)]:
             if not related.pk:
                 related.save()
@@ -31,9 +31,8 @@ def save_logs_on_commit(logs):
         if log.force_save or log.old != log.new:
             log.save()
 
-    if (settings.SAVE_RELATED and
-            not get_variable('disable_related') and
-            any([x.pk for x in logs])):
+    if settings.SAVE_RELATED and any([x.pk for x in logs
+                                      if not x.disable_related]):
         save_related(logs)
 
 
