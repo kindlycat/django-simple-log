@@ -62,10 +62,10 @@ class SimpleLogAbstractBase(models.Model):
         verbose_name=_('user'),
         null=True
     )
-    user_repr = models.CharField(_('user repr'), blank=True, max_length=1000)
+    user_repr = models.TextField(_('user repr'), blank=True)
     user_ip = models.GenericIPAddressField(_('IP address'), null=True)
     object_id = models.TextField(_('object id'), blank=True, null=True)
-    object_repr = models.CharField(_('object repr'), max_length=1000)
+    object_repr = models.TextField(_('object repr'), blank=True)
     old = SimpleJSONField(_('old values'), null=True)
     new = SimpleJSONField(_('new values'), null=True)
     change_message = models.TextField(_('change message'), blank=True)
