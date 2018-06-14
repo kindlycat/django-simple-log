@@ -55,10 +55,10 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('action_time', models.DateTimeField(default=django.utils.timezone.now, editable=False, verbose_name='action time')),
-                ('user_repr', models.CharField(blank=True, max_length=1000, verbose_name='user repr')),
+                ('user_repr', models.TextField(blank=True, verbose_name='user repr')),
                 ('user_ip', models.GenericIPAddressField(null=True, verbose_name='IP address')),
                 ('object_id', models.TextField(blank=True, null=True, verbose_name='object id')),
-                ('object_repr', models.CharField(max_length=1000, verbose_name='object repr')),
+                ('object_repr', models.TextField(blank=True, verbose_name='object repr')),
                 ('old', simple_log.fields.SimpleJSONField(null=True, verbose_name='old values')),
                 ('new', simple_log.fields.SimpleJSONField(null=True, verbose_name='new values')),
                 ('change_message', models.TextField(blank=True, verbose_name='change message')),
