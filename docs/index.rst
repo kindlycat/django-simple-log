@@ -13,6 +13,7 @@ Logging model changes on every create/update/delete (except queryset update).
    :caption: Contents:
 
    installation
+   advanced
    utils
    settings
 

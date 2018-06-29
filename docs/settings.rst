@@ -67,3 +67,59 @@ SIMPLE_LOG_OLD_INSTANCE_ATTR_NAME
 Default: ``'_old_instance'``
 
 Name of attribute for storing old instance of logging object.
+
+
+SIMPLE_LOG_SAVE_RELATED
+-----------------------
+Default: ``False``
+
+Link related logs.
+
+
+SIMPLE_LOG_SAVE_ONE_TO_MANY
+---------------------------
+Default: ``False``
+
+Track one to many fields.
+
+
+SIMPLE_LOG_PROXY_CONCRETE
+-------------------------
+Default: ``False``
+
+Save content type of proxy model, instead of base.
+
+
+SIMPLE_LOG_SAVE_ONLY_CHANGED
+----------------------------
+Default: ``False``
+
+Save only changed fields.
+
+
+SIMPLE_LOG_DATETIME_FORMAT
+--------------------------
+Default: ``None``
+
+Format for datetime fields.
+
+
+SIMPLE_LOG_DATE_FORMAT
+----------------------
+Default: ``None``
+
+Format for date fields.
+
+
+SIMPLE_LOG_TIME_FORMAT
+----------------------
+Default: ``None``
+
+Format for time fields.
+
+
+SIMPLE_LOG_FILE_NAME_ONLY
+-------------------------
+Default: ``True``
+
+Save file name only instead of path to file.
