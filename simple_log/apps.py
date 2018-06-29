@@ -11,7 +11,7 @@ import simple_log
 from simple_log.signals import (
     log_m2m_change, log_post_delete, log_post_save, log_pre_save_delete
 )
-from simple_log.utils import get_label, get_model_list
+from simple_log.utils import get_model_list
 
 
 class SimpleLogConfig(AppConfig):
@@ -21,7 +21,7 @@ class SimpleLogConfig(AppConfig):
     m2m_uid = 'simple_log.{}.{}.{}'
 
     def register_signals(self, model):
-        label = get_label(model)
+        label = model._meta.label
         pre_save.connect(
             log_pre_save_delete,
             sender=label,
@@ -49,7 +49,7 @@ class SimpleLogConfig(AppConfig):
                 sender=sender,
                 dispatch_uid=self.m2m_uid.format(
                     'post_delete',
-                    get_label(sender),
+                    sender._meta.label,
                     label
                 )
             )

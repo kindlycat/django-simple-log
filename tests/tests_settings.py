@@ -138,7 +138,7 @@ class SettingsTestCase(TransactionTestCase):
     @override_settings(SIMPLE_LOG_MODEL='test_app.BadLogModel')
     def test_log_model_not_subclass_simplelog(self):
         with isolate_lru_cache(get_log_model):
-            msg = 'Log model should be subclass of SimpleLogAbstract.'
+            msg = 'Log model should be subclass of SimpleLogAbstractBase.'
             with self.assertRaisesMessage(ImproperlyConfigured, msg):
                 get_log_model()
 

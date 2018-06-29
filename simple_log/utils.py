@@ -15,7 +15,7 @@ from simple_log.conf import settings
 
 
 __all__ = ['get_log_model', 'get_current_user', 'get_current_request',
-           'get_serializer', 'disable_logging', 'get_model_list', 'get_label',
+           'get_serializer', 'disable_logging', 'get_model_list',
            'disable_related', 'get_obj_repr', 'is_related_to', 'get_fields',
            'ContextDecorator']
 
@@ -24,7 +24,7 @@ def check_log_model(model):
     from simple_log.models import SimpleLogAbstractBase
     if not issubclass(model, SimpleLogAbstractBase):
         raise ImproperlyConfigured('Log model should be subclass of '
-                                   'SimpleLogAbstract.')
+                                   'SimpleLogAbstractBase.')
     return model
 
 
@@ -86,13 +86,6 @@ def get_fields(klass):
             (settings.SAVE_ONE_TO_MANY and f.one_to_many and f.related_name)]
 
 
-def get_label(m):
-    try:
-        return m._meta.label
-    except AttributeError:
-        return '{}.{}'.format(m._meta.app_label, m._meta.object_name)
-
-
 @lru_cache.lru_cache(maxsize=None)
 def get_model_list():
     from simple_log.models import SimpleLogAbstractBase
@@ -100,10 +93,10 @@ def get_model_list():
                   if not issubclass(m, SimpleLogAbstractBase)]
     if settings.MODEL_LIST:
         model_list = [m for m in model_list
-                      if get_label(m) in settings.MODEL_LIST]
+                      if m._meta.label in settings.MODEL_LIST]
     if settings.EXCLUDE_MODEL_LIST:
         model_list = [m for m in model_list
-                      if get_label(m) not in settings.EXCLUDE_MODEL_LIST]
+                      if m._meta.label not in settings.EXCLUDE_MODEL_LIST]
     return model_list
 
 
