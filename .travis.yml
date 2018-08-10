@@ -8,19 +8,20 @@ python:
   - 2.7
   - 3.5
   - 3.6
+  - 3.7
 env:
   - DJANGO=1.11
   - DJANGO=2.0
+  - DJANGO=2.1
   - DJANGO=master
 matrix:
   exclude:
     - { python: 2.7, env: DJANGO=2.0 }
+    - { python: 2.7, env: DJANGO=2.1 }
     - { python: 2.7, env: DJANGO=master }
   include:
     - { python: 3.6, env: TOXENV=flake }
-    - { python: 3.7, dist: xenial, sudo: true, env: DJANGO=1.11 }
-    - { python: 3.7, dist: xenial, sudo: true, env: DJANGO=2.0 }
-    - { python: 3.7, dist: xenial, sudo: true, env: DJANGO=master }
+    - { python: 3.7, dist: xenial, sudo: required }
 install:
   - pip install tox-travis coveralls
 
