@@ -3,18 +3,17 @@ from __future__ import unicode_literals
 
 from collections import defaultdict
 
-from simple_log.utils import (
-    get_serializer, get_thread_variable, is_related_to, get_log_model,
-    del_thread_variable
-)
+from request_vars.utils import get_variable
+
 from simple_log.conf import settings
+from simple_log.utils import get_log_model, get_serializer, is_related_to
 
 
 def save_related(logs):
     map_related = defaultdict(list)
-    for saved_log in [x for x in logs if x.pk]:
+    for saved_log in [x for x in logs if x.pk and not x.disable_related]:
         instance = saved_log.instance
-        for related in [k for k in logs if
+        for related in [k for k in logs if not k.disable_related and
                         is_related_to(instance, k.instance)]:
             if not related.pk:
                 related.save()
@@ -23,8 +22,7 @@ def save_related(logs):
         instance.related_logs.add(*related)
 
 
-def save_logs_on_commit():
-    logs = get_thread_variable('logs', [])
+def save_logs_on_commit(logs):
     for log in [x for x in logs if not x.pk]:
         instance = log.instance
         serializer = get_serializer(instance.__class__)()
@@ -33,23 +31,20 @@ def save_logs_on_commit():
         if log.force_save or log.old != log.new:
             log.save()
 
-    if (settings.SAVE_RELATED and
-            not get_thread_variable('disable_related') and
-            any([x.pk for x in logs])):
+    if settings.SAVE_RELATED and any([x.pk for x in logs
+                                      if not x.disable_related]):
         save_related(logs)
-    del_thread_variable('logs')
-    del_thread_variable('request')
 
 
 def log_pre_save_delete(sender, instance, **kwargs):
-    if get_thread_variable('disable_logging'):
+    if get_variable('disable_logging'):
         return
     SimpleLog = get_log_model()
     SimpleLog.set_initial(instance)
 
 
 def log_post_save(sender, instance, created, **kwargs):
-    if get_thread_variable('disable_logging'):
+    if get_variable('disable_logging'):
         return
     if not hasattr(instance, '_log'):
         SimpleLog = get_log_model()
@@ -61,7 +56,7 @@ def log_post_save(sender, instance, created, **kwargs):
 
 
 def log_post_delete(sender, instance, **kwargs):
-    if get_thread_variable('disable_logging'):
+    if get_variable('disable_logging'):
         return
     SimpleLog = get_log_model()
     instance._log = SimpleLog.log(
@@ -73,7 +68,7 @@ def log_post_delete(sender, instance, **kwargs):
 
 
 def log_m2m_change(sender, instance, action, **kwargs):
-    if get_thread_variable('disable_logging'):
+    if get_variable('disable_logging'):
         return
     SimpleLog = get_log_model()
 

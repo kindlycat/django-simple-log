@@ -5,6 +5,8 @@ from distutils.core import setup
 
 from setuptools import find_packages
 
+from simple_log import __version__
+
 
 def readme():
     with open('README.rst') as f:
@@ -13,7 +15,7 @@ def readme():
 
 setup(
     name='django-simple-log',
-    version='0.1.31',
+    version=__version__,
     description='Logging django models changes.',
     long_description=readme(),
     keywords=['django', 'log', 'audit', 'history'],
@@ -22,17 +24,16 @@ setup(
     url='https://github.com/kindlycat/django-simple-log/',
     packages=find_packages(exclude=('manage', 'tests', 'tests.*')),
     include_package_data=True,
-    install_requires=['Django>=1.8'],
+    install_requires=['Django>=1.11', 'django-request-vars>=1.0.1'],
     classifiers=[
-        'Development Status :: 3 - Alpha',
         'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
-        'Framework :: Django :: 1.8',
-        'Framework :: Django :: 1.9',
-        'Framework :: Django :: 1.10',
+        'Programming Language :: Python :: 3.7',
         'Framework :: Django :: 1.11',
         'Framework :: Django :: 2.0',
+        'Framework :: Django :: 2.1',
         'License :: OSI Approved :: BSD License',
     ],
 )

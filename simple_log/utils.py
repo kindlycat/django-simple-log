@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-from threading import local
+from functools import wraps
 
-from contextlib import contextmanager
+from request_vars.utils import del_variable, get_variable, set_variable
+
 from django.apps import apps as django_apps
 from django.core.exceptions import ImproperlyConfigured
 from django.utils import lru_cache, six
@@ -12,33 +13,18 @@ from django.utils.module_loading import import_string
 
 from simple_log.conf import settings
 
-__all__ = ['set_thread_variable', 'get_thread_variable', 'del_thread_variable',
-           'get_log_model', 'get_current_user', 'get_current_request',
+
+__all__ = ['get_log_model', 'get_current_user', 'get_current_request',
            'get_serializer', 'disable_logging', 'get_model_list',
-           'disable_related', 'get_obj_repr', 'is_related_to']
-
-
-_thread_locals = local()
-
-
-def set_thread_variable(key, val):
-    setattr(_thread_locals, key, val)
-
-
-def get_thread_variable(key, default=None):
-    return getattr(_thread_locals, key, default)
-
-
-def del_thread_variable(key):
-    if hasattr(_thread_locals, key):
-        return delattr(_thread_locals, key)
+           'disable_related', 'get_obj_repr', 'is_related_to', 'get_fields',
+           'ContextDecorator']
 
 
 def check_log_model(model):
     from simple_log.models import SimpleLogAbstractBase
     if not issubclass(model, SimpleLogAbstractBase):
         raise ImproperlyConfigured('Log model should be subclass of '
-                                   'SimpleLogAbstract.')
+                                   'SimpleLogAbstractBase.')
     return model
 
 
@@ -68,7 +54,7 @@ def get_serializer(model=None):
 
 
 def get_current_request_default():
-    return get_thread_variable('request')
+    return get_variable('request')
 
 
 @lru_cache.lru_cache(maxsize=None)
@@ -100,13 +86,6 @@ def get_fields(klass):
             (settings.SAVE_ONE_TO_MANY and f.one_to_many and f.related_name)]
 
 
-def get_label(m):
-    try:
-        return m._meta.label
-    except AttributeError:
-        return '{}.{}'.format(m._meta.app_label, m._meta.object_name)
-
-
 @lru_cache.lru_cache(maxsize=None)
 def get_model_list():
     from simple_log.models import SimpleLogAbstractBase
@@ -114,10 +93,10 @@ def get_model_list():
                   if not issubclass(m, SimpleLogAbstractBase)]
     if settings.MODEL_LIST:
         model_list = [m for m in model_list
-                      if get_label(m) in settings.MODEL_LIST]
+                      if m._meta.label in settings.MODEL_LIST]
     if settings.EXCLUDE_MODEL_LIST:
         model_list = [m for m in model_list
-                      if get_label(m) not in settings.EXCLUDE_MODEL_LIST]
+                      if m._meta.label not in settings.EXCLUDE_MODEL_LIST]
     return model_list
 
 
@@ -139,33 +118,52 @@ def is_related_to(instance, to_instance):
             return True
 
 
-@contextmanager
-def disable_logging():
-    set_thread_variable('disable_logging', True)
-    try:
-        yield
-    finally:
-        del_thread_variable('disable_logging')
+class ContextDecorator(object):
+    """
+    A base class or mixin that enables context managers to work as decorators.
+
+    Backport for python 2.7
+    """
+
+    def _recreate_cm(self):
+        """Return a recreated instance of self.
+
+        Allows an otherwise one-shot context manager like
+        _GeneratorContextManager to support use as
+        a decorator via implicit recreation.
+
+        This is a private interface just for _GeneratorContextManager.
+        See issue #11647 for details.
+        """
+        return self
+
+    def __call__(self, func):
+        @wraps(func)
+        def inner(*args, **kwds):
+            with self._recreate_cm():
+                return func(*args, **kwds)
+        return inner
 
 
-@contextmanager
-def disable_related():
-    set_thread_variable('disable_related', True)
-    try:
-        yield
-    finally:
-        del_thread_variable('disable_related')
+class disable_logging(ContextDecorator):
+    def __enter__(self):
+        set_variable('disable_logging', True)
+        return self
+
+    def __exit__(self, *exc):
+        del_variable('disable_logging')
+
+
+class disable_related(ContextDecorator):
+    def __enter__(self):
+        set_variable('disable_related', True)
+        return self
+
+    def __exit__(self, *exc):
+        del_variable('disable_related')
 
 
 def get_obj_repr(obj):
     if hasattr(obj, 'simple_log_repr'):
         return force_text(obj.simple_log_repr())
     return force_text(obj)
-
-
-def user_is_authenticated(user):
-    try:
-        return user.is_authenticated()
-    except TypeError:
-        # In django==2.0 is_authenticated is boolean
-        return user.is_authenticated
