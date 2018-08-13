@@ -53,7 +53,7 @@ WSGI_APPLICATION = 'tests.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': 'test_db',
+        'NAME': 'simple_log',
     }
 }
 

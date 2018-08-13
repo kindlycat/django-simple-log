@@ -1,0 +1,6 @@
+psycopg2
+mock
+tblib
+sphinx
+sphinx_rtd_theme
+tox

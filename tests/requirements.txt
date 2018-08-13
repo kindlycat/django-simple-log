@@ -1,4 +1,0 @@
-psycopg2
-mock
-django-jsonfield
-tblib

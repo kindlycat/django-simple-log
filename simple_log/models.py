@@ -165,8 +165,7 @@ class SimpleLogAbstractBase(models.Model):
         if not hasattr(instance, '_old_values'):
             serializer = get_serializer(instance.__class__)()
             instance._old_values = serializer(
-                getattr(instance, settings.OLD_INSTANCE_ATTR_NAME, None),
-                override=getattr(instance, 'simple_log_override', None)
+                getattr(instance, settings.OLD_INSTANCE_ATTR_NAME, None)
             )
 
     @classmethod
@@ -258,16 +257,16 @@ class SimpleLog(SimpleLogAbstract):
 
 
 class ModelSerializer(object):
-    def __call__(self, instance, override=None):
-        return self.serialize(instance, override)
+    def __call__(self, instance):
+        return self.serialize(instance)
 
-    def serialize(self, instance, override=None):
+    def serialize(self, instance):
         if not (instance and instance.pk):
             return None
         return {
             field.name: {
                 'label': self.get_field_label(field),
-                'value': self.get_field_value(instance, field, override)
+                'value': self.get_field_value(instance, field)
             } for field in get_fields(instance.__class__)
         }
 
@@ -276,9 +275,7 @@ class ModelSerializer(object):
             return force_text(field.related_model._meta.verbose_name_plural)
         return force_text(field.verbose_name)
 
-    def get_field_value(self, instance, field, override=None):
-        if override and field.name in override:
-            return self.get_value_for_type(override[field.name])
+    def get_field_value(self, instance, field):
         if field.many_to_many:
             return self.get_m2m_value(instance, field)
         elif field.one_to_many:

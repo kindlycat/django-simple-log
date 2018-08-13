@@ -6,18 +6,11 @@ Django simple log
     :target: https://coveralls.io/github/kindlycat/django-simple-log?branch=master
 .. image:: https://img.shields.io/pypi/v/django-simple-log.svg
     :target: https://pypi.python.org/pypi/django-simple-log
-.. image:: https://img.shields.io/pypi/status/django-simple-log.svg
-    :target: https://pypi.python.org/pypi/django-simple-log
-.. image:: https://img.shields.io/pypi/pyversions/django-simple-log.svg
-    :target: https://pypi.python.org/pypi/django-simple-log
-.. image:: https://img.shields.io/badge/django-%3E%3D1.11-green.svg
-    :target: https://pypi.python.org/pypi/django-simple-log
-.. image:: https://img.shields.io/gitter/room/nwjs/nw.js.svg
-    :target: https://gitter.im/django-simple-log/django-simple-log
 
 Logging model changes on every create/update/delete (except queryset update).
 
 Full documentation on `read the docs`_.
+
 
 Installation
 ------------

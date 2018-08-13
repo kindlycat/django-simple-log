@@ -16,6 +16,7 @@ Logging model changes on every create/update/delete (except queryset update).
    advanced
    utils
    settings
+   changes
 
 
 Indices and tables

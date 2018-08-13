@@ -13,12 +13,45 @@ If you need to log something manually:
     SimpleLog.log(
         instance=obj,
         action_flag=SimpleLog.CHANGE,
-        change_message='some message'
+        change_message='Some message'
     )
 
 
-Custom model
-------------
+Pass params to log
+------------------
+
+Add ``simple_log_params`` to instance:
+
+.. code-block:: python
+
+    class SomeView(FormView):
+        ...
+
+        def form_valid(self, form):
+            form.instance.simple_log_params = {
+                'user': None,
+                'user_repr': 'GLaDOS',
+                'change_message': 'Cake is a lie'
+            }
+            return super().form_valid(form)
+
+
+Custom serializer
+-----------------
+
+.. code-block:: python
+
+    # Serializer for concrete model
+    class MyModel:
+        ...
+        simple_log_model_serializer = 'app_label.ModelName'
+
+    # Default serializer in settings
+    SIMPLE_LOG_MODEL_SERIALIZER = 'app_label.ModelName'
+
+
+Custom log model
+----------------
 
 .. code-block:: python
 
@@ -53,5 +86,5 @@ Custom model
             return params
 
     # in settings
-    SIMPLE_LOG_MODEL = 'app_label.Model_name'
+    SIMPLE_LOG_MODEL = 'app_label.ChangeLog'
 
