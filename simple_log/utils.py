@@ -90,7 +90,8 @@ def get_fields(klass):
 def get_model_list():
     from simple_log.models import SimpleLogAbstractBase
     model_list = [m for m in django_apps.get_models()
-                  if not issubclass(m, SimpleLogAbstractBase)]
+                  if not issubclass(m, SimpleLogAbstractBase) and
+                  m._meta.managed]
     if settings.MODEL_LIST:
         model_list = [m for m in model_list
                       if m._meta.label in settings.MODEL_LIST]
