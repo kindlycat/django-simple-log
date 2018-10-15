@@ -159,7 +159,7 @@ class SimpleLogAbstractBase(models.Model):
             setattr(
                 instance,
                 settings.OLD_INSTANCE_ATTR_NAME,
-                instance.__class__.objects.get(pk=instance.pk)
+                instance.__class__.objects.filter(pk=instance.pk).first()
             )
         if not hasattr(instance, '_old_values'):
             serializer = get_serializer(instance.__class__)()
