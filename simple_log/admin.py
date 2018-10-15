@@ -10,7 +10,14 @@ from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import PermissionDenied
 from django.urls import reverse
 
+from simple_log.conf import settings
 from simple_log.utils import get_log_model
+
+
+def filter_ct(val):
+    if isinstance(val, (list, tuple)):
+        val = val[0]
+    return val != 'content_type'
 
 
 class SimpleLogChangeList(ChangeList):
@@ -57,13 +64,20 @@ class SimpleLogModelAdmin(admin.ModelAdmin):
     def get_list_filter(self, request):
         ret = super(SimpleLogModelAdmin, self).get_list_filter(request)
         if self.history_for_model:
-            ret = [x for x in ret if x != 'content_type']
+            ret = filter(filter_ct, ret)
         return ret
 
     def get_queryset(self, request):
         qs = super(SimpleLogModelAdmin, self).get_queryset(request)
         if self.history_for_model:
-            ct = ContentType.objects.get_for_model(self.history_for_model)
+            ct = ContentType.objects.get_for_model(
+                self.history_for_model,
+                for_concrete_model=getattr(
+                    self.model,
+                    'simple_log_proxy_concrete',
+                    settings.PROXY_CONCRETE
+                )
+            )
             qs = qs.filter(content_type=ct)
             if self.history_for_object:
                 qs = qs.filter(object_id=self.history_for_object)
