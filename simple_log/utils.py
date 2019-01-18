@@ -112,8 +112,13 @@ def is_related_to(instance, to_instance):
             to_instance, settings.OLD_INSTANCE_ATTR_NAME, None
         )
         to_instance_pk = getattr(old_to_instance, 'pk', None)
-    for field in [x for x in instance._meta.get_fields()
-                  if x.related_model == to_instance.__class__ and x.concrete]:
+    related_fields = [
+        x for x in instance._meta.get_fields()
+        if (x.related_model
+            and issubclass(to_instance.__class__, x.related_model)
+            and x.concrete)
+    ]
+    for field in related_fields:
         if getattr(instance, field.attname, None) == to_instance_pk or \
               getattr(old_instance, field.attname, None) == to_instance_pk:
             return True
