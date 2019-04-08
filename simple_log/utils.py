@@ -7,11 +7,19 @@ from request_vars.utils import del_variable, get_variable, set_variable
 
 from django.apps import apps as django_apps
 from django.core.exceptions import ImproperlyConfigured
-from django.utils import lru_cache, six
 from django.utils.encoding import force_text
 from django.utils.module_loading import import_string
 
 from simple_log.conf import settings
+
+
+try:
+    from django.utils import six
+    from django.utils.lru_cache import lru_cache
+except ImportError:
+    # django > 2.
+    import six
+    from functools import lru_cache
 
 
 __all__ = ['get_log_model', 'get_current_user', 'get_current_request',
@@ -28,7 +36,7 @@ def check_log_model(model):
     return model
 
 
-@lru_cache.lru_cache()
+@lru_cache()
 def get_log_model():
     try:
         return check_log_model(django_apps.get_model(settings.MODEL))
@@ -42,7 +50,7 @@ def get_log_model():
         )
 
 
-@lru_cache.lru_cache(maxsize=None)
+@lru_cache(maxsize=None)
 def get_serializer(model=None):
     if hasattr(model, 'simple_log_serializer'):
         serializer = model.simple_log_serializer
@@ -57,7 +65,7 @@ def get_current_request_default():
     return get_variable('request')
 
 
-@lru_cache.lru_cache(maxsize=None)
+@lru_cache(maxsize=None)
 def _get_current_request():
     return import_string(settings.GET_CURRENT_REQUEST)
 
@@ -71,7 +79,7 @@ def get_current_user():
         return getattr(request, 'user', None)
 
 
-@lru_cache.lru_cache()
+@lru_cache()
 def get_fields(klass):
     fields = klass._meta.get_fields()
     if hasattr(klass, 'simple_log_fields'):
@@ -86,7 +94,7 @@ def get_fields(klass):
             (settings.SAVE_ONE_TO_MANY and f.one_to_many and f.related_name)]
 
 
-@lru_cache.lru_cache(maxsize=None)
+@lru_cache(maxsize=None)
 def get_model_list():
     from simple_log.models import SimpleLogAbstractBase
     model_list = [m for m in django_apps.get_models()

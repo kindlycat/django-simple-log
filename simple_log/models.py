@@ -5,6 +5,7 @@ import datetime
 import os
 
 from request_vars.utils import del_variable, get_variable, set_variable
+from six import python_2_unicode_compatible
 
 from django.conf import settings as django_settings
 from django.contrib.admin.utils import quote
@@ -14,7 +15,7 @@ from django.core.validators import validate_ipv46_address
 from django.db import connection, models
 from django.urls import NoReverseMatch, reverse
 from django.utils import timezone
-from django.utils.encoding import force_text, python_2_unicode_compatible
+from django.utils.encoding import force_text
 from django.utils.functional import cached_property
 from django.utils.translation import ugettext_lazy as _
 
