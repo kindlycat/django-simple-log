@@ -10,7 +10,6 @@ from simple_log.fields import SimpleManyToManyField
 class Migration(migrations.Migration):
 
     dependencies = [
-        migrations.swappable_dependency(settings.SIMPLE_LOG_MODEL),
         ('simple_log', '0001_initial'),
     ]
 
