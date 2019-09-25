@@ -89,6 +89,9 @@ class SimpleLogAbstractBase(models.Model):
     def __str__(self):
         return '%s' % self.object_repr
 
+    def _get_related_objects(self):
+        return getattr(self, '_related_objects', [])
+
     def save(self, *args, **kwargs):
         if settings.SAVE_ONLY_CHANGED:
             changed = self.changed_fields.keys()

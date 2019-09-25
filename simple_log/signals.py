@@ -14,7 +14,8 @@ def save_related(logs):
     for saved_log in [x for x in logs if x.pk and not x.disable_related]:
         instance = saved_log.instance
         for related in [k for k in logs if not k.disable_related and
-                        is_related_to(instance, k.instance)]:
+                        (k in saved_log._get_related_objects() or
+                         is_related_to(instance, k.instance))]:
             if not related.pk:
                 related.save()
             map_related[related].append(saved_log)
