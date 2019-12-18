@@ -12,10 +12,11 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument(
-            '-f', '--with_fields',
+            '-f',
+            '--with_fields',
             action='store_true',
             default=False,
-            help='Show which fields is tracking for every model'
+            help='Show which fields is tracking for every model',
         )
 
     def handle(self, *args, **options):
