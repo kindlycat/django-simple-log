@@ -5,7 +5,11 @@ from simple_log.admin import HistoryModelAdmin, SimpleLogModelAdmin
 from simple_log.models import SimpleLog
 from simple_log.utils import disable_logging, disable_related
 from tests.test_app.models import (
-    OtherModel, RelatedModel, TestModel, TestModelProxy, ThirdModel
+    OtherModel,
+    RelatedModel,
+    TestModel,
+    TestModelProxy,
+    ThirdModel,
 )
 from tests.utils import noop_ctx
 
@@ -17,8 +21,9 @@ class BaseModelAdmin(HistoryModelAdmin):
         dr_ctx = 'disable_related_context' in request.POST
         dr_dec = 'disable_related_decorator' in request.POST
         super_fn = super(BaseModelAdmin, self)._changeform_view
-        with disable_logging() if dl_ctx else noop_ctx(), \
-                disable_related() if dr_ctx else noop_ctx():
+        disable_logging_ctx = disable_logging if dl_ctx else noop_ctx
+        disable_related_ctx = disable_related if dr_ctx else noop_ctx
+        with disable_logging_ctx(), disable_related_ctx():
             if dl_dec:
                 super_fn = disable_logging()(super_fn)
             if dr_dec:
@@ -31,8 +36,9 @@ class BaseModelAdmin(HistoryModelAdmin):
         dr_ctx = 'disable_related_context' in request.POST
         dr_dec = 'disable_related_decorator' in request.POST
         super_fn = super(BaseModelAdmin, self)._delete_view
-        with disable_logging() if dl_ctx else noop_ctx(), \
-                disable_related() if dr_ctx else noop_ctx():
+        disable_logging_ctx = disable_logging if dl_ctx else noop_ctx
+        disable_related_ctx = disable_related if dr_ctx else noop_ctx
+        with disable_logging_ctx(), disable_related_ctx():
             if dl_dec:
                 super_fn = disable_logging()(super_fn)
             if dr_dec:

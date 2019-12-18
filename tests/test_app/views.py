@@ -18,8 +18,9 @@ class DisableMixin(object):
         dr_ctx = 'disable_related_context' in request.POST
         dr_dec = 'disable_related_decorator' in request.POST
         super_dispatch = super(DisableMixin, self).dispatch
-        with disable_logging() if dl_ctx else noop_ctx(),\
-                disable_related() if dr_ctx else noop_ctx():
+        disable_logging_ctx = disable_logging if dl_ctx else noop_ctx
+        disable_related_ctx = disable_related if dr_ctx else noop_ctx
+        with disable_logging_ctx(), disable_related_ctx():
             if dl_dec:
                 super_dispatch = disable_logging()(super_dispatch)
             if dr_dec:

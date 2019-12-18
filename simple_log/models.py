@@ -24,13 +24,20 @@ from simple_log.signals import save_logs_on_commit
 
 from .conf import settings
 from .utils import (
-    get_current_request, get_current_user, get_fields, get_obj_repr,
-    get_serializer
+    get_current_request,
+    get_current_user,
+    get_fields,
+    get_obj_repr,
+    serialize_instance,
 )
 
 
-__all__ = ['SimpleLogAbstractBase', 'SimpleLogAbstract', 'SimpleLog',
-           'ModelSerializer']
+__all__ = [
+    'SimpleLogAbstractBase',
+    'SimpleLogAbstract',
+    'SimpleLog',
+    'ModelSerializer',
+]
 
 
 @python_2_unicode_compatible
@@ -44,9 +51,7 @@ class SimpleLogAbstractBase(models.Model):
         (DELETE, _('deleted')),
     )
     action_time = models.DateTimeField(
-        _('action time'),
-        default=timezone.now,
-        editable=False,
+        _('action time'), default=timezone.now, editable=False,
     )
     content_type = models.ForeignKey(
         ContentType,
@@ -59,7 +64,7 @@ class SimpleLogAbstractBase(models.Model):
         django_settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
         verbose_name=_('user'),
-        null=True
+        null=True,
     )
     user_repr = models.TextField(_('user repr'), blank=True)
     user_ip = models.GenericIPAddressField(_('IP address'), null=True)
@@ -70,10 +75,7 @@ class SimpleLogAbstractBase(models.Model):
     change_message = models.TextField(_('change message'), blank=True)
 
     related_logs = SimpleManyToManyField(
-        'self',
-        verbose_name=_('related log'),
-        blank=True,
-        symmetrical=False,
+        'self', verbose_name=_('related log'), blank=True, symmetrical=False,
     )
 
     is_add = property(lambda self: self.action_flag == self.ADD)
@@ -95,10 +97,12 @@ class SimpleLogAbstractBase(models.Model):
     def save(self, *args, **kwargs):
         if settings.SAVE_ONLY_CHANGED:
             changed = self.changed_fields.keys()
-            self.old = {k: v for k, v in (self.old or {}).items()
-                        if k in changed} or None
-            self.new = {k: v for k, v in (self.new or {}).items()
-                        if k in changed} or None
+            self.old = {
+                k: v for k, v in (self.old or {}).items() if k in changed
+            } or None
+            self.new = {
+                k: v for k, v in (self.new or {}).items() if k in changed
+            } or None
         super(SimpleLogAbstractBase, self).save(*args, **kwargs)
 
     def get_edited_object(self):
@@ -106,8 +110,10 @@ class SimpleLogAbstractBase(models.Model):
 
     def get_admin_url(self):
         if self.content_type and self.object_id:
-            url_name = 'admin:%s_%s_change' % (self.content_type.app_label,
-                                               self.content_type.model)
+            url_name = 'admin:%s_%s_change' % (
+                self.content_type.app_label,
+                self.content_type.model,
+            )
             try:
                 return reverse(url_name, args=(quote(self.object_id),))
             except NoReverseMatch:
@@ -126,64 +132,95 @@ class SimpleLogAbstractBase(models.Model):
                 for_concrete_model=getattr(
                     instance,
                     'simple_log_proxy_concrete',
-                    settings.PROXY_CONCRETE
-                )
+                    settings.PROXY_CONCRETE,
+                ),
             ),
             object_id=instance.pk,
             object_repr=get_obj_repr(instance),
             user=user if user and user.is_authenticated else None,
             user_repr=cls.get_user_repr(user),
-            user_ip=cls.get_ip()
+            user_ip=cls.get_ip(),
         )
         params.update(getattr(instance, 'simple_log_params', {}))
         params.update(kwargs)
         return params
 
     @classmethod
-    def add_to_thread(cls, obj):
-        in_commit = 'sl_in_commit' in \
-                    [f[1].__name__ for f in connection.run_on_commit]
-        logs = get_variable('logs', [])
+    def add_to_thread(cls, instance, obj):
+        in_commit = save_logs_on_commit in [
+            f[1] for f in connection.run_on_commit
+        ]
+        logs = get_variable('simple_log_logs', [])
+        instances = get_variable('simple_log_instances', [])
         # prevent memory usage in non transaction test cases
         if not in_commit and logs:
-            del_variable('logs')
+            del_variable('simple_log_logs')
+            del_variable('simple_log_instances')
             logs = []
+            instances = []
         logs.append(obj)
-        set_variable('logs', logs)
+        instances.append(instance)
+        set_variable('simple_log_logs', logs)
+        set_variable('simple_log_instances', instances)
 
         if not in_commit:
-            def sl_in_commit():
-                save_logs_on_commit(logs)
-            connection.on_commit(sl_in_commit)
+            connection.on_commit(save_logs_on_commit)
 
     @classmethod
     def set_initial(cls, instance):
-        if instance.pk and \
-                not hasattr(instance, settings.OLD_INSTANCE_ATTR_NAME):
+        if instance.pk and not hasattr(
+            instance, settings.OLD_INSTANCE_ATTR_NAME
+        ):
             setattr(
                 instance,
                 settings.OLD_INSTANCE_ATTR_NAME,
-                instance.__class__.objects.filter(pk=instance.pk).first()
+                instance.__class__._base_manager.filter(
+                    pk=instance.pk
+                ).first(),
             )
         if not hasattr(instance, '_old_values'):
-            serializer = get_serializer(instance.__class__)()
-            instance._old_values = serializer(
-                getattr(instance, settings.OLD_INSTANCE_ATTR_NAME, None)
+            old_instance = getattr(
+                instance, settings.OLD_INSTANCE_ATTR_NAME, None
             )
+            instance._old_value = serialize_instance(old_instance)
 
     @classmethod
-    def log(cls, instance, commit=True, with_initial=False,
-            force_save=False, **kwargs):
+    def log(
+        cls,
+        instance,
+        commit=True,
+        with_initial=False,
+        force_save=False,
+        **kwargs
+    ):
         if with_initial:
             cls.set_initial(instance)
         obj = cls(**cls.get_log_params(instance, **kwargs))
         obj.force_save = force_save
         obj.instance = instance
         obj.disable_related = get_variable('disable_related', False)
+        # if hasattr(instance, 'parent_model_field'):
+        #     cls.create_parent_log(obj)
         if commit:
             obj.save()
-        cls.add_to_thread(obj)
+        cls.add_to_thread(instance, obj)
         return obj
+
+    @classmethod
+    def create_parent_log(cls, log):
+        logs = get_variable('logs', [])
+        instance = log.instance
+        parent_instance = getattr(instance, instance.parent_model_field)
+        if instance in logs:
+            parent_log = logs[instance][0]
+        else:
+            parent_log = cls.log(
+                parent_instance,
+                commit=False,
+                action_flag=cls.CHANGE,
+                with_initial=True,
+            )
+        log._related_objects = log._get_related_objects() + [parent_log]
 
     @cached_property
     def changed_fields(self):
@@ -191,7 +228,8 @@ class SimpleLogAbstractBase(models.Model):
         new = self.new or {}
         vals = old or new
         return {
-            k: vals[k]['label'] for k in vals.keys()
+            k: vals[k]['label']
+            for k in vals.keys()
             if old.get(k) != new.get(k)
         }
 
@@ -204,8 +242,10 @@ class SimpleLogAbstractBase(models.Model):
         """
         old = (self.old or {}).get(field_name, {}).get('value', [])
         new = (self.new or {}).get(field_name, {}).get('value', [])
-        return [x for x in new if x not in old], \
-               [x for x in old if x not in new]
+        return (
+            [x for x in new if x not in old],
+            [x for x in old if x not in new],
+        )
 
     @staticmethod
     def get_ip():
@@ -234,17 +274,19 @@ class SimpleLogAbstractBase(models.Model):
     def get_differences(self):
         old = self.old or {}
         new = self.new or {}
-        return [{
-            'label': value,
-            'old': old.get(key, {}).get('value'),
-            'new': new.get(key, {}).get('value')
-        } for key, value in self.changed_fields.items()]
+        return [
+            {
+                'label': value,
+                'old': old.get(key, {}).get('value'),
+                'new': new.get(key, {}).get('value'),
+            }
+            for key, value in self.changed_fields.items()
+        ]
 
 
 class SimpleLogAbstract(SimpleLogAbstractBase):
     action_flag = models.PositiveSmallIntegerField(
-        _('action flag'),
-        choices=SimpleLogAbstractBase.ACTION_CHOICES
+        _('action flag'), choices=SimpleLogAbstractBase.ACTION_CHOICES
     )
 
     class Meta(SimpleLogAbstractBase.Meta):
@@ -269,8 +311,9 @@ class ModelSerializer(object):
         return {
             field.name: {
                 'label': self.get_field_label(field),
-                'value': self.get_field_value(instance, field)
-            } for field in get_fields(instance.__class__)
+                'value': self.get_field_value(instance, field),
+            }
+            for field in get_fields(instance.__class__)
         }
 
     def get_field_label(self, field):
@@ -292,23 +335,22 @@ class ModelSerializer(object):
         return self.get_other_value(instance, field)
 
     def get_m2m_value(self, instance, field):
-        return [{
-            'db': self.get_value_for_type(x.pk),
-            'repr': get_obj_repr(x)
-        } for x in getattr(instance, field.name).iterator()]
+        return [
+            {'db': self.get_value_for_type(x.pk), 'repr': get_obj_repr(x)}
+            for x in getattr(instance, field.name).iterator()
+        ]
 
     def get_o2m_value(self, instance, field):
-        return [{
-            'db': self.get_value_for_type(x.pk),
-            'repr': get_obj_repr(x)
-        } for x in getattr(instance, field.name).iterator()]
+        return [
+            {'db': self.get_value_for_type(x.pk), 'repr': get_obj_repr(x)}
+            for x in getattr(instance, field.name).iterator()
+        ]
 
     def get_fk_value(self, instance, field):
         return {
             'db': self.get_value_for_type(field.value_from_object(instance)),
-            'repr': self.get_value_for_type(
-                getattr(instance, field.name)
-            ) or '',
+            'repr': self.get_value_for_type(getattr(instance, field.name))
+            or '',
         }
 
     def get_choice_value(self, instance, field):
@@ -316,7 +358,8 @@ class ModelSerializer(object):
             'db': self.get_value_for_type(field.value_from_object(instance)),
             'repr': self.get_value_for_type(
                 instance._get_FIELD_display(field=field)
-            ) or '',
+            )
+            or '',
         }
 
     def get_file_value(self, instance, field):

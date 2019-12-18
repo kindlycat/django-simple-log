@@ -18,9 +18,7 @@ class TestModel(models.Model):
     )
 
     char_field = models.CharField(
-        verbose_name='Char field',
-        max_length=100,
-        blank=True
+        verbose_name='Char field', max_length=100, blank=True
     )
     fk_field = models.ForeignKey(
         'test_app.OtherModel',
@@ -34,14 +32,14 @@ class TestModel(models.Model):
         'test_app.OtherModel',
         verbose_name='M2m field',
         related_name='test_entries_m2m',
-        blank=True
+        blank=True,
     )
     choice_field = models.PositiveSmallIntegerField(
         verbose_name='Choice field',
         choices=CHOICES,
         default=ONE,
         blank=True,
-        null=True
+        null=True,
     )
 
     class Meta:
@@ -61,24 +59,15 @@ class TestModelProxy(TestModel):
 @python_2_unicode_compatible
 class OtherModel(models.Model):
     char_field = models.CharField(verbose_name='Char field', max_length=100)
-    m2m_field = models.ManyToManyField(
-        'test_app.TestModel',
-        blank=True
-    )
+    m2m_field = models.ManyToManyField('test_app.TestModel', blank=True)
     date_field = models.DateField(
-        verbose_name='Date field',
-        blank=True,
-        null=True
+        verbose_name='Date field', blank=True, null=True
     )
     date_time_field = models.DateTimeField(
-        verbose_name='Date time field',
-        blank=True,
-        null=True
+        verbose_name='Date time field', blank=True, null=True
     )
     time_field = models.TimeField(
-        verbose_name='Time field',
-        blank=True,
-        null=True
+        verbose_name='Time field', blank=True, null=True
     )
 
     class Meta:
@@ -106,9 +95,7 @@ class ThirdModel(models.Model):
 @python_2_unicode_compatible
 class RelatedModel(models.Model):
     third_model = models.ForeignKey(
-        ThirdModel,
-        related_name='related_entries',
-        on_delete=models.CASCADE,
+        ThirdModel, related_name='related_entries', on_delete=models.CASCADE,
     )
     char_field = models.CharField(verbose_name='Char field', max_length=100)
 
