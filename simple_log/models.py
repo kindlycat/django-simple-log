@@ -2,6 +2,7 @@
 from __future__ import absolute_import, unicode_literals
 
 import datetime
+import logging
 import os
 
 from request_vars.utils import del_variable, get_variable, set_variable
@@ -38,6 +39,9 @@ __all__ = [
     'SimpleLog',
     'ModelSerializer',
 ]
+
+
+logger = logging.getLogger('simple_log')
 
 
 @python_2_unicode_compatible
@@ -195,16 +199,19 @@ class SimpleLogAbstractBase(models.Model):
     ):
         if with_initial:
             cls.set_initial(instance)
-        obj = cls(**cls.get_log_params(instance, **kwargs))
-        obj.force_save = force_save
-        obj.instance = instance
-        obj.disable_related = get_variable('disable_related', False)
-        # if hasattr(instance, 'parent_model_field'):
-        #     cls.create_parent_log(obj)
-        if commit:
-            obj.save()
-        cls.add_to_thread(instance, obj)
-        return obj
+        try:
+            obj = cls(**cls.get_log_params(instance, **kwargs))
+            obj.force_save = force_save
+            obj.instance = instance
+            obj.disable_related = get_variable('disable_related', False)
+            # if hasattr(instance, 'parent_model_field'):
+            #     cls.create_parent_log(obj)
+            if commit:
+                obj.save()
+            cls.add_to_thread(instance, obj)
+            return obj
+        except Exception:
+            logger.exception("Can't create log instance.")
 
     @classmethod
     def create_parent_log(cls, log):

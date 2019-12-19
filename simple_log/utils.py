@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
+import logging
 from functools import wraps
 
 from request_vars.utils import del_variable, get_variable, set_variable
@@ -36,6 +37,9 @@ __all__ = [
     'ContextDecorator',
     'serialize_instance',
 ]
+
+
+logger = logging.getLogger('simple_log')
 
 
 def check_log_model(model):
@@ -218,7 +222,14 @@ def get_obj_repr(obj):
 def serialize_instance(instance):
     serializer_class = get_serializer(instance.__class__)
     serializer = serializer_class()
-    return serializer(instance)
+    try:
+        return serializer(instance)
+    except Exception:
+        logger.exception(
+            "Can't serialize instance: {} with pk {}".format(
+                instance.__class__, instance.pk
+            )
+        )
 
 
 def is_log_needed(instance, raw):

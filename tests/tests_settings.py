@@ -235,5 +235,10 @@ class SettingsTestCase(TransactionTestCase):
     @override_settings(SIMPLE_LOG_EXCLUDE_RAW=True)
     def test_exclude_raw(self):
         initial_count = SimpleLog.objects.count()
-        call_command('loaddata', 'tests/fixtures/test_app.json', verbosity=0)
+        fixtures = [
+            'tests/fixtures/test_model.json',
+            'tests/fixtures/third_model.json',
+            'tests/fixtures/related_model.json',
+        ]
+        call_command('loaddata', *fixtures, verbosity=0)
         self.assertEqual(SimpleLog.objects.count(), initial_count)
