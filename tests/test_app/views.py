@@ -25,7 +25,9 @@ class WrapViewMixin(object):
 
     @atomic
     def dispatch(self, request, *args, **kwargs):
-        return self._wrap_view(super().dispatch, request, *args, **kwargs)
+        return self._wrap_view(
+            super(WrapViewMixin, self).dispatch, request, *args, **kwargs
+        )
 
 
 class FormsetViewMixin(object):
