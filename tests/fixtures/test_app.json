@@ -1,0 +1,12 @@
+[
+  {
+    "model": "test_app.testmodel",
+    "pk": 1,
+    "fields": {
+      "char_field": "Test",
+      "fk_field": null,
+      "choice_field": 1,
+      "m2m_field": []
+    }
+  }
+]

@@ -123,3 +123,10 @@ SIMPLE_LOG_FILE_NAME_ONLY
 Default: ``True``
 
 Save file name only instead of path to file.
+
+
+SIMPLE_LOG_EXCLUDE_RAW
+-------------------------
+Default: ``False``
+
+Don't create log entry if signal is raw (e. g. load data from fixtures).

@@ -6,8 +6,8 @@ from collections import defaultdict
 from request_vars.utils import del_variable, get_variable
 
 from simple_log.conf import settings
-from simple_log.utils import get_log_model, is_related_to, serialize_instance
-
+from simple_log.utils import get_log_model, is_related_to, serialize_instance, \
+    is_log_needed
 
 __all__ = [
     'log_m2m_change_handler',
@@ -58,18 +58,14 @@ def save_logs_on_commit():
 
 
 def log_pre_save_delete_handler(sender, instance, **kwargs):
-    if get_variable('disable_logging') or instance in get_variable(
-        'simple_log_instances', []
-    ):
+    if not is_log_needed(instance, kwargs.get('raw')):
         return
     log_model = get_log_model()
     log_model.set_initial(instance)
 
 
 def log_post_save_handler(sender, instance, created, **kwargs):
-    if get_variable('disable_logging') or instance in get_variable(
-        'simple_log_instances', []
-    ):
+    if not is_log_needed(instance, kwargs.get('raw')):
         return
     log_model = get_log_model()
     log_model.log(
@@ -80,9 +76,7 @@ def log_post_save_handler(sender, instance, created, **kwargs):
 
 
 def log_post_delete_handler(sender, instance, **kwargs):
-    if get_variable('disable_logging') or instance in get_variable(
-        'simple_log_instances', []
-    ):
+    if not is_log_needed(instance, kwargs.get('raw')):
         return
     log_model = get_log_model()
     log_model.log(
@@ -91,9 +85,7 @@ def log_post_delete_handler(sender, instance, **kwargs):
 
 
 def log_m2m_change_handler(sender, instance, action, **kwargs):
-    if get_variable('disable_logging') or instance in get_variable(
-        'simple_log_instances', []
-    ):
+    if not is_log_needed(instance, kwargs.get('raw')):
         return
     log_model = get_log_model()
     if action in ('pre_add', 'pre_remove', 'pre_clear'):

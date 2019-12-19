@@ -219,3 +219,11 @@ def serialize_instance(instance):
     serializer_class = get_serializer(instance.__class__)
     serializer = serializer_class()
     return serializer(instance)
+
+
+def is_log_needed(instance, raw):
+    return not (
+        get_variable('disable_logging')
+        or instance in get_variable('simple_log_instances', [])
+        or (raw and settings.EXCLUDE_RAW)
+    )

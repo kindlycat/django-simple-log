@@ -4,6 +4,7 @@ from __future__ import unicode_literals
 from django.apps import apps
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ImproperlyConfigured
+from django.core.management import call_command
 from django.test import TransactionTestCase, override_settings
 from django.test.utils import isolate_lru_cache
 from django.utils import timezone
@@ -230,3 +231,9 @@ class SettingsTestCase(TransactionTestCase):
                 'test_entries_fk': {'label': 'test entries', 'value': []},
             },
         )
+
+    @override_settings(SIMPLE_LOG_EXCLUDE_RAW=True)
+    def test_exclude_raw(self):
+        initial_count = SimpleLog.objects.count()
+        call_command('loaddata', 'tests/fixtures/test_app.json', verbosity=0)
+        self.assertEqual(SimpleLog.objects.count(), initial_count)
