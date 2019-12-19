@@ -6,8 +6,13 @@ from collections import defaultdict
 from request_vars.utils import del_variable, get_variable
 
 from simple_log.conf import settings
-from simple_log.utils import get_log_model, is_related_to, serialize_instance, \
-    is_log_needed
+from simple_log.utils import (
+    get_log_model,
+    is_log_needed,
+    is_related_to,
+    serialize_instance,
+)
+
 
 __all__ = [
     'log_m2m_change_handler',
