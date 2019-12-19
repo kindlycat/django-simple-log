@@ -10,7 +10,7 @@ from simple_log.utils import disable_logging, disable_related
 
 from .test_app.models import OtherModel, RelatedModel, TestModel, ThirdModel
 from .tests_admin import AdminTestCase
-from .utils import noop_ctx
+from .utils import get_ctx
 
 
 class SystemTestCase(AdminTestCase):
@@ -37,13 +37,7 @@ class SystemTestCase(AdminTestCase):
     def add_object(self, model, params, **kwargs):
         params, m2m = self.prepare_params(model, params)
 
-        dl_ctx = 'disable_logging_context' in kwargs.get(
-            'additional_params', {}
-        )
         dl_dec = 'disable_logging_decorator' in kwargs.get(
-            'additional_params', {}
-        )
-        dr_ctx = 'disable_related_context' in kwargs.get(
             'additional_params', {}
         )
         dr_dec = 'disable_related_decorator' in kwargs.get(
@@ -55,9 +49,11 @@ class SystemTestCase(AdminTestCase):
             for k, v in m2m.items():
                 getattr(obj, k).add(*v)
 
-        disable_logging_ctx = disable_logging if dl_ctx else noop_ctx
-        disable_related_ctx = disable_related if dr_ctx else noop_ctx
-        with disable_logging_ctx(), disable_related_ctx():
+        ctx = get_ctx(
+            'disable_logging_context' in kwargs.get('additional_params', {}),
+            'disable_related_context' in kwargs.get('additional_params', {}),
+        )
+        with ctx[0](), ctx[1]():
             if dl_dec:
                 save_obj = disable_logging()(save_obj)
             if dr_dec:
@@ -71,13 +67,7 @@ class SystemTestCase(AdminTestCase):
         for k, v in params.items():
             setattr(obj, k, v)
 
-        dl_ctx = 'disable_logging_context' in kwargs.get(
-            'additional_params', {}
-        )
         dl_dec = 'disable_logging_decorator' in kwargs.get(
-            'additional_params', {}
-        )
-        dr_ctx = 'disable_related_context' in kwargs.get(
             'additional_params', {}
         )
         dr_dec = 'disable_related_decorator' in kwargs.get(
@@ -92,9 +82,11 @@ class SystemTestCase(AdminTestCase):
                 else:
                     getattr(obj, k).add(*v)
 
-        disable_logging_ctx = disable_logging if dl_ctx else noop_ctx
-        disable_related_ctx = disable_related if dr_ctx else noop_ctx
-        with disable_logging_ctx(), disable_related_ctx():
+        ctx = get_ctx(
+            'disable_logging_context' in kwargs.get('additional_params', {}),
+            'disable_related_context' in kwargs.get('additional_params', {}),
+        )
+        with ctx[0](), ctx[1]():
             if dl_dec:
                 save_obj = disable_logging()(save_obj)
             if dr_dec:
@@ -106,17 +98,17 @@ class SystemTestCase(AdminTestCase):
     @atomic
     def delete_object(self, obj, params=None):
         params = params or {}
-        dl_ctx = 'disable_logging_context' in params
         dl_dec = 'disable_logging_decorator' in params
-        dr_ctx = 'disable_related_context' in params
         dr_dec = 'disable_related_decorator' in params
 
         def delete_obj():
             obj.delete()
 
-        disable_logging_ctx = disable_logging if dl_ctx else noop_ctx
-        disable_related_ctx = disable_related if dr_ctx else noop_ctx
-        with disable_logging_ctx(), disable_related_ctx():
+        ctx = get_ctx(
+            'disable_logging_context' in params,
+            'disable_related_context' in params,
+        )
+        with ctx[0](), ctx[1]():
             if dl_dec:
                 delete_obj = disable_logging()(delete_obj)
             if dr_dec:
