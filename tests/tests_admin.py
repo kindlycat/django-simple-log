@@ -334,7 +334,9 @@ class AdminTestCase(TransactionTestCase):
         other_model = OtherModel.objects.create(char_field='other')
         with isolate_lru_cache(get_fields):
             initial_count = SimpleLog.objects.count()
-            TestModel.objects.create(char_field='test', fk_field=other_model)
+            self.add_object(
+                TestModel, {'char_field': 'test', 'fk_field': other_model}
+            )
             sl = SimpleLog.objects.latest('pk')
             self.assertEqual(SimpleLog.objects.count(), initial_count + 1)
             self.assertDictEqual(
@@ -353,7 +355,9 @@ class AdminTestCase(TransactionTestCase):
         other_model = OtherModel.objects.create(char_field='other')
         with isolate_lru_cache(get_fields):
             initial_count = SimpleLog.objects.count()
-            TestModel.objects.create(char_field='test', fk_field=other_model)
+            self.add_object(
+                TestModel, {'char_field': 'test', 'fk_field': other_model}
+            )
             sl = SimpleLog.objects.latest('pk')
             self.assertEqual(SimpleLog.objects.count(), initial_count + 1)
             self.assertDictEqual(
