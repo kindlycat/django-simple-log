@@ -1,0 +1,9 @@
+[
+  {
+    "model": "test_app.thirdmodel",
+    "pk": 1,
+    "fields": {
+      "char_field": "Test"
+    }
+  }
+]

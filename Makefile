@@ -12,3 +12,7 @@ build:
 
 docs:
 	make -C ./docs html
+
+linters:
+	flake8 .
+	black . --check

@@ -36,6 +36,7 @@ DEFAULTS = {
     'DATE_FORMAT': None,
     'TIME_FORMAT': None,
     'FILE_NAME_ONLY': True,
+    'EXCLUDE_RAW': False,
 }
 
 

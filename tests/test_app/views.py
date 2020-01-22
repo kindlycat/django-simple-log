@@ -7,24 +7,27 @@ from django.views.generic import CreateView, DeleteView, UpdateView
 
 from simple_log.utils import disable_logging, disable_related
 from tests.test_app.models import RelatedModel, ThirdModel
-from tests.utils import noop_ctx
+from tests.utils import get_ctx
 
 
-class DisableMixin(object):
+class WrapViewMixin(object):
+    def _wrap_view(self, view, request, *args, **kwargs):
+        ctx = get_ctx(
+            'disable_logging_context' in request.POST,
+            'disable_related_context' in request.POST,
+        )
+        with ctx[0](), ctx[1]():
+            if 'disable_logging_decorator' in request.POST:
+                view = disable_logging()(view)
+            if 'disable_related_decorator' in request.POST:
+                view = disable_related()(view)
+            return view(request, *args, **kwargs)
+
     @atomic
     def dispatch(self, request, *args, **kwargs):
-        dl_ctx = 'disable_logging_context' in request.POST
-        dl_dec = 'disable_logging_decorator' in request.POST
-        dr_ctx = 'disable_related_context' in request.POST
-        dr_dec = 'disable_related_decorator' in request.POST
-        super_dispatch = super(DisableMixin, self).dispatch
-        with disable_logging() if dl_ctx else noop_ctx(),\
-                disable_related() if dr_ctx else noop_ctx():
-            if dl_dec:
-                super_dispatch = disable_logging()(super_dispatch)
-            if dr_dec:
-                super_dispatch = disable_related()(super_dispatch)
-            return super_dispatch(request, *args, **kwargs)
+        return self._wrap_view(
+            super(WrapViewMixin, self).dispatch, request, *args, **kwargs
+        )
 
 
 class FormsetViewMixin(object):
@@ -65,17 +68,17 @@ class FormsetViewMixin(object):
         return super(FormsetViewMixin, self).form_valid(form)
 
 
-class TestCreateView(DisableMixin, FormsetViewMixin, CreateView):
+class TestCreateView(WrapViewMixin, FormsetViewMixin, CreateView):
     fields = '__all__'
     success_url = '.'
     template_name = 'form.html'
 
 
-class TestUpdateView(DisableMixin, FormsetViewMixin, UpdateView):
+class TestUpdateView(WrapViewMixin, FormsetViewMixin, UpdateView):
     fields = '__all__'
     success_url = '.'
     template_name = 'form.html'
 
 
-class TestDeleteView(DisableMixin, DeleteView):
+class TestDeleteView(WrapViewMixin, DeleteView):
     success_url = '.'

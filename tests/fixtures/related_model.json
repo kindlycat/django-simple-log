@@ -1,0 +1,26 @@
+[
+  {
+    "model": "test_app.relatedmodel",
+    "pk": 1,
+    "fields": {
+      "third_model": 1,
+      "char_field": "Test 1"
+    }
+  },
+  {
+    "model": "test_app.relatedmodel",
+    "pk": 2,
+    "fields": {
+      "third_model": 1,
+      "char_field": "Test 2"
+    }
+  },
+  {
+    "model": "test_app.relatedmodel",
+    "pk": 3,
+    "fields": {
+      "third_model": 1,
+      "char_field": "Test 3"
+    }
+  }
+]
