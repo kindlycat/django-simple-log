@@ -8,6 +8,7 @@ from request_vars.utils import del_variable, get_variable
 from simple_log.conf import settings
 from simple_log.utils import (
     get_log_model,
+    get_obj_repr,
     is_log_needed,
     is_related_to,
     serialize_instance,
@@ -16,9 +17,9 @@ from simple_log.utils import (
 
 __all__ = [
     'log_m2m_change_handler',
-    'log_pre_save_delete_handler',
+    'log_pre_save_handler',
     'log_post_save_handler',
-    'log_post_delete_handler',
+    'log_pre_delete_handler',
     'save_logs_on_commit',
     'save_related',
 ]
@@ -62,7 +63,7 @@ def save_logs_on_commit():
     del_variable('simple_log_instances')
 
 
-def log_pre_save_delete_handler(sender, instance, **kwargs):
+def log_pre_save_handler(sender, instance, **kwargs):
     if not is_log_needed(instance, kwargs.get('raw')):
         return
     log_model = get_log_model()
@@ -80,12 +81,16 @@ def log_post_save_handler(sender, instance, created, **kwargs):
     )
 
 
-def log_post_delete_handler(sender, instance, **kwargs):
+def log_pre_delete_handler(sender, instance, **kwargs):
     if not is_log_needed(instance, kwargs.get('raw')):
         return
     log_model = get_log_model()
+    log_model.set_initial(instance)
     log_model.log(
-        instance=instance, action_flag=log_model.DELETE, commit=False
+        instance=instance,
+        action_flag=log_model.DELETE,
+        commit=False,
+        object_repr=get_obj_repr(instance),
     )
 
 
