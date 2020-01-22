@@ -51,5 +51,3 @@ class RelatedModelInline(admin.TabularInline):
 class ThirdModelAdmin(BaseModelAdmin):
     inlines = [RelatedModelInline]
 
-
-admin.site.register(SimpleLog, SimpleLogModelAdmin)
