@@ -185,7 +185,7 @@ class CustomViewTestCase(AdminTestCase):
         )
 
     @override_settings(SIMPLE_LOG_ANONYMOUS_REPR='UNKNOWN')
-    def test_anonymous_change_repr(self):
+    def test_anonymous_repr(self):
         self.client.logout()
         params = {
             'char_field': 'test',

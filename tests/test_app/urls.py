@@ -6,6 +6,7 @@ from django.contrib import admin
 
 from tests.test_app.models import (
     OtherModel,
+    RelatedModel,
     TestModel,
     TestModelProxy,
     ThirdModel,
@@ -17,7 +18,7 @@ urlpatterns = [
     url(r'^admin/', admin.site.urls),
 ]
 
-for model in (TestModel, OtherModel, ThirdModel, TestModelProxy):
+for model in (TestModel, OtherModel, ThirdModel, RelatedModel, TestModelProxy):
     urlpatterns += [
         url(
             r'^{}/add/$'.format(model._meta.model_name),

@@ -93,7 +93,7 @@ class SimpleLogAbstractBase(models.Model):
         abstract = True
 
     def __str__(self):
-        return '%s' % self.object_repr
+        return self.object_repr
 
     def _get_related_objects(self):
         return getattr(self, '_related_objects', [])
@@ -154,17 +154,12 @@ class SimpleLogAbstractBase(models.Model):
         in_commit = save_logs_on_commit in [
             f[1] for f in connection.run_on_commit
         ]
-        logs = get_variable('simple_log_logs', [])
-        instances = get_variable('simple_log_instances', [])
+        instances = get_variable('simple_log_instances', {})
         # prevent memory usage in non transaction test cases
-        if not in_commit and logs:
-            del_variable('simple_log_logs')
+        if not in_commit and instances:
             del_variable('simple_log_instances')
-            logs = []
-            instances = []
-        logs.append(obj)
-        instances.append(instance)
-        set_variable('simple_log_logs', logs)
+            instances = {}
+        instances[instance] = obj
         set_variable('simple_log_instances', instances)
 
         if not in_commit:
@@ -201,11 +196,12 @@ class SimpleLogAbstractBase(models.Model):
             cls.set_initial(instance)
         try:
             obj = cls(**cls.get_log_params(instance, **kwargs))
-            obj.force_save = force_save
             obj.instance = instance
+            instance._log = obj
+            obj.force_save = force_save
             obj.disable_related = get_variable('disable_related', False)
-            # if hasattr(instance, 'parent_model_field'):
-            #     cls.create_parent_log(obj)
+            if hasattr(instance, 'parent_model_fields'):
+                cls.create_parent_log(obj)
             if commit:
                 obj.save()
             cls.add_to_thread(instance, obj)
@@ -215,19 +211,22 @@ class SimpleLogAbstractBase(models.Model):
 
     @classmethod
     def create_parent_log(cls, log):
-        logs = get_variable('logs', [])
+        new_instances = get_variable('simple_log_instances', {})
         instance = log.instance
-        parent_instance = getattr(instance, instance.parent_model_field)
-        if instance in logs:
-            parent_log = logs[instance][0]
-        else:
-            parent_log = cls.log(
-                parent_instance,
-                commit=False,
-                action_flag=cls.CHANGE,
-                with_initial=True,
-            )
-        log._related_objects = log._get_related_objects() + [parent_log]
+        for field in instance.parent_model_fields:
+            parent_instance = getattr(instance, field, None)
+            if parent_instance:
+                parent_log = new_instances.get(parent_instance)
+                if not parent_log:
+                    parent_log = cls.log(
+                        parent_instance,
+                        commit=False,
+                        action_flag=cls.CHANGE,
+                        with_initial=True,
+                    )
+                log._related_objects = log._get_related_objects() + [
+                    parent_log
+                ]
 
     @cached_property
     def changed_fields(self):
@@ -300,7 +299,9 @@ class SimpleLogAbstract(SimpleLogAbstractBase):
         abstract = True
 
     def __str__(self):
-        return '%s: %s' % (self.object_repr, self.get_action_flag_display())
+        return '{}: {}'.format(
+            self.object_repr, self.get_action_flag_display()
+        )
 
 
 class SimpleLog(SimpleLogAbstract):

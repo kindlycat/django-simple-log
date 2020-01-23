@@ -118,3 +118,19 @@ class LogModelTestCase(TransactionTestCase):
                 'new': {'db': TestModel.TWO, 'repr': 'Two'},
             },
         )
+
+    def test_log_repr(self):
+        obj = TestModel.objects.create(char_field='test')
+        sl = SimpleLog.objects.latest('pk')
+        self.assertEqual(str(sl), '{}: {}'.format(sl.object_repr, 'added'))
+
+        obj = TestModel.objects.get(pk=obj.pk)
+        obj.char_field = 'test2'
+        obj.save()
+        sl = SimpleLog.objects.latest('pk')
+        self.assertEqual(str(sl), '{}: {}'.format(sl.object_repr, 'changed'))
+
+        obj = TestModel.objects.get(pk=obj.pk)
+        obj.delete()
+        sl = SimpleLog.objects.latest('pk')
+        self.assertEqual(str(sl), '{}: {}'.format(sl.object_repr, 'deleted'))

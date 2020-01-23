@@ -215,7 +215,7 @@ class disable_related(ContextDecorator):
 
 def get_obj_repr(obj):
     if hasattr(obj, 'simple_log_repr'):
-        return force_text(obj.simple_log_repr())
+        return force_text(obj.simple_log_repr)
     return force_text(obj)
 
 
@@ -235,6 +235,6 @@ def serialize_instance(instance):
 def is_log_needed(instance, raw):
     return not (
         get_variable('disable_logging')
-        or instance in get_variable('simple_log_instances', [])
+        or hasattr(instance, '_log')
         or (raw and settings.EXCLUDE_RAW)
     )

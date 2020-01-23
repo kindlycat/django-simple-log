@@ -46,9 +46,7 @@ def save_related(logs):
 
 
 def save_logs_on_commit():
-    all_logs = get_variable('simple_log_logs', [])
-    if not all_logs:
-        return
+    all_logs = get_variable('simple_log_instances', {}).values()
     for log in [x for x in all_logs if not x.pk]:
         log.old = getattr(log.instance, '_old_value', None)
         log.new = serialize_instance(log.instance)
@@ -59,7 +57,6 @@ def save_logs_on_commit():
         [x.pk for x in all_logs if not x.disable_related]
     ):
         save_related(all_logs)
-    del_variable('simple_log_logs')
     del_variable('simple_log_instances')
 
 

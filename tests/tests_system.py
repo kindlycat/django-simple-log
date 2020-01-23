@@ -35,6 +35,7 @@ class SystemTestCase(AdminTestCase):
 
     @atomic
     def add_object(self, model, params, **kwargs):
+        params = params.copy()
         params, m2m = self.prepare_params(model, params)
 
         dl_dec = 'disable_logging_decorator' in kwargs.get(
@@ -63,6 +64,7 @@ class SystemTestCase(AdminTestCase):
 
     @atomic
     def change_object(self, obj, params, **kwargs):
+        params = params.copy()
         params, m2m = self.prepare_params(obj._meta.model, params)
         for k, v in params.items():
             setattr(obj, k, v)
@@ -97,7 +99,7 @@ class SystemTestCase(AdminTestCase):
 
     @atomic
     def delete_object(self, obj, params=None):
-        params = params or {}
+        params = (params or {}).copy()
         dl_dec = 'disable_logging_decorator' in params
         dr_dec = 'disable_related_decorator' in params
 
