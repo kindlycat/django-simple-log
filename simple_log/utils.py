@@ -161,6 +161,7 @@ def is_related_to(log, to_log):
             x.related_model
             and issubclass(to_instance.__class__, x.related_model)
             and x.concrete
+            and not (x.many_to_many and not instance.pk)
         )
     ]
     for field in related_fields:
@@ -239,6 +240,9 @@ def serialize_instance(instance):
 def is_log_needed(instance, raw):
     return not (
         get_variable('disable_logging')
-        or hasattr(instance, '_log')
+        or (
+            instance.pk
+            and instance in get_variable('simple_log_instances', {})
+        )
         or (raw and settings.EXCLUDE_RAW)
     )
