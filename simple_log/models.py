@@ -166,16 +166,16 @@ class SimpleLogAbstractBase(models.Model):
             connection.on_commit(save_logs_on_commit)
 
     @classmethod
-    def set_initial(cls, instance):
+    def set_initial(cls, instance, using=None):
         if instance.pk and not hasattr(
             instance, settings.OLD_INSTANCE_ATTR_NAME
         ):
             setattr(
                 instance,
                 settings.OLD_INSTANCE_ATTR_NAME,
-                instance.__class__._base_manager.filter(
-                    pk=instance.pk
-                ).first(),
+                instance.__class__._base_manager.using(using)
+                .filter(pk=instance.pk)
+                .first(),
             )
         if not hasattr(instance, '_old_values'):
             old_instance = getattr(
@@ -190,10 +190,11 @@ class SimpleLogAbstractBase(models.Model):
         commit=True,
         with_initial=False,
         force_save=False,
+        using=None,
         **kwargs
     ):
         if with_initial:
-            cls.set_initial(instance)
+            cls.set_initial(instance, using)
         try:
             obj = cls(**cls.get_log_params(instance, **kwargs))
             obj.instance = instance
@@ -201,7 +202,7 @@ class SimpleLogAbstractBase(models.Model):
             obj.force_save = force_save
             obj.disable_related = get_variable('disable_related', False)
             if hasattr(instance, 'parent_model_fields'):
-                cls.create_parent_log(obj)
+                obj.create_parent_logs()
             if commit:
                 obj.save()
             cls.add_to_thread(instance, obj)
@@ -209,22 +210,20 @@ class SimpleLogAbstractBase(models.Model):
         except Exception:
             logger.exception("Can't create log instance.")
 
-    @classmethod
-    def create_parent_log(cls, log):
+    def create_parent_logs(self):
         new_instances = get_variable('simple_log_instances', {})
-        instance = log.instance
-        for field in instance.parent_model_fields:
-            parent_instance = getattr(instance, field, None)
+        for field in self.instance.parent_model_fields:
+            parent_instance = getattr(self.instance, field, None)
             if parent_instance:
                 parent_log = new_instances.get(parent_instance)
                 if not parent_log:
-                    parent_log = cls.log(
+                    parent_log = self.log(
                         parent_instance,
                         commit=False,
-                        action_flag=cls.CHANGE,
+                        action_flag=self.CHANGE,
                         with_initial=True,
                     )
-                log._related_objects = log._get_related_objects() + [
+                self._related_objects = self._get_related_objects() + [
                     parent_log
                 ]
 

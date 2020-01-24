@@ -139,9 +139,13 @@ def get_model_list():
     return model_list
 
 
-def is_related_to(instance, to_instance):
+def is_related_to(log, to_log):
+    instance = log.instance
+    to_instance = to_log.instance
     if instance == to_instance:
         return False
+    if to_log in log._get_related_objects():
+        return True
     old_instance = getattr(instance, settings.OLD_INSTANCE_ATTR_NAME, None)
     to_instance_pk = to_instance.pk
     if not to_instance_pk:
