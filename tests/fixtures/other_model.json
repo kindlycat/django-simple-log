@@ -1,0 +1,10 @@
+[
+  {
+    "model": "test_app.othermodel",
+    "pk": 1,
+    "fields": {
+      "char_field": "Test",
+      "m2m_field": [1]
+    }
+  }
+]

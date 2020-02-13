@@ -52,4 +52,9 @@ class ThirdModelAdmin(BaseModelAdmin):
     inlines = [RelatedModelInline]
 
 
+@register(RelatedModel)
+class RelatedModelAdmin(BaseModelAdmin):
+    pass
+
+
 admin.site.register(SimpleLog, SimpleLogModelAdmin)

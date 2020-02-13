@@ -99,6 +99,8 @@ class RelatedModel(models.Model):
     )
     char_field = models.CharField(verbose_name='Char field', max_length=100)
 
+    parent_model_fields = ('third_model',)
+
     class Meta:
         verbose_name = 'related entry'
         verbose_name_plural = 'related entries'

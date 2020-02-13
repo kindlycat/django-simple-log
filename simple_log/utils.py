@@ -139,9 +139,13 @@ def get_model_list():
     return model_list
 
 
-def is_related_to(instance, to_instance):
+def is_related_to(log, to_log):
+    instance = log.instance
+    to_instance = to_log.instance
     if instance == to_instance:
         return False
+    if to_log in log._get_related_objects():
+        return True
     old_instance = getattr(instance, settings.OLD_INSTANCE_ATTR_NAME, None)
     to_instance_pk = to_instance.pk
     if not to_instance_pk:
@@ -157,6 +161,7 @@ def is_related_to(instance, to_instance):
             x.related_model
             and issubclass(to_instance.__class__, x.related_model)
             and x.concrete
+            and not (x.many_to_many and not instance.pk)
         )
     ]
     for field in related_fields:
@@ -215,7 +220,7 @@ class disable_related(ContextDecorator):
 
 def get_obj_repr(obj):
     if hasattr(obj, 'simple_log_repr'):
-        return force_text(obj.simple_log_repr())
+        return force_text(obj.simple_log_repr)
     return force_text(obj)
 
 
@@ -235,6 +240,9 @@ def serialize_instance(instance):
 def is_log_needed(instance, raw):
     return not (
         get_variable('disable_logging')
-        or instance in get_variable('simple_log_instances', [])
+        or (
+            instance.pk
+            and instance in get_variable('simple_log_instances', {})
+        )
         or (raw and settings.EXCLUDE_RAW)
     )

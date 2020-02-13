@@ -47,7 +47,7 @@ class AdminTestCase(TransactionTestCase):
             RelatedModel.objects.create(char_field='related', third_model=tm)
 
     def prepare_params(self, model, params):
-        for k, v in params.items():
+        for k, v in [(k, v) for k, v in params.items() if v]:
             if model._meta.get_field(k).many_to_many:
                 params[k] = [x.pk for x in v]
             elif model._meta.get_field(k).is_relation:
@@ -55,6 +55,7 @@ class AdminTestCase(TransactionTestCase):
         return params
 
     def add_object(self, model, params, **kwargs):
+        params = params.copy()
         params = self.prepare_params(model, params)
         params.update(**kwargs.get('additional_params', {}))
         headers = kwargs.get('headers', {})
@@ -62,6 +63,8 @@ class AdminTestCase(TransactionTestCase):
         return model.objects.latest('pk')
 
     def change_object(self, obj, params, **kwargs):
+        params = params.copy()
+        params = self.prepare_params(obj.__class__, params)
         headers = kwargs.pop('headers', {})
         params.update(**kwargs.get('additional_params', {}))
         self.client.post(
@@ -638,3 +641,83 @@ class AdminTestCase(TransactionTestCase):
         second_sl = SimpleLog.objects.all()[1]
         self.assertQuerysetEqual(first_sl.related_logs.all(), [])
         self.assertQuerysetEqual(second_sl.related_logs.all(), [])
+
+    def test_create_object_with_parent(self):
+        third_instance = ThirdModel.objects.create(char_field='test')
+        params = {
+            'char_field': 'test',
+            'third_model': third_instance,
+        }
+        initial_count = SimpleLog.objects.count()
+        obj = self.add_object(RelatedModel, params)
+        self.assertEqual(SimpleLog.objects.count(), initial_count + 2)
+        first_sl = SimpleLog.objects.all()[0]
+        second_sl = SimpleLog.objects.all()[1]
+        self.assertEqual(first_sl.get_edited_object(), third_instance)
+        self.assertEqual(first_sl.action_flag, SimpleLog.CHANGE)
+        self.assertEqual(second_sl.get_edited_object(), obj)
+        self.assertEqual(second_sl.action_flag, SimpleLog.ADD)
+        self.assertQuerysetEqual(
+            first_sl.related_logs.all(), [repr(second_sl)]
+        )
+        self.assertQuerysetEqual(second_sl.related_logs.all(), [])
+
+    def test_change_object_with_parent(self):
+        third_instance = ThirdModel.objects.create(char_field='test')
+        params = {
+            'char_field': 'test',
+            'third_model': third_instance,
+        }
+        obj = self.add_object(RelatedModel, params)
+        initial_count = SimpleLog.objects.count()
+        params.update(char_field='test2')
+        self.change_object(obj, params)
+        self.assertEqual(SimpleLog.objects.count(), initial_count + 2)
+        first_sl = SimpleLog.objects.all()[0]
+        second_sl = SimpleLog.objects.all()[1]
+        self.assertEqual(first_sl.get_edited_object(), third_instance)
+        self.assertEqual(first_sl.action_flag, SimpleLog.CHANGE)
+        self.assertEqual(second_sl.get_edited_object(), obj)
+        self.assertEqual(second_sl.action_flag, SimpleLog.CHANGE)
+        self.assertQuerysetEqual(
+            first_sl.related_logs.all(), [repr(second_sl)]
+        )
+        self.assertQuerysetEqual(second_sl.related_logs.all(), [])
+
+    def test_delete_object_with_parent(self):
+        third_instance = ThirdModel.objects.create(char_field='test')
+        params = {
+            'char_field': 'test',
+            'third_model': third_instance,
+        }
+        obj = self.add_object(RelatedModel, params)
+        obj_pk = obj.pk
+        initial_count = SimpleLog.objects.count()
+        self.delete_object(obj)
+        self.assertEqual(SimpleLog.objects.count(), initial_count + 2)
+        first_sl = SimpleLog.objects.all()[0]
+        second_sl = SimpleLog.objects.all()[1]
+        self.assertEqual(first_sl.get_edited_object(), third_instance)
+        self.assertEqual(first_sl.action_flag, SimpleLog.CHANGE)
+        self.assertEqual(second_sl.object_id, str(obj_pk))
+        self.assertEqual(
+            second_sl.content_type,
+            ContentType.objects.get_for_model(RelatedModel),
+        )
+        self.assertEqual(second_sl.action_flag, SimpleLog.DELETE)
+        self.assertQuerysetEqual(
+            first_sl.related_logs.all(), [repr(second_sl)]
+        )
+        self.assertQuerysetEqual(second_sl.related_logs.all(), [])
+
+    @mock.patch.object(
+        TestModel,
+        'simple_log_repr',
+        new_callable=mock.PropertyMock,
+        create=True,
+        return_value='Test repr',
+    )
+    def test_simple_log_repr_property(self, mocked):
+        self.add_object(TestModel, {'char_field': 'test'})
+        sl = SimpleLog.objects.latest('pk')
+        self.assertEqual(sl.object_repr, 'Test repr')

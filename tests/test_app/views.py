@@ -82,3 +82,4 @@ class TestUpdateView(WrapViewMixin, FormsetViewMixin, UpdateView):
 
 class TestDeleteView(WrapViewMixin, DeleteView):
     success_url = '.'
+    template_name = 'confirm_delete.html'

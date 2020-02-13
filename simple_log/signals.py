@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
+import inspect
 from collections import defaultdict
 
 from request_vars.utils import del_variable, get_variable
@@ -28,15 +29,10 @@ __all__ = [
 def save_related(logs):
     map_related = defaultdict(list)
     for saved_log in [x for x in logs if x.pk and not x.disable_related]:
-        instance = saved_log.instance
         for related in [
-            k
-            for k in logs
-            if not k.disable_related
-            and (
-                k in saved_log._get_related_objects()
-                or is_related_to(instance, k.instance)
-            )
+            log
+            for log in logs
+            if not log.disable_related and is_related_to(saved_log, log)
         ]:
             if not related.pk:
                 related.save()
@@ -46,9 +42,7 @@ def save_related(logs):
 
 
 def save_logs_on_commit():
-    all_logs = get_variable('simple_log_logs', [])
-    if not all_logs:
-        return
+    all_logs = get_variable('simple_log_instances', {}).values()
     for log in [x for x in all_logs if not x.pk]:
         log.old = getattr(log.instance, '_old_value', None)
         log.new = serialize_instance(log.instance)
@@ -59,7 +53,6 @@ def save_logs_on_commit():
         [x.pk for x in all_logs if not x.disable_related]
     ):
         save_related(all_logs)
-    del_variable('simple_log_logs')
     del_variable('simple_log_instances')
 
 
@@ -67,7 +60,7 @@ def log_pre_save_handler(sender, instance, **kwargs):
     if not is_log_needed(instance, kwargs.get('raw')):
         return
     log_model = get_log_model()
-    log_model.set_initial(instance)
+    log_model.set_initial(instance, kwargs.get('using'))
 
 
 def log_post_save_handler(sender, instance, created, **kwargs):
@@ -78,6 +71,7 @@ def log_post_save_handler(sender, instance, created, **kwargs):
         instance=instance,
         action_flag=log_model.ADD if created else log_model.CHANGE,
         commit=False,
+        using=kwargs.get('using'),
     )
 
 
@@ -91,11 +85,18 @@ def log_pre_delete_handler(sender, instance, **kwargs):
         action_flag=log_model.DELETE,
         commit=False,
         object_repr=get_obj_repr(instance),
+        using=kwargs.get('using'),
     )
 
 
 def log_m2m_change_handler(sender, instance, action, **kwargs):
-    if not is_log_needed(instance, kwargs.get('raw')):
+    # M2m change signal does not provide raw kwarg
+    raw = False
+    for fr in inspect.stack():
+        if inspect.getmodulename(fr[1]) in ('test', 'loaddata'):
+            raw = True
+            break
+    if not is_log_needed(instance, raw):
         return
     log_model = get_log_model()
     if action in ('pre_add', 'pre_remove', 'pre_clear'):
@@ -103,5 +104,8 @@ def log_m2m_change_handler(sender, instance, action, **kwargs):
 
     if action in ('post_add', 'post_remove', 'post_clear'):
         log_model.log(
-            instance=instance, action_flag=log_model.CHANGE, commit=False
+            instance=instance,
+            action_flag=log_model.CHANGE,
+            commit=False,
+            using=kwargs.get('using'),
         )
