@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
+import inspect
 from collections import defaultdict
 
 from request_vars.utils import del_variable, get_variable
@@ -89,7 +90,13 @@ def log_pre_delete_handler(sender, instance, **kwargs):
 
 
 def log_m2m_change_handler(sender, instance, action, **kwargs):
-    if not is_log_needed(instance, kwargs.get('raw')):
+    # M2m change signal does not provide raw kwarg
+    raw = False
+    for fr in inspect.stack():
+        if inspect.getmodulename(fr[1]) in ('test', 'loaddata'):
+            raw = True
+            break
+    if not is_log_needed(instance, raw):
         return
     log_model = get_log_model()
     if action in ('pre_add', 'pre_remove', 'pre_clear'):

@@ -236,6 +236,7 @@ class SettingsTestCase(TransactionTestCase):
     def test_exclude_raw(self):
         initial_count = SimpleLog.objects.count()
         fixtures = [
+            'tests/fixtures/other_model.json',
             'tests/fixtures/test_model.json',
             'tests/fixtures/third_model.json',
             'tests/fixtures/related_model.json',
