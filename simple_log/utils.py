@@ -1,8 +1,6 @@
-# -*- coding: utf-8 -*-
-from __future__ import unicode_literals
-
 import logging
-from functools import wraps
+from contextlib import ContextDecorator
+from functools import lru_cache
 
 from request_vars.utils import del_variable, get_variable, set_variable
 
@@ -12,15 +10,6 @@ from django.utils.encoding import force_text
 from django.utils.module_loading import import_string
 
 from simple_log.conf import settings
-
-
-try:
-    from django.utils import six
-    from django.utils.lru_cache import lru_cache
-except ImportError:
-    # django > 2.
-    import six
-    from functools import lru_cache
 
 
 __all__ = [
@@ -73,7 +62,7 @@ def get_serializer(model=None):
         serializer = model.simple_log_serializer
     else:
         serializer = settings.MODEL_SERIALIZER
-    if isinstance(serializer, six.string_types):
+    if isinstance(serializer, str):
         return import_string(serializer)
     return serializer
 
@@ -170,34 +159,6 @@ def is_related_to(log, to_log):
             or getattr(old_instance, field.attname, None) == to_instance_pk
         ):
             return True
-
-
-class ContextDecorator(object):
-    """
-    A base class or mixin that enables context managers to work as decorators.
-
-    Backport for python 2.7
-    """
-
-    def _recreate_cm(self):
-        """Return a recreated instance of self.
-
-        Allows an otherwise one-shot context manager like
-        _GeneratorContextManager to support use as
-        a decorator via implicit recreation.
-
-        This is a private interface just for _GeneratorContextManager.
-        See issue #11647 for details.
-        """
-        return self
-
-    def __call__(self, func):
-        @wraps(func)
-        def inner(*args, **kwds):
-            with self._recreate_cm():
-                return func(*args, **kwds)
-
-        return inner
 
 
 class disable_logging(ContextDecorator):

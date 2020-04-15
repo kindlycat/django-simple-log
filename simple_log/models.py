@@ -1,12 +1,8 @@
-# -*- coding: utf-8 -*-
-from __future__ import absolute_import, unicode_literals
-
 import datetime
 import logging
 import os
 
 from request_vars.utils import del_variable, get_variable, set_variable
-from six import python_2_unicode_compatible
 
 from django.conf import settings as django_settings
 from django.contrib.admin.utils import quote
@@ -44,7 +40,6 @@ __all__ = [
 logger = logging.getLogger('simple_log')
 
 
-@python_2_unicode_compatible
 class SimpleLogAbstractBase(models.Model):
     ADD = 1
     CHANGE = 2
