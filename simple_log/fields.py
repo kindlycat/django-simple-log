@@ -1,5 +1,6 @@
 from django.db.models import ManyToManyField
 
+
 try:
     from django.db.models import JSONField
 except ImportError:
