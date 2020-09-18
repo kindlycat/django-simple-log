@@ -10,3 +10,14 @@ exclude = '''
   | docs
 )
 '''
+
+
+[tool.isort]
+line_length = 79
+multi_line_output = 3
+lines_after_imports = 2
+sections = ['FUTURE', 'STDLIB', 'THIRDPARTY', 'DJANGO', 'FIRSTPARTY', 'LOCALFOLDER']
+skip_glob = ['migrations', 'docs', 'build', '.*', '__pycache__']
+known_django = ['django']
+known_third_party = ['request_vars']
+include_trailing_comma = true
