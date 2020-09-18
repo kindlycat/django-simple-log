@@ -1,3 +1,5 @@
+from unittest import mock
+
 from django.contrib.auth.models import User
 from django.contrib.contenttypes.models import ContentType
 from django.test import TransactionTestCase
@@ -16,12 +18,6 @@ from .test_app.models import (
     TestModelProxy,
     ThirdModel,
 )
-
-
-try:
-    from unittest import mock
-except ImportError:
-    import mock
 
 
 class AdminTestCase(TransactionTestCase):

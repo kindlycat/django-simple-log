@@ -1,6 +1,3 @@
-# -*- coding: utf-8 -*-
-from __future__ import unicode_literals
-
 from django.db.transaction import atomic
 from django.forms import inlineformset_factory
 from django.views.generic import CreateView, DeleteView, UpdateView
