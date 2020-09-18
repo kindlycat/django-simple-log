@@ -1,14 +1,8 @@
-# -*- coding: utf-8 -*-
-from __future__ import unicode_literals
-
-from six import python_2_unicode_compatible
-
 from django.db import models
 
 from simple_log.models import ModelSerializer, SimpleLogAbstract
 
 
-@python_2_unicode_compatible
 class TestModel(models.Model):
     ONE = 1
     TWO = 2
@@ -56,7 +50,6 @@ class TestModelProxy(TestModel):
         proxy = True
 
 
-@python_2_unicode_compatible
 class OtherModel(models.Model):
     char_field = models.CharField(verbose_name='Char field', max_length=100)
     m2m_field = models.ManyToManyField('test_app.TestModel', blank=True)
@@ -79,7 +72,6 @@ class OtherModel(models.Model):
         return self.char_field
 
 
-@python_2_unicode_compatible
 class ThirdModel(models.Model):
     char_field = models.CharField(verbose_name='Char field', max_length=100)
 
@@ -92,10 +84,9 @@ class ThirdModel(models.Model):
         return self.char_field
 
 
-@python_2_unicode_compatible
 class RelatedModel(models.Model):
     third_model = models.ForeignKey(
-        ThirdModel, related_name='related_entries', on_delete=models.CASCADE,
+        ThirdModel, related_name='related_entries', on_delete=models.CASCADE
     )
     char_field = models.CharField(verbose_name='Char field', max_length=100)
 

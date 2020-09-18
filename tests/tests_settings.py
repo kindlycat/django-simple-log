@@ -1,6 +1,3 @@
-# -*- coding: utf-8 -*-
-from __future__ import unicode_literals
-
 from django.apps import apps
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ImproperlyConfigured
@@ -149,7 +146,7 @@ class SettingsTestCase(TransactionTestCase):
             )
 
     @override_settings(
-        SIMPLE_LOG_MODEL_LIST=(), SIMPLE_LOG_EXCLUDE_MODEL_LIST=(),
+        SIMPLE_LOG_MODEL_LIST=(), SIMPLE_LOG_EXCLUDE_MODEL_LIST=()
     )
     def test_log_all_models(self):
         all_models = [

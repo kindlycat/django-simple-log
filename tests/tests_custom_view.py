@@ -1,6 +1,3 @@
-# -*- coding: utf-8 -*-
-from __future__ import unicode_literals
-
 from django.contrib.contenttypes.models import ContentType
 from django.test import override_settings
 from django.utils.encoding import force_text

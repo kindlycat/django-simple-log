@@ -50,7 +50,7 @@ class SimpleLogAbstractBase(models.Model):
         (DELETE, _('deleted')),
     )
     action_time = models.DateTimeField(
-        _('action time'), default=timezone.now, editable=False,
+        _('action time'), default=timezone.now, editable=False
     )
     content_type = models.ForeignKey(
         ContentType,
@@ -74,7 +74,7 @@ class SimpleLogAbstractBase(models.Model):
     change_message = models.TextField(_('change message'), blank=True)
 
     related_logs = SimpleManyToManyField(
-        'self', verbose_name=_('related log'), blank=True, symmetrical=False,
+        'self', verbose_name=_('related log'), blank=True, symmetrical=False
     )
 
     is_add = property(lambda self: self.action_flag == self.ADD)

@@ -1,6 +1,3 @@
-# -*- coding: utf-8 -*-
-from __future__ import unicode_literals
-
 from django.contrib.admin.utils import quote
 from django.db.transaction import atomic
 from django.test import TransactionTestCase

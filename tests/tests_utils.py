@@ -1,6 +1,3 @@
-# -*- coding: utf-8 -*-
-from __future__ import unicode_literals
-
 from django.test import TransactionTestCase
 
 from simple_log.templatetags.simple_log_tags import get_type
