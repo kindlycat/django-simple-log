@@ -149,7 +149,7 @@ class SettingsTestCase(TransactionTestCase):
             )
 
     @override_settings(
-        SIMPLE_LOG_MODEL_LIST=(), SIMPLE_LOG_EXCLUDE_MODEL_LIST=(),
+        SIMPLE_LOG_MODEL_LIST=(), SIMPLE_LOG_EXCLUDE_MODEL_LIST=()
     )
     def test_log_all_models(self):
         all_models = [

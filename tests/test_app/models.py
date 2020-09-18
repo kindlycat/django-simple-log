@@ -95,7 +95,7 @@ class ThirdModel(models.Model):
 @python_2_unicode_compatible
 class RelatedModel(models.Model):
     third_model = models.ForeignKey(
-        ThirdModel, related_name='related_entries', on_delete=models.CASCADE,
+        ThirdModel, related_name='related_entries', on_delete=models.CASCADE
     )
     char_field = models.CharField(verbose_name='Char field', max_length=100)
 

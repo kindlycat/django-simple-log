@@ -29,7 +29,7 @@ class SimpleLogChangeList(ChangeList):
             return reverse(
                 'admin:%s_%s_history_detail'
                 % (object_opts.app_label, object_opts.model_name),
-                args=(quote(object_pk), quote(pk),),
+                args=(quote(object_pk), quote(pk)),
                 current_app=self.model_admin.admin_site.name,
             )
         return super(SimpleLogChangeList, self).url_for_result(result)
