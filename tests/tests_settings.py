@@ -240,3 +240,10 @@ class SettingsTestCase(TransactionTestCase):
         ]
         call_command('loaddata', *fixtures, verbosity=0)
         self.assertEqual(SimpleLog.objects.count(), initial_count)
+
+    @override_settings(SIMPLE_LOG_ENABLED=False)
+    def test_enabled(self):
+        initial_count = SimpleLog.objects.count()
+        TestModel.objects.create(char_field='test')
+        OtherModel.objects.create(char_field='test')
+        self.assertEqual(SimpleLog.objects.count(), initial_count)

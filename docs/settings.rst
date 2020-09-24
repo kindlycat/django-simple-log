@@ -130,3 +130,10 @@ SIMPLE_LOG_EXCLUDE_RAW
 Default: ``False``
 
 Don't create log entry if signal is raw (e. g. load data from fixtures).
+
+
+SIMPLE_LOG_ENABLED
+-------------------------
+Default: ``True``
+
+Enable/disable log, useful for testing.

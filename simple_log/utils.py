@@ -199,7 +199,7 @@ def serialize_instance(instance):
 
 
 def is_log_needed(instance, raw):
-    return not (
+    return settings.ENABLED and not (
         get_variable('disable_logging')
         or (
             instance.pk
