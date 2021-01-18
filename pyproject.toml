@@ -4,10 +4,11 @@ include = '\.pyi?$'
 skip-string-normalization = true
 exclude = '''
 (
-  migrations
-  | \.\*
-  | .venv
+  \.\*
+  | migrations
   | docs
+  | build
+  | __pycache__
 )
 '''
 
