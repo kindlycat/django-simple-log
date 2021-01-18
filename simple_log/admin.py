@@ -7,7 +7,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import PermissionDenied
 from django.urls import reverse
 
-from simple_log.conf import settings
+from simple_log.settings import log_settings
 from simple_log.utils import get_log_model
 
 
@@ -85,7 +85,7 @@ class SimpleLogModelAdmin(admin.ModelAdmin):
                 for_concrete_model=getattr(
                     self.model,
                     'simple_log_proxy_concrete',
-                    settings.PROXY_CONCRETE,
+                    log_settings.PROXY_CONCRETE,
                 ),
             )
             qs = qs.filter(content_type=ct)

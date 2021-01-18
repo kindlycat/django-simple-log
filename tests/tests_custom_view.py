@@ -2,8 +2,8 @@ from django.contrib.contenttypes.models import ContentType
 from django.test import override_settings
 from django.utils.encoding import force_text
 
-from simple_log.conf import settings
 from simple_log.models import SimpleLog
+from simple_log.settings import log_settings
 
 from .test_app.models import TestModel
 from .tests_admin import AdminTestCase
@@ -26,7 +26,7 @@ class CustomViewTestCase(AdminTestCase):
         sl = SimpleLog.objects.latest('pk')
         self.assertEqual(sl.action_flag, SimpleLog.ADD)
         self.assertIsNone(sl.user)
-        self.assertEqual(sl.user_repr, settings.ANONYMOUS_REPR)
+        self.assertEqual(sl.user_repr, log_settings.ANONYMOUS_REPR)
         self.assertEqual(sl.user_ip, self.ip)
         self.assertEqual(sl.object_id, force_text(new_obj.id))
         self.assertEqual(sl.object_repr, force_text(new_obj))
@@ -82,7 +82,7 @@ class CustomViewTestCase(AdminTestCase):
         sl = SimpleLog.objects.latest('pk')
         self.assertEqual(sl.action_flag, SimpleLog.CHANGE)
         self.assertIsNone(sl.user)
-        self.assertEqual(sl.user_repr, settings.ANONYMOUS_REPR)
+        self.assertEqual(sl.user_repr, log_settings.ANONYMOUS_REPR)
         self.assertEqual(sl.user_ip, self.ip)
         self.assertEqual(sl.object_id, force_text(obj.id))
         self.assertEqual(sl.object_repr, force_text(obj))
@@ -146,7 +146,7 @@ class CustomViewTestCase(AdminTestCase):
         sl = SimpleLog.objects.latest('pk')
         self.assertEqual(sl.action_flag, SimpleLog.DELETE)
         self.assertIsNone(sl.user)
-        self.assertEqual(sl.user_repr, settings.ANONYMOUS_REPR)
+        self.assertEqual(sl.user_repr, log_settings.ANONYMOUS_REPR)
         self.assertEqual(sl.user_ip, self.ip)
         self.assertEqual(sl.object_id, force_text(obj.id))
         self.assertEqual(sl.object_repr, force_text(obj))

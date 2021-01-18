@@ -41,7 +41,7 @@ DEFAULTS = {
 DEPRECATED_SETTINGS = []
 
 
-class Settings(object):
+class Settings:
     prefix = 'SIMPLE_LOG_'
 
     def __getattr__(self, name):
@@ -74,5 +74,5 @@ class Settings(object):
 if not hasattr(dj_settings, 'SIMPLE_LOG_MODEL'):
     setattr(dj_settings, 'SIMPLE_LOG_MODEL', DEFAULTS['MODEL'])
 
-settings = Settings()
-setting_changed.connect(settings.change_setting)
+log_settings = Settings()
+setting_changed.connect(log_settings.change_setting)

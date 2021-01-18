@@ -19,7 +19,7 @@ from django.utils.translation import ugettext_lazy as _
 from simple_log.fields import SimpleJSONField, SimpleManyToManyField
 from simple_log.signals import save_logs_on_commit
 
-from .conf import settings
+from .settings import log_settings
 from .utils import (
     get_current_request,
     get_current_user,
@@ -94,7 +94,7 @@ class SimpleLogAbstractBase(models.Model):
         return getattr(self, '_related_objects', [])
 
     def save(self, *args, **kwargs):
-        if settings.SAVE_ONLY_CHANGED:
+        if log_settings.SAVE_ONLY_CHANGED:
             changed = self.changed_fields.keys()
             self.old = {
                 k: v for k, v in (self.old or {}).items() if k in changed
@@ -131,7 +131,7 @@ class SimpleLogAbstractBase(models.Model):
                 for_concrete_model=getattr(
                     instance,
                     'simple_log_proxy_concrete',
-                    settings.PROXY_CONCRETE,
+                    log_settings.PROXY_CONCRETE,
                 ),
             ),
             object_id=instance.pk,
@@ -163,18 +163,18 @@ class SimpleLogAbstractBase(models.Model):
     @classmethod
     def set_initial(cls, instance, using=None):
         if instance.pk and not hasattr(
-            instance, settings.OLD_INSTANCE_ATTR_NAME
+            instance, log_settings.OLD_INSTANCE_ATTR_NAME
         ):
             setattr(
                 instance,
-                settings.OLD_INSTANCE_ATTR_NAME,
+                log_settings.OLD_INSTANCE_ATTR_NAME,
                 instance.__class__._base_manager.using(using)
                 .filter(pk=instance.pk)
                 .first(),
             )
         if not hasattr(instance, '_old_values'):
             old_instance = getattr(
-                instance, settings.OLD_INSTANCE_ATTR_NAME, None
+                instance, log_settings.OLD_INSTANCE_ATTR_NAME, None
             )
             instance._old_value = serialize_instance(old_instance)
 
@@ -265,11 +265,11 @@ class SimpleLogAbstractBase(models.Model):
     @classmethod
     def get_user_repr(cls, user):
         if user is None:
-            return settings.NONE_USER_REPR
+            return log_settings.NONE_USER_REPR
         elif user.is_authenticated:
             return force_text(user)
         else:
-            return settings.ANONYMOUS_REPR
+            return log_settings.ANONYMOUS_REPR
 
     def get_differences(self):
         old = self.old or {}
@@ -303,7 +303,7 @@ class SimpleLog(SimpleLogAbstract):
         swappable = 'SIMPLE_LOG_MODEL'
 
 
-class ModelSerializer(object):
+class ModelSerializer:
     def __call__(self, instance):
         return self.serialize(instance)
 
@@ -366,7 +366,7 @@ class ModelSerializer(object):
 
     def get_file_value(self, instance, field):
         value = self.get_value_for_type(field.value_from_object(instance))
-        if settings.FILE_NAME_ONLY or instance.simple_log_file_name_only:
+        if log_settings.FILE_NAME_ONLY or instance.simple_log_file_name_only:
             value = os.path.basename(value)
         return value
 
@@ -377,10 +377,13 @@ class ModelSerializer(object):
     def get_value_for_type(value):
         if value is None or isinstance(value, (int, bool, dict, list)):
             return value
-        if isinstance(value, datetime.datetime) and settings.DATETIME_FORMAT:
-            return value.strftime(settings.DATETIME_FORMAT)
-        if isinstance(value, datetime.date) and settings.DATE_FORMAT:
-            return value.strftime(settings.DATE_FORMAT)
-        if isinstance(value, datetime.time) and settings.TIME_FORMAT:
-            return value.strftime(settings.TIME_FORMAT)
+        if (
+            isinstance(value, datetime.datetime)
+            and log_settings.DATETIME_FORMAT
+        ):
+            return value.strftime(log_settings.DATETIME_FORMAT)
+        if isinstance(value, datetime.date) and log_settings.DATE_FORMAT:
+            return value.strftime(log_settings.DATE_FORMAT)
+        if isinstance(value, datetime.time) and log_settings.TIME_FORMAT:
+            return value.strftime(log_settings.TIME_FORMAT)
         return force_text(value)

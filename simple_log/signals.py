@@ -3,7 +3,7 @@ from collections import defaultdict
 
 from request_vars.utils import del_variable, get_variable
 
-from simple_log.conf import settings
+from simple_log.settings import log_settings
 from simple_log.utils import (
     get_log_model,
     get_obj_repr,
@@ -46,7 +46,7 @@ def save_logs_on_commit():
         if log.is_delete or log.old != log.new:
             log.save()
 
-    if settings.SAVE_RELATED and any(
+    if log_settings.SAVE_RELATED and any(
         [x.pk for x in all_logs if not x.disable_related]
     ):
         save_related(all_logs)

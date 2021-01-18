@@ -7,8 +7,8 @@ from django.test.utils import isolate_lru_cache
 from django.utils import timezone
 from django.utils.encoding import force_text
 
-from simple_log.conf import settings
 from simple_log.models import SimpleLog, SimpleLogAbstract
+from simple_log.settings import log_settings
 from simple_log.utils import (
     get_fields,
     get_log_model,
@@ -133,16 +133,16 @@ class SettingsTestCase(TransactionTestCase):
         # Get wrong attribute
         msg = "'Settings' object has no attribute 'NOT_EXIST_ATTRIBUTE'"
         with self.assertRaisesMessage(AttributeError, msg):
-            getattr(settings, 'NOT_EXIST_ATTRIBUTE')
+            getattr(log_settings, 'NOT_EXIST_ATTRIBUTE')
 
-        # Override settings, skip not SIMPLE_LOG settings
+        # Override log_settings, skip not SIMPLE_LOG log_settings
         with override_settings(SOME_SETTING=111):
-            self.assertIsNone(getattr(settings, 'SOME_SETTING', None))
+            self.assertIsNone(getattr(log_settings, 'SOME_SETTING', None))
 
-        # Override settings, ignore not in defaults
+        # Override log_settings, ignore not in defaults
         with override_settings(SIMPLE_LOG_SOME_SETTING=111):
             self.assertIsNone(
-                getattr(settings, 'SIMPLE_LOG_SOME_SETTING', None)
+                getattr(log_settings, 'SIMPLE_LOG_SOME_SETTING', None)
             )
 
     @override_settings(
