@@ -9,3 +9,4 @@ __pycache__
 
 !.gitignore
 !.travis.yml
+!.pre-commit-config.yaml
