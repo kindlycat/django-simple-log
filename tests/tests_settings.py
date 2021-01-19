@@ -108,7 +108,9 @@ class SettingsTestCase(TransactionTestCase):
     @override_settings(SIMPLE_LOG_MODEL=111)
     def test_log_model_wrong_value(self):
         with isolate_lru_cache(get_log_model):
-            msg = "SIMPLE_LOG_MODEL must be of the form 'app_label.model_name'"
+            msg = (
+                "SIMPLE_LOG_MODEL must be of the form 'app_label.model_name'."
+            )
             with self.assertRaisesMessage(ImproperlyConfigured, msg):
                 get_log_model()
 
@@ -117,7 +119,7 @@ class SettingsTestCase(TransactionTestCase):
         with isolate_lru_cache(get_log_model):
             msg = (
                 "SIMPLE_LOG_MODEL refers to model 'not_exist.Model' "
-                "that has not been installed"
+                "that has not been installed."  # noqa: Q000
             )
             with self.assertRaisesMessage(ImproperlyConfigured, msg):
                 get_log_model()
@@ -131,9 +133,9 @@ class SettingsTestCase(TransactionTestCase):
 
     def test_settings_object(self):
         # Get wrong attribute
-        msg = "'Settings' object has no attribute 'NOT_EXIST_ATTRIBUTE'"
+        msg = "'Settings' object has no attribute 'NOT_EXIST_ATTRIBUTE'."
         with self.assertRaisesMessage(AttributeError, msg):
-            getattr(log_settings, 'NOT_EXIST_ATTRIBUTE')
+            getattr(log_settings, 'NOT_EXIST_ATTRIBUTE')  # noqa: B009
 
         # Override log_settings, skip not SIMPLE_LOG log_settings
         with override_settings(SOME_SETTING=111):

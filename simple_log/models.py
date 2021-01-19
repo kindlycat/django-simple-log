@@ -67,7 +67,7 @@ class SimpleLogAbstractBase(models.Model):
     )
     user_repr = models.TextField(_('user repr'), blank=True)
     user_ip = models.GenericIPAddressField(_('IP address'), null=True)
-    object_id = models.TextField(_('object id'), blank=True, null=True)
+    object_id = models.TextField(_('object id'), blank=True)
     object_repr = models.TextField(_('object repr'), blank=True)
     old = SimpleJSONField(_('old values'), null=True)
     new = SimpleJSONField(_('new values'), null=True)
@@ -109,7 +109,7 @@ class SimpleLogAbstractBase(models.Model):
 
     def get_admin_url(self):
         if self.content_type and self.object_id:
-            url_name = 'admin:%s_%s_change' % (
+            url_name = 'admin:{}_{}_change'.format(
                 self.content_type.app_label,
                 self.content_type.model,
             )
@@ -125,8 +125,8 @@ class SimpleLogAbstractBase(models.Model):
             user = kwargs['user']
         else:
             user = get_current_user()
-        params = dict(
-            content_type=ContentType.objects.get_for_model(
+        params = {
+            'content_type': ContentType.objects.get_for_model(
                 instance.__class__,
                 for_concrete_model=getattr(
                     instance,
@@ -134,21 +134,21 @@ class SimpleLogAbstractBase(models.Model):
                     log_settings.PROXY_CONCRETE,
                 ),
             ),
-            object_id=instance.pk,
-            object_repr=get_obj_repr(instance),
-            user=user if user and user.is_authenticated else None,
-            user_repr=cls.get_user_repr(user),
-            user_ip=cls.get_ip(),
-        )
+            'object_id': instance.pk,
+            'object_repr': get_obj_repr(instance),
+            'user': user if user and user.is_authenticated else None,
+            'user_repr': cls.get_user_repr(user),
+            'user_ip': cls.get_ip(),
+        }
         params.update(getattr(instance, 'simple_log_params', {}))
         params.update(kwargs)
         return params
 
     @classmethod
     def add_to_thread(cls, instance, obj):
-        in_commit = save_logs_on_commit in [
+        in_commit = save_logs_on_commit in (
             f[1] for f in connection.run_on_commit
-        ]
+        )
         instances = get_variable('simple_log_instances', {})
         # prevent memory usage in non transaction test cases
         if not in_commit and instances:

@@ -46,8 +46,8 @@ class Settings:
 
     def __getattr__(self, name):
         if name not in DEFAULTS:
-            msg = "'%s' object has no attribute '%s'"
-            raise AttributeError(msg % (self.__class__.__name__, name))
+            msg = "'{}' object has no attribute '{}'"
+            raise AttributeError(msg.format(self.__class__.__name__, name))
 
         value = self.get_setting(name)
         setattr(self, name, value)
@@ -70,9 +70,6 @@ class Settings:
         else:
             delattr(self, setting)
 
-
-if not hasattr(dj_settings, 'SIMPLE_LOG_MODEL'):
-    setattr(dj_settings, 'SIMPLE_LOG_MODEL', DEFAULTS['MODEL'])
 
 log_settings = Settings()
 setting_changed.connect(log_settings.change_setting)

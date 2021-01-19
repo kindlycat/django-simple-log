@@ -25,11 +25,11 @@ class SimpleLogChangeList(ChangeList):
         if history_for_model:
             object_opts = history_for_model._meta
             pk = getattr(result, self.pk_attname)
-            object_pk = getattr(result, 'object_id')
             return reverse(
-                'admin:%s_%s_history_detail'
-                % (object_opts.app_label, object_opts.model_name),
-                args=(quote(object_pk), quote(pk)),
+                'admin:{}_{}_history_detail'.format(
+                    object_opts.app_label, object_opts.model_name
+                ),
+                args=(quote(result.object_id), quote(pk)),
                 current_app=self.model_admin.admin_site.name,
             )
         return super(SimpleLogChangeList, self).url_for_result(result)
@@ -117,12 +117,12 @@ class HistoryModelAdmin(admin.ModelAdmin):
             url(
                 r'^history/$',
                 wrap(self.model_history_view),
-                name='%s_%s_model_history' % info,
+                name='{}_{}_model_history'.format(*info),
             ),
             url(
                 r'^(.+)/history/(.+)/$',
                 wrap(self.history_detail_view),
-                name='%s_%s_history_detail' % info,
+                name='{}_{}_history_detail'.format(*info),
             ),
         ]
         return custom_urlpatterns + urlpatterns

@@ -98,7 +98,7 @@ class RelatedModel(models.Model):
         ordering = ['pk']
 
     def __str__(self):
-        return 'Related entry of the "%s"' % self.third_model
+        return 'Related entry of the "{}"'.format(self.third_model)
 
 
 class SwappableLogModel(SimpleLogAbstract):
@@ -106,7 +106,8 @@ class SwappableLogModel(SimpleLogAbstract):
 
 
 class BadLogModel(models.Model):
-    pass
+    def __str__(self):
+        return str(self.pk)
 
 
 class CustomSerializer(ModelSerializer):

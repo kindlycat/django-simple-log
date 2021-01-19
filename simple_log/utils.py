@@ -36,7 +36,7 @@ def check_log_model(model):
 
     if not issubclass(model, SimpleLogAbstractBase):
         raise ImproperlyConfigured(
-            'Log model should be subclass of ' 'SimpleLogAbstractBase.'
+            'Log model should be subclass of SimpleLogAbstractBase.'
         )
     return model
 
@@ -47,12 +47,12 @@ def get_log_model():
         return check_log_model(django_apps.get_model(log_settings.MODEL))
     except (ValueError, AttributeError):
         raise ImproperlyConfigured(
-            "SIMPLE_LOG_MODEL must be of the form " "'app_label.model_name'"
+            "SIMPLE_LOG_MODEL must be of the form 'app_label.model_name'."
         )
     except LookupError:
         raise ImproperlyConfigured(
-            "SIMPLE_LOG_MODEL refers to model '%s' "
-            "that has not been installed" % log_settings.MODEL
+            "SIMPLE_LOG_MODEL refers to model '{}' that has not been "
+            "installed.".format(log_settings.MODEL)  # noqa: Q000
         )
 
 

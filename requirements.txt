@@ -1,4 +1,2 @@
-psycopg2
-mock
-tblib
-tox
+-r requirements/test.txt
+-r requirements/codestyle.txt
