@@ -102,7 +102,7 @@ class HistoryModelAdmin(admin.ModelAdmin):
     history_change_list_template = 'simple_log/admin/history_change_list.html'
 
     def get_urls(self):
-        from django.conf.urls import url
+        from django.urls import path
 
         def wrap(view):
             def wrapper(*args, **kwargs):
@@ -114,13 +114,13 @@ class HistoryModelAdmin(admin.ModelAdmin):
 
         urlpatterns = super(HistoryModelAdmin, self).get_urls()
         custom_urlpatterns = [
-            url(
-                r'^history/$',
+            path(
+                r'history/',
                 wrap(self.model_history_view),
                 name='{}_{}_model_history'.format(*info),
             ),
-            url(
-                r'^(.+)/history/(.+)/$',
+            path(
+                '<object_id>/history/<history_id>/',
                 wrap(self.history_detail_view),
                 name='{}_{}_history_detail'.format(*info),
             ),

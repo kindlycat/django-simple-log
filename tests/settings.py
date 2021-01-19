@@ -65,3 +65,5 @@ STATIC_URL = '/static/'
 
 SIMPLE_LOG_SAVE_RELATED = True
 SIMPLE_LOG_SAVE_ONE_TO_MANY = True
+
+DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'

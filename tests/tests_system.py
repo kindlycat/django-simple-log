@@ -1,6 +1,6 @@
 from django.db.transaction import atomic
 from django.test import override_settings
-from django.utils.encoding import force_text
+from django.utils.encoding import force_str
 
 from simple_log.models import SimpleLog
 from simple_log.utils import disable_logging, disable_related
@@ -153,7 +153,7 @@ class SystemTestCase(AdminTestCase):
                     'value': [
                         {
                             'db': self.other_model.pk,
-                            'repr': force_text(self.other_model),
+                            'repr': force_str(self.other_model),
                         }
                     ],
                 },
@@ -213,7 +213,7 @@ class SystemTestCase(AdminTestCase):
                     'value': [
                         {
                             'db': self.other_model.pk,
-                            'repr': force_text(self.other_model),
+                            'repr': force_str(self.other_model),
                         }
                     ],
                 },
@@ -243,7 +243,7 @@ class SystemTestCase(AdminTestCase):
                     'value': [
                         {
                             'db': self.other_model.pk,
-                            'repr': force_text(self.other_model),
+                            'repr': force_str(self.other_model),
                         }
                     ],
                 },
