@@ -1,6 +1,6 @@
 from django.conf import settings as dj_settings
 from django.core.signals import setting_changed
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 
 
 DEFAULTS = {
@@ -46,7 +46,7 @@ class Settings:
 
     def __getattr__(self, name):
         if name not in DEFAULTS:
-            msg = "'{}' object has no attribute '{}'"
+            msg = "'{}' object has no attribute '{}'."
             raise AttributeError(msg.format(self.__class__.__name__, name))
 
         value = self.get_setting(name)
