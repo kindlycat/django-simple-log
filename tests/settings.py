@@ -54,6 +54,8 @@ DATABASES = {
         'NAME': 'simple_log',
         'USER': 'postgres',
         'PASSWORD': 'postgres',
+        'host': 'postgres',
+        'port': 5432,
     }
 }
 
