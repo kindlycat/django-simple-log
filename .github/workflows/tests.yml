@@ -6,11 +6,11 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu:lates
+    runs-on: ubuntu:latest
     env:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_HOST: postgres
+      POSTGRES_HOST: localhost
       POSTGRES_DB: simple_log
       POSTGRES_PORT: 5432
     strategy:
