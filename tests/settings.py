@@ -52,6 +52,8 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
         'NAME': 'simple_log',
+        'USER': 'postgres',
+        'PASSWORD': 'postgres',
     }
 }
 
