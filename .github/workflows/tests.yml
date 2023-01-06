@@ -120,7 +120,7 @@ jobs:
         env:
           POSTGRES_USER: ${{ env.POSTGRES_USER }}
           POSTGRES_PASSWORD: ${{ env.POSTGRES_PASSWORD }}
-          POSTGRES_HOST: ${{ env.POSTGRES_PASSWORD }}
+          POSTGRES_HOST: ${{ env.POSTGRES_HOST }}
           POSTGRES_DB: ${{ env.POSTGRES_DB }}
           POSTGRES_PORT: ${{ env.POSTGRES_PORT }}
           DATABASE_URL: postgres://postgres:postgres@localhost:5432/simple_log
