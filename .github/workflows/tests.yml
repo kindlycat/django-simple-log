@@ -11,7 +11,7 @@ jobs:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_HOST: localhost
-      POSTGRES_DB: simple_log
+      POSTGRES_DB: postgres
       POSTGRES_PORT: 5432
     strategy:
       matrix:
@@ -123,7 +123,6 @@ jobs:
           POSTGRES_HOST: ${{ env.POSTGRES_HOST }}
           POSTGRES_DB: ${{ env.POSTGRES_DB }}
           POSTGRES_PORT: ${{ env.POSTGRES_PORT }}
-          DATABASE_URL: postgres://postgres:postgres@localhost:5432/simple_log
         run: |
           python ./runtests.py
 #          tox -e ${{ matrix.tox-env }}
