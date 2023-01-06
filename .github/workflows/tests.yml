@@ -15,81 +15,82 @@ jobs:
       POSTGRES_PORT: 5432
     strategy:
       matrix:
-        - name: Python 3.6 / Django 3.2
-          python_version: "3.6"
-          tox_env: py36-dj32
+        include:
+          - name: Python 3.6 / Django 3.2
+            python_version: "3.6"
+            tox_env: py36-dj32
 
-        - name: Python 3.7 / Django 3.2
-          python_version: "3.7"
-          tox_env: py37-dj32
+          - name: Python 3.7 / Django 3.2
+            python_version: "3.7"
+            tox_env: py37-dj32
 
-        - name: Python 3.8 / Django 3.2
-          python_version: "3.8"
-          tox_env: py38-dj32
+          - name: Python 3.8 / Django 3.2
+            python_version: "3.8"
+            tox_env: py38-dj32
 
-        - name: Python 3.9 / Django 3.2
-          python_version: "3.9"
-          tox_env: py39-dj32
+          - name: Python 3.9 / Django 3.2
+            python_version: "3.9"
+            tox_env: py39-dj32
 
-        - name: Python 3.10 / Django 3.2
-          python_version: "3.10"
-          tox_env: py310-dj32
+          - name: Python 3.10 / Django 3.2
+            python_version: "3.10"
+            tox_env: py310-dj32
 
-        - name: Python 3.8 / Django 4.0
-          python_version: "3.8"
-          tox_env: py38-dj40
+          - name: Python 3.8 / Django 4.0
+            python_version: "3.8"
+            tox_env: py38-dj40
 
-        - name: Python 3.9 / Django 4.0
-          python_version: "3.9"
-          tox_env: py39-dj40
+          - name: Python 3.9 / Django 4.0
+            python_version: "3.9"
+            tox_env: py39-dj40
 
-        - name: Python 3.10 / Django 4.0
-          python_version: "3.10"
-          tox_env: py310-dj40
+          - name: Python 3.10 / Django 4.0
+            python_version: "3.10"
+            tox_env: py310-dj40
 
-        - name: Python 3.8 / Django 4.1
-          python_version: "3.8"
-          tox_env: py38-dj41
+          - name: Python 3.8 / Django 4.1
+            python_version: "3.8"
+            tox_env: py38-dj41
 
-        - name: Python 3.9 / Django 4.1
-          python_version: "3.9"
-          tox_env: py39-dj41
+          - name: Python 3.9 / Django 4.1
+            python_version: "3.9"
+            tox_env: py39-dj41
 
-        - name: Python 3.10 / Django 4.1
-          python_version: "3.10"
-          tox_env: py310-dj41
+          - name: Python 3.10 / Django 4.1
+            python_version: "3.10"
+            tox_env: py310-dj41
 
-        - name: Python 3.10 / Django 4.1
-          python_version: "3.10"
-          tox_env: py310-dj41
+          - name: Python 3.10 / Django 4.1
+            python_version: "3.10"
+            tox_env: py310-dj41
 
-        - name: Python 3.11 / Django 4.1
-          python_version: "3.11"
-          tox_env: py311-dj41
+          - name: Python 3.11 / Django 4.1
+            python_version: "3.11"
+            tox_env: py311-dj41
 
-        - name: Python 3.8 / Django master
-          python_version: "3.8"
-          tox_env: py38-djmaster
+          - name: Python 3.8 / Django master
+            python_version: "3.8"
+            tox_env: py38-djmaster
 
-        - name: Python 3.9 / Django master
-          python_version: "3.9"
-          tox_env: py39-djmaster
+          - name: Python 3.9 / Django master
+            python_version: "3.9"
+            tox_env: py39-djmaster
 
-        - name: Python 3.10 / Django master
-          python_version: "3.10"
-          tox_env: py310-djmaster
+          - name: Python 3.10 / Django master
+            python_version: "3.10"
+            tox_env: py310-djmaster
 
-        - name: Python 3.10 / Django master
-          python_version: "3.10"
-          tox_env: py310-djmaster
+          - name: Python 3.10 / Django master
+            python_version: "3.10"
+            tox_env: py310-djmaster
 
-        - name: Python 3.11 / Django master
-          python_version: "3.11"
-          tox_env: py311-djmaster
+          - name: Python 3.11 / Django master
+            python_version: "3.11"
+            tox_env: py311-djmaster
 
-        - name: Linters
-          python_version: "3.11"
-          tox_env: linters
+          - name: Linters
+            python_version: "3.11"
+            tox_env: linters
     services:
       postgres:
         image: postgres
@@ -113,7 +114,6 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install tox tox-gh-actions
       - name: Test with tox
         env:
           POSTGRES_USER: ${{ env.POSTGRES_USER }}
@@ -122,4 +122,4 @@ jobs:
           POSTGRES_DB: ${{ env.POSTGRES_DB }}
           POSTGRES_PORT: ${{ env.POSTGRES_PORT }}
         run: |
-          tox
+          tox -e ${{ matrix.tox_env }}
