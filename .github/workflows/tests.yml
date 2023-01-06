@@ -125,6 +125,6 @@ jobs:
           POSTGRES_PORT: ${{ env.POSTGRES_PORT }}
           DATABASE_URL: postgres://postgres:postgres@localhost:5432/simple_log
         run: |
-          python manage.py test
+          python ./runtests.py
 #          tox -e ${{ matrix.tox-env }}
 
