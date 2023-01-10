@@ -40,4 +40,3 @@ jobs:
         env:
           POSTGRES_HOST: localhost
           POSTGRES_DB: postgres
-          POSTGRES_PORT: 5432
