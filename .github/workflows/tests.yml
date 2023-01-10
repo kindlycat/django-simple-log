@@ -13,6 +13,7 @@ jobs:
         image: postgres
         env:
           POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: simple_log
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -37,6 +38,3 @@ jobs:
 
       - name: Run tests
         run: python ./runtests.py
-        env:
-          POSTGRES_HOST: localhost
-          POSTGRES_DB: postgres
