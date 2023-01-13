@@ -1,9 +1,4 @@
-# -*- coding: utf-8 -*-
-from __future__ import unicode_literals
-
-from distutils.core import setup
-
-from setuptools import find_packages
+import setuptools
 
 from simple_log import __version__
 
@@ -13,7 +8,7 @@ def readme():
         return f.read()
 
 
-setup(
+setuptools.setup(
     name='django-simple-log',
     version=__version__,
     description='Logging django models changes.',
@@ -22,18 +17,18 @@ setup(
     author='Grigory Mishchenko',
     author_email='grishkokot@gmail.com',
     url='https://github.com/kindlycat/django-simple-log/',
-    packages=find_packages(exclude=('manage', 'tests', 'tests.*')),
+    packages=setuptools.find_packages(exclude=('manage', 'tests', 'tests.*')),
     include_package_data=True,
-    install_requires=['Django>=1.11', 'django-request-vars>=1.0.1'],
+    install_requires=['Django>=2.2', 'django-request-vars>=1.0.1'],
     classifiers=[
-        'Programming Language :: Python :: 2.7',
-        'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
-        'Framework :: Django :: 1.11',
-        'Framework :: Django :: 2.0',
-        'Framework :: Django :: 2.1',
+        'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.9',
+        'Framework :: Django :: 2.2',
+        'Framework :: Django :: 3.0',
+        'Framework :: Django :: 3.1',
         'License :: OSI Approved :: BSD License',
     ],
 )

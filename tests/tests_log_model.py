@@ -22,26 +22,27 @@ class LogModelTestCase(TransactionTestCase):
         )
         self.assertEqual(sl.get_admin_url(), expected_url)
         self.assertIn(
-            sl.get_admin_url(), '/admin/test_app/testmodel/%d/change/' % obj.pk
+            sl.get_admin_url(),
+            '/admin/test_app/testmodel/{}/change/'.format(obj.pk),
         )
-        sl.content_type.model = "nonexistent"
+        sl.content_type.model = 'nonexistent'
         self.assertIsNone(sl.get_admin_url())
 
     def test_log_str(self):
         TestModel.objects.create(char_field='test')
         obj = TestModel.objects.latest('pk')
         sl = SimpleLog.objects.latest('pk')
-        self.assertEqual(str(sl), '%s: %s' % (str(obj), 'added'))
+        self.assertEqual(str(sl), '{}: {}'.format(str(obj), 'added'))
 
         obj.char_field = 'test2'
         obj.save()
         obj = TestModel.objects.latest('pk')
         sl = SimpleLog.objects.latest('pk')
-        self.assertEqual(str(sl), '%s: %s' % (str(obj), 'changed'))
+        self.assertEqual(str(sl), '{}: {}'.format(str(obj), 'changed'))
 
         obj.delete()
         sl = SimpleLog.objects.latest('pk')
-        self.assertEqual(str(sl), '%s: %s' % (str(obj), 'deleted'))
+        self.assertEqual(str(sl), '{}: {}'.format(str(obj), 'deleted'))
 
     def test_log_changed_fields(self):
         TestModel.objects.create(char_field='test')

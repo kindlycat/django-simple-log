@@ -6,10 +6,10 @@ from request_vars.utils import del_variable, get_variable, set_variable
 
 from django.apps import apps as django_apps
 from django.core.exceptions import ImproperlyConfigured
-from django.utils.encoding import force_text
+from django.utils.encoding import force_str
 from django.utils.module_loading import import_string
 
-from simple_log.conf import settings
+from simple_log.settings import log_settings
 
 
 __all__ = [
@@ -36,7 +36,7 @@ def check_log_model(model):
 
     if not issubclass(model, SimpleLogAbstractBase):
         raise ImproperlyConfigured(
-            'Log model should be subclass of ' 'SimpleLogAbstractBase.'
+            'Log model should be subclass of SimpleLogAbstractBase.'
         )
     return model
 
@@ -44,15 +44,15 @@ def check_log_model(model):
 @lru_cache()
 def get_log_model():
     try:
-        return check_log_model(django_apps.get_model(settings.MODEL))
+        return check_log_model(django_apps.get_model(log_settings.MODEL))
     except (ValueError, AttributeError):
         raise ImproperlyConfigured(
-            "SIMPLE_LOG_MODEL must be of the form " "'app_label.model_name'"
+            "SIMPLE_LOG_MODEL must be of the form 'app_label.model_name'."
         )
     except LookupError:
         raise ImproperlyConfigured(
-            "SIMPLE_LOG_MODEL refers to model '%s' "
-            "that has not been installed" % settings.MODEL
+            "SIMPLE_LOG_MODEL refers to model '{}' that has not been "
+            "installed.".format(log_settings.MODEL)  # noqa: Q000
         )
 
 
@@ -61,7 +61,7 @@ def get_serializer(model=None):
     if hasattr(model, 'simple_log_serializer'):
         serializer = model.simple_log_serializer
     else:
-        serializer = settings.MODEL_SERIALIZER
+        serializer = log_settings.MODEL_SERIALIZER
     if isinstance(serializer, str):
         return import_string(serializer)
     return serializer
@@ -73,7 +73,7 @@ def get_current_request_default():
 
 @lru_cache(maxsize=None)
 def _get_current_request():
-    return import_string(settings.GET_CURRENT_REQUEST)
+    return import_string(log_settings.GET_CURRENT_REQUEST)
 
 
 get_current_request = _get_current_request()
@@ -96,13 +96,13 @@ def get_fields(klass):
         ]
     else:
         fields = [
-            f for f in fields if f.name not in settings.EXCLUDE_FIELD_LIST
+            f for f in fields if f.name not in log_settings.EXCLUDE_FIELD_LIST
         ]
     return [
         f
         for f in fields
         if f.concrete
-        or (settings.SAVE_ONE_TO_MANY and f.one_to_many and f.related_name)
+        or (log_settings.SAVE_ONE_TO_MANY and f.one_to_many and f.related_name)
     ]
 
 
@@ -115,15 +115,15 @@ def get_model_list():
         for m in django_apps.get_models()
         if not issubclass(m, SimpleLogAbstractBase) and m._meta.managed
     ]
-    if settings.MODEL_LIST:
+    if log_settings.MODEL_LIST:
         model_list = [
-            m for m in model_list if m._meta.label in settings.MODEL_LIST
+            m for m in model_list if m._meta.label in log_settings.MODEL_LIST
         ]
-    if settings.EXCLUDE_MODEL_LIST:
+    if log_settings.EXCLUDE_MODEL_LIST:
         model_list = [
             m
             for m in model_list
-            if m._meta.label not in settings.EXCLUDE_MODEL_LIST
+            if m._meta.label not in log_settings.EXCLUDE_MODEL_LIST
         ]
     return model_list
 
@@ -135,12 +135,12 @@ def is_related_to(log, to_log):
         return False
     if to_log in log._get_related_objects():
         return True
-    old_instance = getattr(instance, settings.OLD_INSTANCE_ATTR_NAME, None)
+    old_instance = getattr(instance, log_settings.OLD_INSTANCE_ATTR_NAME, None)
     to_instance_pk = to_instance.pk
     if not to_instance_pk:
         # If deleted
         old_to_instance = getattr(
-            to_instance, settings.OLD_INSTANCE_ATTR_NAME, None
+            to_instance, log_settings.OLD_INSTANCE_ATTR_NAME, None
         )
         to_instance_pk = getattr(old_to_instance, 'pk', None)
     related_fields = [
@@ -181,8 +181,8 @@ class disable_related(ContextDecorator):
 
 def get_obj_repr(obj):
     if hasattr(obj, 'simple_log_repr'):
-        return force_text(obj.simple_log_repr)
-    return force_text(obj)
+        return force_str(obj.simple_log_repr)
+    return force_str(obj)
 
 
 def serialize_instance(instance):
@@ -199,11 +199,11 @@ def serialize_instance(instance):
 
 
 def is_log_needed(instance, raw):
-    return settings.ENABLED and not (
+    return log_settings.ENABLED and not (
         get_variable('disable_logging')
         or (
             instance.pk
             and instance in get_variable('simple_log_instances', {})
         )
-        or (raw and settings.EXCLUDE_RAW)
+        or (raw and log_settings.EXCLUDE_RAW)
     )

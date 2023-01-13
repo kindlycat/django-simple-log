@@ -7,7 +7,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import PermissionDenied
 from django.urls import reverse
 
-from simple_log.conf import settings
+from simple_log.settings import log_settings
 from simple_log.utils import get_log_model
 
 
@@ -25,11 +25,11 @@ class SimpleLogChangeList(ChangeList):
         if history_for_model:
             object_opts = history_for_model._meta
             pk = getattr(result, self.pk_attname)
-            object_pk = getattr(result, 'object_id')
             return reverse(
-                'admin:%s_%s_history_detail'
-                % (object_opts.app_label, object_opts.model_name),
-                args=(quote(object_pk), quote(pk)),
+                'admin:{}_{}_history_detail'.format(
+                    object_opts.app_label, object_opts.model_name
+                ),
+                args=(quote(result.object_id), quote(pk)),
                 current_app=self.model_admin.admin_site.name,
             )
         return super(SimpleLogChangeList, self).url_for_result(result)
@@ -85,7 +85,7 @@ class SimpleLogModelAdmin(admin.ModelAdmin):
                 for_concrete_model=getattr(
                     self.model,
                     'simple_log_proxy_concrete',
-                    settings.PROXY_CONCRETE,
+                    log_settings.PROXY_CONCRETE,
                 ),
             )
             qs = qs.filter(content_type=ct)
@@ -102,7 +102,7 @@ class HistoryModelAdmin(admin.ModelAdmin):
     history_change_list_template = 'simple_log/admin/history_change_list.html'
 
     def get_urls(self):
-        from django.conf.urls import url
+        from django.urls import path
 
         def wrap(view):
             def wrapper(*args, **kwargs):
@@ -114,15 +114,15 @@ class HistoryModelAdmin(admin.ModelAdmin):
 
         urlpatterns = super(HistoryModelAdmin, self).get_urls()
         custom_urlpatterns = [
-            url(
-                r'^history/$',
+            path(
+                r'history/',
                 wrap(self.model_history_view),
-                name='%s_%s_model_history' % info,
+                name='{}_{}_model_history'.format(*info),
             ),
-            url(
-                r'^(.+)/history/(.+)/$',
+            path(
+                '<object_id>/history/<history_id>/',
                 wrap(self.history_detail_view),
-                name='%s_%s_history_detail' % info,
+                name='{}_{}_history_detail'.format(*info),
             ),
         ]
         return custom_urlpatterns + urlpatterns

@@ -1,0 +1,4 @@
+psycopg2==2.8.6
+tblib==1.7.0
+tox==3.21.1
+coverage==5.3.1

@@ -1,9 +1,9 @@
 from django.contrib.contenttypes.models import ContentType
 from django.test import override_settings
-from django.utils.encoding import force_text
+from django.utils.encoding import force_str
 
-from simple_log.conf import settings
 from simple_log.models import SimpleLog
+from simple_log.settings import log_settings
 
 from .test_app.models import TestModel
 from .tests_admin import AdminTestCase
@@ -26,10 +26,10 @@ class CustomViewTestCase(AdminTestCase):
         sl = SimpleLog.objects.latest('pk')
         self.assertEqual(sl.action_flag, SimpleLog.ADD)
         self.assertIsNone(sl.user)
-        self.assertEqual(sl.user_repr, settings.ANONYMOUS_REPR)
+        self.assertEqual(sl.user_repr, log_settings.ANONYMOUS_REPR)
         self.assertEqual(sl.user_ip, self.ip)
-        self.assertEqual(sl.object_id, force_text(new_obj.id))
-        self.assertEqual(sl.object_repr, force_text(new_obj))
+        self.assertEqual(sl.object_id, force_str(new_obj.id))
+        self.assertEqual(sl.object_repr, force_str(new_obj))
         self.assertEqual(
             sl.content_type, ContentType.objects.get_for_model(new_obj)
         )
@@ -42,7 +42,7 @@ class CustomViewTestCase(AdminTestCase):
                     'label': 'Fk field',
                     'value': {
                         'db': self.other_model.pk,
-                        'repr': force_text(self.other_model),
+                        'repr': force_str(self.other_model),
                     },
                 },
                 'm2m_field': {
@@ -50,7 +50,7 @@ class CustomViewTestCase(AdminTestCase):
                     'value': [
                         {
                             'db': self.other_model.pk,
-                            'repr': force_text(self.other_model),
+                            'repr': force_str(self.other_model),
                         }
                     ],
                 },
@@ -82,10 +82,10 @@ class CustomViewTestCase(AdminTestCase):
         sl = SimpleLog.objects.latest('pk')
         self.assertEqual(sl.action_flag, SimpleLog.CHANGE)
         self.assertIsNone(sl.user)
-        self.assertEqual(sl.user_repr, settings.ANONYMOUS_REPR)
+        self.assertEqual(sl.user_repr, log_settings.ANONYMOUS_REPR)
         self.assertEqual(sl.user_ip, self.ip)
-        self.assertEqual(sl.object_id, force_text(obj.id))
-        self.assertEqual(sl.object_repr, force_text(obj))
+        self.assertEqual(sl.object_id, force_str(obj.id))
+        self.assertEqual(sl.object_repr, force_str(obj))
         self.assertEqual(
             sl.content_type, ContentType.objects.get_for_model(obj)
         )
@@ -97,7 +97,7 @@ class CustomViewTestCase(AdminTestCase):
                     'label': 'Fk field',
                     'value': {
                         'db': self.other_model.pk,
-                        'repr': force_text(self.other_model),
+                        'repr': force_str(self.other_model),
                     },
                 },
                 'm2m_field': {
@@ -105,7 +105,7 @@ class CustomViewTestCase(AdminTestCase):
                     'value': [
                         {
                             'db': self.other_model.pk,
-                            'repr': force_text(self.other_model),
+                            'repr': force_str(self.other_model),
                         }
                     ],
                 },
@@ -146,10 +146,10 @@ class CustomViewTestCase(AdminTestCase):
         sl = SimpleLog.objects.latest('pk')
         self.assertEqual(sl.action_flag, SimpleLog.DELETE)
         self.assertIsNone(sl.user)
-        self.assertEqual(sl.user_repr, settings.ANONYMOUS_REPR)
+        self.assertEqual(sl.user_repr, log_settings.ANONYMOUS_REPR)
         self.assertEqual(sl.user_ip, self.ip)
-        self.assertEqual(sl.object_id, force_text(obj.id))
-        self.assertEqual(sl.object_repr, force_text(obj))
+        self.assertEqual(sl.object_id, force_str(obj.id))
+        self.assertEqual(sl.object_repr, force_str(obj))
         self.assertEqual(
             sl.content_type, ContentType.objects.get_for_model(obj)
         )
@@ -162,7 +162,7 @@ class CustomViewTestCase(AdminTestCase):
                     'label': 'Fk field',
                     'value': {
                         'db': self.other_model.pk,
-                        'repr': force_text(self.other_model),
+                        'repr': force_str(self.other_model),
                     },
                 },
                 'm2m_field': {
@@ -170,7 +170,7 @@ class CustomViewTestCase(AdminTestCase):
                     'value': [
                         {
                             'db': self.other_model.pk,
-                            'repr': force_text(self.other_model),
+                            'repr': force_str(self.other_model),
                         }
                     ],
                 },

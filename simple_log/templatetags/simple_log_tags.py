@@ -1,5 +1,5 @@
 from django.template import Library
-from django.utils.encoding import force_text
+from django.utils.encoding import force_str
 
 
 register = Library()
@@ -19,4 +19,4 @@ def get_type(value):
         return 'list'
     if isinstance(value, int):
         return 'int'
-    return force_text(type(value))
+    return force_str(type(value))

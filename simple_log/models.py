@@ -12,14 +12,14 @@ from django.core.validators import validate_ipv46_address
 from django.db import connection, models
 from django.urls import NoReverseMatch, reverse
 from django.utils import timezone
-from django.utils.encoding import force_text
+from django.utils.encoding import force_str
 from django.utils.functional import cached_property
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 
 from simple_log.fields import SimpleJSONField, SimpleManyToManyField
 from simple_log.signals import save_logs_on_commit
 
-from .conf import settings
+from .settings import log_settings
 from .utils import (
     get_current_request,
     get_current_user,
@@ -67,7 +67,7 @@ class SimpleLogAbstractBase(models.Model):
     )
     user_repr = models.TextField(_('user repr'), blank=True)
     user_ip = models.GenericIPAddressField(_('IP address'), null=True)
-    object_id = models.TextField(_('object id'), blank=True, null=True)
+    object_id = models.TextField(_('object id'), blank=True)
     object_repr = models.TextField(_('object repr'), blank=True)
     old = SimpleJSONField(_('old values'), null=True)
     new = SimpleJSONField(_('new values'), null=True)
@@ -94,7 +94,7 @@ class SimpleLogAbstractBase(models.Model):
         return getattr(self, '_related_objects', [])
 
     def save(self, *args, **kwargs):
-        if settings.SAVE_ONLY_CHANGED:
+        if log_settings.SAVE_ONLY_CHANGED:
             changed = self.changed_fields.keys()
             self.old = {
                 k: v for k, v in (self.old or {}).items() if k in changed
@@ -109,7 +109,7 @@ class SimpleLogAbstractBase(models.Model):
 
     def get_admin_url(self):
         if self.content_type and self.object_id:
-            url_name = 'admin:%s_%s_change' % (
+            url_name = 'admin:{}_{}_change'.format(
                 self.content_type.app_label,
                 self.content_type.model,
             )
@@ -125,30 +125,30 @@ class SimpleLogAbstractBase(models.Model):
             user = kwargs['user']
         else:
             user = get_current_user()
-        params = dict(
-            content_type=ContentType.objects.get_for_model(
+        params = {
+            'content_type': ContentType.objects.get_for_model(
                 instance.__class__,
                 for_concrete_model=getattr(
                     instance,
                     'simple_log_proxy_concrete',
-                    settings.PROXY_CONCRETE,
+                    log_settings.PROXY_CONCRETE,
                 ),
             ),
-            object_id=instance.pk,
-            object_repr=get_obj_repr(instance),
-            user=user if user and user.is_authenticated else None,
-            user_repr=cls.get_user_repr(user),
-            user_ip=cls.get_ip(),
-        )
+            'object_id': instance.pk,
+            'object_repr': get_obj_repr(instance),
+            'user': user if user and user.is_authenticated else None,
+            'user_repr': cls.get_user_repr(user),
+            'user_ip': cls.get_ip(),
+        }
         params.update(getattr(instance, 'simple_log_params', {}))
         params.update(kwargs)
         return params
 
     @classmethod
     def add_to_thread(cls, instance, obj):
-        in_commit = save_logs_on_commit in [
+        in_commit = save_logs_on_commit in (
             f[1] for f in connection.run_on_commit
-        ]
+        )
         instances = get_variable('simple_log_instances', {})
         # prevent memory usage in non transaction test cases
         if not in_commit and instances:
@@ -163,18 +163,18 @@ class SimpleLogAbstractBase(models.Model):
     @classmethod
     def set_initial(cls, instance, using=None):
         if instance.pk and not hasattr(
-            instance, settings.OLD_INSTANCE_ATTR_NAME
+            instance, log_settings.OLD_INSTANCE_ATTR_NAME
         ):
             setattr(
                 instance,
-                settings.OLD_INSTANCE_ATTR_NAME,
+                log_settings.OLD_INSTANCE_ATTR_NAME,
                 instance.__class__._base_manager.using(using)
                 .filter(pk=instance.pk)
                 .first(),
             )
         if not hasattr(instance, '_old_values'):
             old_instance = getattr(
-                instance, settings.OLD_INSTANCE_ATTR_NAME, None
+                instance, log_settings.OLD_INSTANCE_ATTR_NAME, None
             )
             instance._old_value = serialize_instance(old_instance)
 
@@ -265,11 +265,11 @@ class SimpleLogAbstractBase(models.Model):
     @classmethod
     def get_user_repr(cls, user):
         if user is None:
-            return settings.NONE_USER_REPR
+            return log_settings.NONE_USER_REPR
         elif user.is_authenticated:
-            return force_text(user)
+            return force_str(user)
         else:
-            return settings.ANONYMOUS_REPR
+            return log_settings.ANONYMOUS_REPR
 
     def get_differences(self):
         old = self.old or {}
@@ -303,7 +303,7 @@ class SimpleLog(SimpleLogAbstract):
         swappable = 'SIMPLE_LOG_MODEL'
 
 
-class ModelSerializer(object):
+class ModelSerializer:
     def __call__(self, instance):
         return self.serialize(instance)
 
@@ -320,8 +320,8 @@ class ModelSerializer(object):
 
     def get_field_label(self, field):
         if field.one_to_many:
-            return force_text(field.related_model._meta.verbose_name_plural)
-        return force_text(field.verbose_name)
+            return force_str(field.related_model._meta.verbose_name_plural)
+        return force_str(field.verbose_name)
 
     def get_field_value(self, instance, field):
         if field.many_to_many:
@@ -366,7 +366,7 @@ class ModelSerializer(object):
 
     def get_file_value(self, instance, field):
         value = self.get_value_for_type(field.value_from_object(instance))
-        if settings.FILE_NAME_ONLY or instance.simple_log_file_name_only:
+        if log_settings.FILE_NAME_ONLY or instance.simple_log_file_name_only:
             value = os.path.basename(value)
         return value
 
@@ -377,10 +377,13 @@ class ModelSerializer(object):
     def get_value_for_type(value):
         if value is None or isinstance(value, (int, bool, dict, list)):
             return value
-        if isinstance(value, datetime.datetime) and settings.DATETIME_FORMAT:
-            return value.strftime(settings.DATETIME_FORMAT)
-        if isinstance(value, datetime.date) and settings.DATE_FORMAT:
-            return value.strftime(settings.DATE_FORMAT)
-        if isinstance(value, datetime.time) and settings.TIME_FORMAT:
-            return value.strftime(settings.TIME_FORMAT)
-        return force_text(value)
+        if (
+            isinstance(value, datetime.datetime)
+            and log_settings.DATETIME_FORMAT
+        ):
+            return value.strftime(log_settings.DATETIME_FORMAT)
+        if isinstance(value, datetime.date) and log_settings.DATE_FORMAT:
+            return value.strftime(log_settings.DATE_FORMAT)
+        if isinstance(value, datetime.time) and log_settings.TIME_FORMAT:
+            return value.strftime(log_settings.TIME_FORMAT)
+        return force_str(value)

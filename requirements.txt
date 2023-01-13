@@ -1,5 +1,2 @@
-psycopg2
-mock
-tblib
-tox
-django-request-vars
+-r requirements/test.txt
+-r requirements/codestyle.txt

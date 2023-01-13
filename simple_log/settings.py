@@ -1,6 +1,6 @@
 from django.conf import settings as dj_settings
 from django.core.signals import setting_changed
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 
 
 DEFAULTS = {
@@ -41,13 +41,13 @@ DEFAULTS = {
 DEPRECATED_SETTINGS = []
 
 
-class Settings(object):
+class Settings:
     prefix = 'SIMPLE_LOG_'
 
     def __getattr__(self, name):
         if name not in DEFAULTS:
-            msg = "'%s' object has no attribute '%s'"
-            raise AttributeError(msg % (self.__class__.__name__, name))
+            msg = "'{}' object has no attribute '{}'."
+            raise AttributeError(msg.format(self.__class__.__name__, name))
 
         value = self.get_setting(name)
         setattr(self, name, value)
@@ -71,8 +71,5 @@ class Settings(object):
             delattr(self, setting)
 
 
-if not hasattr(dj_settings, 'SIMPLE_LOG_MODEL'):
-    setattr(dj_settings, 'SIMPLE_LOG_MODEL', DEFAULTS['MODEL'])
-
-settings = Settings()
-setting_changed.connect(settings.change_setting)
+log_settings = Settings()
+setting_changed.connect(log_settings.change_setting)
