@@ -23,6 +23,7 @@ jobs:
           - 5432:5432
 
     strategy:
+      fail-fast: false
       matrix:
         include:
           - name: Python 3.6 / Django 3.2
