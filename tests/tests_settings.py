@@ -5,7 +5,7 @@ from django.core.management import call_command
 from django.test import TransactionTestCase, override_settings
 from django.test.utils import isolate_lru_cache
 from django.utils import timezone
-from django.utils.encoding import force_text
+from django.utils.encoding import force_str
 
 from simple_log.conf import settings
 from simple_log.models import SimpleLog, SimpleLogAbstract
@@ -68,7 +68,7 @@ class SettingsTestCase(TransactionTestCase):
                         'label': 'Fk field',
                         'value': {
                             'db': other_model.pk,
-                            'repr': force_text(other_model),
+                            'repr': force_str(other_model),
                         },
                     },
                     'm2m_field': {'label': 'M2m field', 'value': []},
@@ -94,7 +94,7 @@ class SettingsTestCase(TransactionTestCase):
                         'label': 'Fk field',
                         'value': {
                             'db': other_model.pk,
-                            'repr': force_text(other_model),
+                            'repr': force_str(other_model),
                         },
                     },
                     'm2m_field': {'label': 'M2m field', 'value': []},

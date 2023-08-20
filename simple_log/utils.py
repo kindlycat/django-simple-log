@@ -6,7 +6,7 @@ from request_vars.utils import del_variable, get_variable, set_variable
 
 from django.apps import apps as django_apps
 from django.core.exceptions import ImproperlyConfigured
-from django.utils.encoding import force_text
+from django.utils.encoding import force_str
 from django.utils.module_loading import import_string
 
 from simple_log.conf import settings
@@ -181,8 +181,8 @@ class disable_related(ContextDecorator):
 
 def get_obj_repr(obj):
     if hasattr(obj, 'simple_log_repr'):
-        return force_text(obj.simple_log_repr)
-    return force_text(obj)
+        return force_str(obj.simple_log_repr)
+    return force_str(obj)
 
 
 def serialize_instance(instance):

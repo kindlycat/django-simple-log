@@ -12,9 +12,9 @@ from django.core.validators import validate_ipv46_address
 from django.db import connection, models
 from django.urls import NoReverseMatch, reverse
 from django.utils import timezone
-from django.utils.encoding import force_text
+from django.utils.encoding import force_str
 from django.utils.functional import cached_property
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 
 from simple_log.fields import SimpleJSONField, SimpleManyToManyField
 from simple_log.signals import save_logs_on_commit
@@ -267,7 +267,7 @@ class SimpleLogAbstractBase(models.Model):
         if user is None:
             return settings.NONE_USER_REPR
         elif user.is_authenticated:
-            return force_text(user)
+            return force_str(user)
         else:
             return settings.ANONYMOUS_REPR
 
@@ -320,8 +320,8 @@ class ModelSerializer(object):
 
     def get_field_label(self, field):
         if field.one_to_many:
-            return force_text(field.related_model._meta.verbose_name_plural)
-        return force_text(field.verbose_name)
+            return force_str(field.related_model._meta.verbose_name_plural)
+        return force_str(field.verbose_name)
 
     def get_field_value(self, instance, field):
         if field.many_to_many:
@@ -383,4 +383,4 @@ class ModelSerializer(object):
             return value.strftime(settings.DATE_FORMAT)
         if isinstance(value, datetime.time) and settings.TIME_FORMAT:
             return value.strftime(settings.TIME_FORMAT)
-        return force_text(value)
+        return force_str(value)
