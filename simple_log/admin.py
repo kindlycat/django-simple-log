@@ -102,7 +102,10 @@ class HistoryModelAdmin(admin.ModelAdmin):
     history_change_list_template = 'simple_log/admin/history_change_list.html'
 
     def get_urls(self):
-        from django.conf.urls import url
+        try:
+            from django.conf.urls import url
+        except ImportError:
+            from django.urls import path as url
 
         def wrap(view):
             def wrapper(*args, **kwargs):

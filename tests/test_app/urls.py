@@ -1,4 +1,3 @@
-from django.conf.urls import url
 from django.contrib import admin
 
 from tests.test_app.models import (
@@ -9,6 +8,11 @@ from tests.test_app.models import (
     ThirdModel,
 )
 from tests.test_app.views import TestCreateView, TestDeleteView, TestUpdateView
+
+try:
+    from django.conf.urls import url
+except ImportError:
+    from django.urls import path as url
 
 
 urlpatterns = [
