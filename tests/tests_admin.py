@@ -1,5 +1,6 @@
 from unittest import mock
 
+import django
 from django.contrib.auth.models import User
 from django.contrib.contenttypes.models import ContentType
 from django.test import TransactionTestCase
@@ -38,6 +39,13 @@ class AdminTestCase(TransactionTestCase):
             OtherModel.objects.create(char_field='other')
             tm = ThirdModel.objects.create(char_field='third')
             RelatedModel.objects.create(char_field='related', third_model=tm)
+
+    def assertQuerySetEqual(self, *args, **kwargs):
+        if django.get_version() > '4.2':
+            func = super().assertQuerySetEqual
+        else:
+            func = self.assertQuerysetEqual
+        return func(*args, **kwargs)
 
     def prepare_params(self, model, params):
         for k, v in [(k, v) for k, v in params.items() if v]:
