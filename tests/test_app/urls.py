@@ -9,9 +9,11 @@ from tests.test_app.models import (
 )
 from tests.test_app.views import TestCreateView, TestDeleteView, TestUpdateView
 
+
 try:
     from django.conf.urls import url
 except ImportError:
+    # django < 4.0
     from django.urls import re_path as url
 
 

@@ -1,11 +1,4 @@
-from django.db.models import ManyToManyField
-
-
-try:
-    from django.db.models import JSONField
-except ImportError:
-    # Django < 4.0
-    from django.contrib.postgres.fields.jsonb import JSONField
+from django.db.models import JSONField, ManyToManyField
 
 
 class SimpleManyToManyField(ManyToManyField):

@@ -105,6 +105,7 @@ class HistoryModelAdmin(admin.ModelAdmin):
         try:
             from django.conf.urls import url
         except ImportError:
+            # django < 4.0
             from django.urls import re_path as url
 
         def wrap(view):
