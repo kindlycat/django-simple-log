@@ -492,7 +492,7 @@ class AdminTestCase(TransactionTestCase):
         first_sl = SimpleLog.objects.all()[0]
         second_sl = SimpleLog.objects.all()[1]
         self.assertQuerysetEqual(
-            first_sl.related_logs.all(), [repr(second_sl)]
+            first_sl.related_logs.all(), [second_sl], transform=None
         )
         self.assertQuerysetEqual(second_sl.related_logs.all(), [])
 
@@ -512,7 +512,7 @@ class AdminTestCase(TransactionTestCase):
         second_sl = SimpleLog.objects.all()[1]
         self.assertQuerysetEqual(first_sl.related_logs.all(), [])
         self.assertQuerysetEqual(
-            second_sl.related_logs.all(), [repr(first_sl)]
+            second_sl.related_logs.all(), [first_sl], transform=None
         )
         self.assertEqual(first_sl.user, second_sl.user)
 
@@ -540,7 +540,7 @@ class AdminTestCase(TransactionTestCase):
         second_sl = SimpleLog.objects.all()[1]
         self.assertQuerysetEqual(first_sl.related_logs.all(), [])
         self.assertQuerysetEqual(
-            second_sl.related_logs.all(), [repr(first_sl)]
+            second_sl.related_logs.all(), [first_sl], transform=None
         )
         self.assertEqual(first_sl.user, second_sl.user)
 
@@ -651,7 +651,7 @@ class AdminTestCase(TransactionTestCase):
         self.assertEqual(second_sl.get_edited_object(), obj)
         self.assertEqual(second_sl.action_flag, SimpleLog.ADD)
         self.assertQuerysetEqual(
-            first_sl.related_logs.all(), [repr(second_sl)]
+            first_sl.related_logs.all(), [second_sl], transform=None
         )
         self.assertQuerysetEqual(second_sl.related_logs.all(), [])
 
@@ -673,7 +673,7 @@ class AdminTestCase(TransactionTestCase):
         self.assertEqual(second_sl.get_edited_object(), obj)
         self.assertEqual(second_sl.action_flag, SimpleLog.CHANGE)
         self.assertQuerysetEqual(
-            first_sl.related_logs.all(), [repr(second_sl)]
+            first_sl.related_logs.all(), [second_sl], transform=None
         )
         self.assertQuerysetEqual(second_sl.related_logs.all(), [])
 
@@ -699,7 +699,7 @@ class AdminTestCase(TransactionTestCase):
         )
         self.assertEqual(second_sl.action_flag, SimpleLog.DELETE)
         self.assertQuerysetEqual(
-            first_sl.related_logs.all(), [repr(second_sl)]
+            first_sl.related_logs.all(), [second_sl], transform=None
         )
         self.assertQuerysetEqual(second_sl.related_logs.all(), [])
 
