@@ -1,7 +1,7 @@
 Django simple log
 =================
-.. image:: https://travis-ci.org/kindlycat/django-simple-log.svg?branch=master
-    :target: https://travis-ci.org/kindlycat/django-simple-log
+.. image:: https://github.com/kindlycat/django-simple-log/actions/workflows/tests.yml/badge.svg?event=push
+    :target: https://github.com/kindlycat/django-simple-log/actions/workflows/tests.yml/badge.svg?event=push
 .. image:: https://coveralls.io/repos/github/kindlycat/django-simple-log/badge.svg?branch=master
     :target: https://coveralls.io/github/kindlycat/django-simple-log?branch=master
 .. image:: https://img.shields.io/pypi/v/django-simple-log.svg
