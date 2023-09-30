@@ -72,7 +72,7 @@ class Settings(object):
 
 
 if not hasattr(dj_settings, 'SIMPLE_LOG_MODEL'):
-    setattr(dj_settings, 'SIMPLE_LOG_MODEL', DEFAULTS['MODEL'])
+    dj_settings.SIMPLE_LOG_MODEL = DEFAULTS['MODEL']
 
 settings = Settings()
 setting_changed.connect(settings.change_setting)

@@ -25,7 +25,7 @@ class SimpleLogChangeList(ChangeList):
         if history_for_model:
             object_opts = history_for_model._meta
             pk = getattr(result, self.pk_attname)
-            object_pk = getattr(result, 'object_id')
+            object_pk = result.object_id
             return reverse(
                 'admin:%s_%s_history_detail'
                 % (object_opts.app_label, object_opts.model_name),
@@ -102,7 +102,10 @@ class HistoryModelAdmin(admin.ModelAdmin):
     history_change_list_template = 'simple_log/admin/history_change_list.html'
 
     def get_urls(self):
-        from django.conf.urls import url
+        try:
+            from django.conf.urls import url
+        except ImportError:
+            from django.urls import re_path as url
 
         def wrap(view):
             def wrapper(*args, **kwargs):

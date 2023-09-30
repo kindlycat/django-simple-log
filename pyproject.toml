@@ -4,13 +4,13 @@ include = '\.pyi?$'
 skip-string-normalization = true
 exclude = '''
 (
-  migrations
-  | \.\*
-  | .venv
+  \.\*
+  | migrations
   | docs
+  | build
+  | __pycache__
 )
 '''
-
 
 [tool.isort]
 line_length = 79

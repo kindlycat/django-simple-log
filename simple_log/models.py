@@ -125,8 +125,8 @@ class SimpleLogAbstractBase(models.Model):
             user = kwargs['user']
         else:
             user = get_current_user()
-        params = dict(
-            content_type=ContentType.objects.get_for_model(
+        params = {
+            'content_type': ContentType.objects.get_for_model(
                 instance.__class__,
                 for_concrete_model=getattr(
                     instance,
@@ -134,12 +134,12 @@ class SimpleLogAbstractBase(models.Model):
                     settings.PROXY_CONCRETE,
                 ),
             ),
-            object_id=instance.pk,
-            object_repr=get_obj_repr(instance),
-            user=user if user and user.is_authenticated else None,
-            user_repr=cls.get_user_repr(user),
-            user_ip=cls.get_ip(),
-        )
+            'object_id': instance.pk,
+            'object_repr': get_obj_repr(instance),
+            'user': user if user and user.is_authenticated else None,
+            'user_repr': cls.get_user_repr(user),
+            'user_ip': cls.get_ip(),
+        }
         params.update(getattr(instance, 'simple_log_params', {}))
         params.update(kwargs)
         return params

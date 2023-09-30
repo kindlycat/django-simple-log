@@ -24,7 +24,7 @@ class LogModelTestCase(TransactionTestCase):
         self.assertIn(
             sl.get_admin_url(), '/admin/test_app/testmodel/%d/change/' % obj.pk
         )
-        sl.content_type.model = "nonexistent"
+        sl.content_type.model = 'nonexistent'
         self.assertIsNone(sl.get_admin_url())
 
     def test_log_str(self):
