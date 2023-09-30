@@ -82,10 +82,6 @@ jobs:
             python-version: "3.8"
             tox-env: py38-djmaster
 
-          - name: Python 3.9 / Django master
-            python-version: "3.9"
-            tox-env: py39-djmaster
-
           - name: Python 3.10 / Django master
             python-version: "3.10"
             tox-env: py310-djmaster

@@ -499,10 +499,10 @@ class AdminTestCase(TransactionTestCase):
         self.assertEqual(SimpleLog.objects.count(), initial_count + 2)
         first_sl = SimpleLog.objects.all()[0]
         second_sl = SimpleLog.objects.all()[1]
-        self.assertQuerysetEqual(
+        self.assertQuerySetEqual(
             first_sl.related_logs.all(), [second_sl], transform=None
         )
-        self.assertQuerysetEqual(second_sl.related_logs.all(), [])
+        self.assertQuerySetEqual(second_sl.related_logs.all(), [])
 
     def test_add_object_with_related(self):
         initial_count = SimpleLog.objects.count()
@@ -518,8 +518,8 @@ class AdminTestCase(TransactionTestCase):
         self.assertEqual(SimpleLog.objects.count(), initial_count + 2)
         first_sl = SimpleLog.objects.all()[0]
         second_sl = SimpleLog.objects.all()[1]
-        self.assertQuerysetEqual(first_sl.related_logs.all(), [])
-        self.assertQuerysetEqual(
+        self.assertQuerySetEqual(first_sl.related_logs.all(), [])
+        self.assertQuerySetEqual(
             second_sl.related_logs.all(), [first_sl], transform=None
         )
         self.assertEqual(first_sl.user, second_sl.user)
@@ -546,8 +546,8 @@ class AdminTestCase(TransactionTestCase):
         self.assertEqual(SimpleLog.objects.count(), initial_count + 2)
         first_sl = SimpleLog.objects.all()[0]
         second_sl = SimpleLog.objects.all()[1]
-        self.assertQuerysetEqual(first_sl.related_logs.all(), [])
-        self.assertQuerysetEqual(
+        self.assertQuerySetEqual(first_sl.related_logs.all(), [])
+        self.assertQuerySetEqual(
             second_sl.related_logs.all(), [first_sl], transform=None
         )
         self.assertEqual(first_sl.user, second_sl.user)
@@ -568,8 +568,8 @@ class AdminTestCase(TransactionTestCase):
         self.assertEqual(SimpleLog.objects.count(), initial_count + 2)
         first_sl = SimpleLog.objects.all()[0]
         second_sl = SimpleLog.objects.all()[1]
-        self.assertQuerysetEqual(first_sl.related_logs.all(), [])
-        self.assertQuerysetEqual(second_sl.related_logs.all(), [])
+        self.assertQuerySetEqual(first_sl.related_logs.all(), [])
+        self.assertQuerySetEqual(second_sl.related_logs.all(), [])
 
         # add as decorator
         initial_count = SimpleLog.objects.count()
@@ -586,8 +586,8 @@ class AdminTestCase(TransactionTestCase):
         self.assertEqual(SimpleLog.objects.count(), initial_count + 2)
         first_sl = SimpleLog.objects.all()[0]
         second_sl = SimpleLog.objects.all()[1]
-        self.assertQuerysetEqual(first_sl.related_logs.all(), [])
-        self.assertQuerysetEqual(second_sl.related_logs.all(), [])
+        self.assertQuerySetEqual(first_sl.related_logs.all(), [])
+        self.assertQuerySetEqual(second_sl.related_logs.all(), [])
 
         # change as context manager
         initial_count = SimpleLog.objects.count()
@@ -604,8 +604,8 @@ class AdminTestCase(TransactionTestCase):
         self.assertEqual(SimpleLog.objects.count(), initial_count + 2)
         first_sl = SimpleLog.objects.all()[0]
         second_sl = SimpleLog.objects.all()[1]
-        self.assertQuerysetEqual(first_sl.related_logs.all(), [])
-        self.assertQuerysetEqual(second_sl.related_logs.all(), [])
+        self.assertQuerySetEqual(first_sl.related_logs.all(), [])
+        self.assertQuerySetEqual(second_sl.related_logs.all(), [])
 
         # change as decorator
         related = obj2.related_entries.latest('pk')
@@ -622,8 +622,8 @@ class AdminTestCase(TransactionTestCase):
         self.assertEqual(SimpleLog.objects.count(), initial_count + 2)
         first_sl = SimpleLog.objects.all()[0]
         second_sl = SimpleLog.objects.all()[1]
-        self.assertQuerysetEqual(first_sl.related_logs.all(), [])
-        self.assertQuerysetEqual(second_sl.related_logs.all(), [])
+        self.assertQuerySetEqual(first_sl.related_logs.all(), [])
+        self.assertQuerySetEqual(second_sl.related_logs.all(), [])
 
         # delete as context manager
         initial_count = SimpleLog.objects.count()
@@ -631,8 +631,8 @@ class AdminTestCase(TransactionTestCase):
         self.assertEqual(SimpleLog.objects.count(), initial_count + 2)
         first_sl = SimpleLog.objects.all()[0]
         second_sl = SimpleLog.objects.all()[1]
-        self.assertQuerysetEqual(first_sl.related_logs.all(), [])
-        self.assertQuerysetEqual(second_sl.related_logs.all(), [])
+        self.assertQuerySetEqual(first_sl.related_logs.all(), [])
+        self.assertQuerySetEqual(second_sl.related_logs.all(), [])
 
         # delete as decorator
         initial_count = SimpleLog.objects.count()
@@ -640,8 +640,8 @@ class AdminTestCase(TransactionTestCase):
         self.assertEqual(SimpleLog.objects.count(), initial_count + 2)
         first_sl = SimpleLog.objects.all()[0]
         second_sl = SimpleLog.objects.all()[1]
-        self.assertQuerysetEqual(first_sl.related_logs.all(), [])
-        self.assertQuerysetEqual(second_sl.related_logs.all(), [])
+        self.assertQuerySetEqual(first_sl.related_logs.all(), [])
+        self.assertQuerySetEqual(second_sl.related_logs.all(), [])
 
     def test_create_object_with_parent(self):
         third_instance = ThirdModel.objects.create(char_field='test')
@@ -658,10 +658,10 @@ class AdminTestCase(TransactionTestCase):
         self.assertEqual(first_sl.action_flag, SimpleLog.CHANGE)
         self.assertEqual(second_sl.get_edited_object(), obj)
         self.assertEqual(second_sl.action_flag, SimpleLog.ADD)
-        self.assertQuerysetEqual(
+        self.assertQuerySetEqual(
             first_sl.related_logs.all(), [second_sl], transform=None
         )
-        self.assertQuerysetEqual(second_sl.related_logs.all(), [])
+        self.assertQuerySetEqual(second_sl.related_logs.all(), [])
 
     def test_change_object_with_parent(self):
         third_instance = ThirdModel.objects.create(char_field='test')
@@ -680,10 +680,10 @@ class AdminTestCase(TransactionTestCase):
         self.assertEqual(first_sl.action_flag, SimpleLog.CHANGE)
         self.assertEqual(second_sl.get_edited_object(), obj)
         self.assertEqual(second_sl.action_flag, SimpleLog.CHANGE)
-        self.assertQuerysetEqual(
+        self.assertQuerySetEqual(
             first_sl.related_logs.all(), [second_sl], transform=None
         )
-        self.assertQuerysetEqual(second_sl.related_logs.all(), [])
+        self.assertQuerySetEqual(second_sl.related_logs.all(), [])
 
     def test_delete_object_with_parent(self):
         third_instance = ThirdModel.objects.create(char_field='test')
@@ -706,10 +706,10 @@ class AdminTestCase(TransactionTestCase):
             ContentType.objects.get_for_model(RelatedModel),
         )
         self.assertEqual(second_sl.action_flag, SimpleLog.DELETE)
-        self.assertQuerysetEqual(
+        self.assertQuerySetEqual(
             first_sl.related_logs.all(), [second_sl], transform=None
         )
-        self.assertQuerysetEqual(second_sl.related_logs.all(), [])
+        self.assertQuerySetEqual(second_sl.related_logs.all(), [])
 
     @mock.patch.object(
         TestModel,

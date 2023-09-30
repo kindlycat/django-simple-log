@@ -289,8 +289,8 @@ class SystemTestCase(AdminTestCase):
         self.assertEqual(SimpleLog.objects.count(), initial_count + 2)
         first_sl = SimpleLog.objects.all()[0]
         second_sl = SimpleLog.objects.all()[1]
-        self.assertQuerysetEqual(first_sl.related_logs.all(), [])
-        self.assertQuerysetEqual(
+        self.assertQuerySetEqual(first_sl.related_logs.all(), [])
+        self.assertQuerySetEqual(
             second_sl.related_logs.all(), [first_sl], transform=None
         )
         self.assertEqual(first_sl.user, second_sl.user)
@@ -309,8 +309,8 @@ class SystemTestCase(AdminTestCase):
         self.assertEqual(SimpleLog.objects.count(), initial_count + 2)
         first_sl = SimpleLog.objects.all()[0]
         second_sl = SimpleLog.objects.all()[1]
-        self.assertQuerysetEqual(first_sl.related_logs.all(), [])
-        self.assertQuerysetEqual(
+        self.assertQuerySetEqual(first_sl.related_logs.all(), [])
+        self.assertQuerySetEqual(
             second_sl.related_logs.all(), [first_sl], transform=None
         )
         self.assertEqual(first_sl.user, second_sl.user)
@@ -330,8 +330,8 @@ class SystemTestCase(AdminTestCase):
         self.assertEqual(SimpleLog.objects.count(), initial_count + 2)
         first_sl = SimpleLog.objects.all()[0]
         second_sl = SimpleLog.objects.all()[1]
-        self.assertQuerysetEqual(first_sl.related_logs.all(), [])
-        self.assertQuerysetEqual(second_sl.related_logs.all(), [])
+        self.assertQuerySetEqual(first_sl.related_logs.all(), [])
+        self.assertQuerySetEqual(second_sl.related_logs.all(), [])
 
         # add as decorator
         initial_count = SimpleLog.objects.count()
@@ -347,8 +347,8 @@ class SystemTestCase(AdminTestCase):
         self.assertEqual(SimpleLog.objects.count(), initial_count + 2)
         first_sl = SimpleLog.objects.all()[0]
         second_sl = SimpleLog.objects.all()[1]
-        self.assertQuerysetEqual(first_sl.related_logs.all(), [])
-        self.assertQuerysetEqual(second_sl.related_logs.all(), [])
+        self.assertQuerySetEqual(first_sl.related_logs.all(), [])
+        self.assertQuerySetEqual(second_sl.related_logs.all(), [])
 
         # change as context manager
         initial_count = SimpleLog.objects.count()
@@ -367,8 +367,8 @@ class SystemTestCase(AdminTestCase):
         self.assertEqual(SimpleLog.objects.count(), initial_count + 2)
         first_sl = SimpleLog.objects.all()[0]
         second_sl = SimpleLog.objects.all()[1]
-        self.assertQuerysetEqual(first_sl.related_logs.all(), [])
-        self.assertQuerysetEqual(second_sl.related_logs.all(), [])
+        self.assertQuerySetEqual(first_sl.related_logs.all(), [])
+        self.assertQuerySetEqual(second_sl.related_logs.all(), [])
 
         # change as decorator
         initial_count = SimpleLog.objects.count()
@@ -387,8 +387,8 @@ class SystemTestCase(AdminTestCase):
         self.assertEqual(SimpleLog.objects.count(), initial_count + 2)
         first_sl = SimpleLog.objects.all()[0]
         second_sl = SimpleLog.objects.all()[1]
-        self.assertQuerysetEqual(first_sl.related_logs.all(), [])
-        self.assertQuerysetEqual(second_sl.related_logs.all(), [])
+        self.assertQuerySetEqual(first_sl.related_logs.all(), [])
+        self.assertQuerySetEqual(second_sl.related_logs.all(), [])
 
         # delete as context manager
         initial_count = SimpleLog.objects.count()
@@ -397,8 +397,8 @@ class SystemTestCase(AdminTestCase):
         self.assertEqual(SimpleLog.objects.count(), initial_count + 2)
         first_sl = SimpleLog.objects.all()[0]
         second_sl = SimpleLog.objects.all()[1]
-        self.assertQuerysetEqual(first_sl.related_logs.all(), [])
-        self.assertQuerysetEqual(second_sl.related_logs.all(), [])
+        self.assertQuerySetEqual(first_sl.related_logs.all(), [])
+        self.assertQuerySetEqual(second_sl.related_logs.all(), [])
 
         # delete as decorator
         initial_count = SimpleLog.objects.count()
@@ -407,5 +407,5 @@ class SystemTestCase(AdminTestCase):
         self.assertEqual(SimpleLog.objects.count(), initial_count + 2)
         first_sl = SimpleLog.objects.all()[0]
         second_sl = SimpleLog.objects.all()[1]
-        self.assertQuerysetEqual(first_sl.related_logs.all(), [])
-        self.assertQuerysetEqual(second_sl.related_logs.all(), [])
+        self.assertQuerySetEqual(first_sl.related_logs.all(), [])
+        self.assertQuerySetEqual(second_sl.related_logs.all(), [])
