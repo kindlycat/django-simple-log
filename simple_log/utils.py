@@ -47,12 +47,12 @@ def get_log_model():
         return check_log_model(django_apps.get_model(settings.MODEL))
     except (ValueError, AttributeError):
         raise ImproperlyConfigured(
-            "SIMPLE_LOG_MODEL must be of the form " "'app_label.model_name'"
+            "SIMPLE_LOG_MODEL must be of the form 'app_label.model_name'"
         )
     except LookupError:
         raise ImproperlyConfigured(
             "SIMPLE_LOG_MODEL refers to model '%s' "
-            "that has not been installed" % settings.MODEL
+            'that has not been installed' % settings.MODEL
         )
 
 
@@ -192,9 +192,9 @@ def serialize_instance(instance):
         return serializer(instance)
     except Exception:
         logger.exception(
-            "Can't serialize instance: {} with pk {}".format(
-                instance.__class__, instance.pk
-            )
+            "Can't serialize instance: %s with pk %s",
+            instance.__class__,
+            instance.pk,
         )
 
 

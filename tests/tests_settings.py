@@ -117,7 +117,7 @@ class SettingsTestCase(TransactionTestCase):
         with isolate_lru_cache(get_log_model):
             msg = (
                 "SIMPLE_LOG_MODEL refers to model 'not_exist.Model' "
-                "that has not been installed"
+                'that has not been installed'
             )
             with self.assertRaisesMessage(ImproperlyConfigured, msg):
                 get_log_model()
@@ -133,7 +133,7 @@ class SettingsTestCase(TransactionTestCase):
         # Get wrong attribute
         msg = "'Settings' object has no attribute 'NOT_EXIST_ATTRIBUTE'"
         with self.assertRaisesMessage(AttributeError, msg):
-            getattr(settings, 'NOT_EXIST_ATTRIBUTE')
+            settings.NOT_EXIST_ATTRIBUTE  # noqa
 
         # Override settings, skip not SIMPLE_LOG settings
         with override_settings(SOME_SETTING=111):

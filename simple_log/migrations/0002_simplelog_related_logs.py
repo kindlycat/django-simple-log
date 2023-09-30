@@ -1,5 +1,5 @@
-from django.db import migrations
 from django.conf import settings
+from django.db import migrations
 
 from simple_log.fields import SimpleManyToManyField
 

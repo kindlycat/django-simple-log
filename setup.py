@@ -1,6 +1,4 @@
 # -*- coding: utf-8 -*-
-from __future__ import unicode_literals
-
 from distutils.core import setup
 
 from setuptools import find_namespace_packages
@@ -22,7 +20,9 @@ setup(
     author='Grigory Mishchenko',
     author_email='grishkokot@gmail.com',
     url='https://github.com/kindlycat/django-simple-log/',
-    packages=find_namespace_packages(exclude=('manage', 'tests', 'tests.*', 'docs', 'MANIFEST.in')),
+    packages=find_namespace_packages(
+        exclude=('manage', 'tests', 'tests.*', 'docs')
+    ),
     include_package_data=True,
     install_requires=['Django>=1.11', 'django-request-vars>=1.0.1'],
     classifiers=[

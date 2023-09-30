@@ -25,7 +25,7 @@ class SimpleLogChangeList(ChangeList):
         if history_for_model:
             object_opts = history_for_model._meta
             pk = getattr(result, self.pk_attname)
-            object_pk = getattr(result, 'object_id')
+            object_pk = result.object_id
             return reverse(
                 'admin:%s_%s_history_detail'
                 % (object_opts.app_label, object_opts.model_name),

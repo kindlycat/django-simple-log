@@ -47,7 +47,7 @@ def save_logs_on_commit():
             log.save()
 
     if settings.SAVE_RELATED and any(
-        [x.pk for x in all_logs if not x.disable_related]
+        x.pk for x in all_logs if not x.disable_related
     ):
         save_related(all_logs)
     del_variable('simple_log_instances')
