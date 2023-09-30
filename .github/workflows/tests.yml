@@ -106,3 +106,7 @@ jobs:
 
       - name: Run tests
         run: tox -e ${{ matrix.tox-env }}
+
+      - name: Coveralls
+        uses: coverallsapp/github-action@v2
+  
