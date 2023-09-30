@@ -5,7 +5,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.test import TransactionTestCase
 from django.test.utils import isolate_lru_cache
 from django.urls import reverse
-from django.utils.encoding import force_text
+from django.utils.encoding import force_str
 
 from simple_log.models import SimpleLog
 from simple_log.utils import disable_logging, get_fields, get_serializer
@@ -26,7 +26,7 @@ class AdminTestCase(TransactionTestCase):
     def setUp(self):
         self.create_initial_objects()
         self.user = User.objects.all()[0]
-        self.user_repr = force_text(self.user)
+        self.user_repr = force_str(self.user)
         self.ip = '127.0.0.1'
         self.other_model = OtherModel.objects.all()[0]
         with disable_logging():
@@ -114,8 +114,8 @@ class AdminTestCase(TransactionTestCase):
         self.assertEqual(sl.user, self.user)
         self.assertEqual(sl.user_repr, self.user_repr)
         self.assertEqual(sl.user_ip, self.ip)
-        self.assertEqual(sl.object_id, force_text(new_obj.id))
-        self.assertEqual(sl.object_repr, force_text(new_obj))
+        self.assertEqual(sl.object_id, force_str(new_obj.id))
+        self.assertEqual(sl.object_repr, force_str(new_obj))
         self.assertEqual(
             sl.content_type, ContentType.objects.get_for_model(new_obj)
         )
@@ -128,7 +128,7 @@ class AdminTestCase(TransactionTestCase):
                     'label': 'Fk field',
                     'value': {
                         'db': self.other_model.pk,
-                        'repr': force_text(self.other_model),
+                        'repr': force_str(self.other_model),
                     },
                 },
                 'm2m_field': {
@@ -136,7 +136,7 @@ class AdminTestCase(TransactionTestCase):
                     'value': [
                         {
                             'db': self.other_model.pk,
-                            'repr': force_text(self.other_model),
+                            'repr': force_str(self.other_model),
                         }
                     ],
                 },
@@ -169,8 +169,8 @@ class AdminTestCase(TransactionTestCase):
         self.assertEqual(sl.user, self.user)
         self.assertEqual(sl.user_repr, self.user_repr)
         self.assertEqual(sl.user_ip, self.ip)
-        self.assertEqual(sl.object_id, force_text(obj.id))
-        self.assertEqual(sl.object_repr, force_text(obj))
+        self.assertEqual(sl.object_id, force_str(obj.id))
+        self.assertEqual(sl.object_repr, force_str(obj))
         self.assertEqual(
             sl.content_type, ContentType.objects.get_for_model(obj)
         )
@@ -182,7 +182,7 @@ class AdminTestCase(TransactionTestCase):
                     'label': 'Fk field',
                     'value': {
                         'db': self.other_model.pk,
-                        'repr': force_text(self.other_model),
+                        'repr': force_str(self.other_model),
                     },
                 },
                 'm2m_field': {
@@ -190,7 +190,7 @@ class AdminTestCase(TransactionTestCase):
                     'value': [
                         {
                             'db': self.other_model.pk,
-                            'repr': force_text(self.other_model),
+                            'repr': force_str(self.other_model),
                         }
                     ],
                 },
@@ -233,8 +233,8 @@ class AdminTestCase(TransactionTestCase):
         self.assertEqual(sl.user, self.user)
         self.assertEqual(sl.user_repr, self.user_repr)
         self.assertEqual(sl.user_ip, self.ip)
-        self.assertEqual(sl.object_id, force_text(obj_id))
-        self.assertEqual(sl.object_repr, force_text(obj))
+        self.assertEqual(sl.object_id, force_str(obj_id))
+        self.assertEqual(sl.object_repr, force_str(obj))
         self.assertEqual(
             sl.content_type, ContentType.objects.get_for_model(obj)
         )
@@ -247,7 +247,7 @@ class AdminTestCase(TransactionTestCase):
                     'label': 'Fk field',
                     'value': {
                         'db': self.other_model.pk,
-                        'repr': force_text(self.other_model),
+                        'repr': force_str(self.other_model),
                     },
                 },
                 'm2m_field': {
@@ -255,7 +255,7 @@ class AdminTestCase(TransactionTestCase):
                     'value': [
                         {
                             'db': self.other_model.pk,
-                            'repr': force_text(self.other_model),
+                            'repr': force_str(self.other_model),
                         }
                     ],
                 },
@@ -282,8 +282,8 @@ class AdminTestCase(TransactionTestCase):
         self.assertEqual(sl.user, self.user)
         self.assertEqual(sl.user_repr, self.user_repr)
         self.assertEqual(sl.user_ip, self.ip)
-        self.assertEqual(sl.object_id, force_text(new_obj.id))
-        self.assertEqual(sl.object_repr, force_text(new_obj))
+        self.assertEqual(sl.object_id, force_str(new_obj.id))
+        self.assertEqual(sl.object_repr, force_str(new_obj))
         self.assertEqual(
             sl.content_type, ContentType.objects.get_for_model(new_obj)
         )
@@ -294,11 +294,11 @@ class AdminTestCase(TransactionTestCase):
                 'char_field': {'label': 'Char field', 'value': '★'},
                 'fk_field': {
                     'label': 'Fk field',
-                    'value': {'db': other.pk, 'repr': force_text(other)},
+                    'value': {'db': other.pk, 'repr': force_str(other)},
                 },
                 'm2m_field': {
                     'label': 'M2m field',
-                    'value': [{'db': other.pk, 'repr': force_text(other)}],
+                    'value': [{'db': other.pk, 'repr': force_str(other)}],
                 },
                 'choice_field': {
                     'label': 'Choice field',
@@ -363,7 +363,7 @@ class AdminTestCase(TransactionTestCase):
                         'label': 'Fk field',
                         'value': {
                             'db': other_model.pk,
-                            'repr': force_text(other_model),
+                            'repr': force_str(other_model),
                         },
                     },
                     'm2m_field': {'label': 'M2m field', 'value': []},
