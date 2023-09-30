@@ -291,7 +291,7 @@ class SystemTestCase(AdminTestCase):
         second_sl = SimpleLog.objects.all()[1]
         self.assertQuerysetEqual(first_sl.related_logs.all(), [])
         self.assertQuerysetEqual(
-            second_sl.related_logs.all(), [repr(first_sl)]
+            second_sl.related_logs.all(), [first_sl], transofrm=None
         )
         self.assertEqual(first_sl.user, second_sl.user)
 
@@ -311,7 +311,7 @@ class SystemTestCase(AdminTestCase):
         second_sl = SimpleLog.objects.all()[1]
         self.assertQuerysetEqual(first_sl.related_logs.all(), [])
         self.assertQuerysetEqual(
-            second_sl.related_logs.all(), [repr(first_sl)]
+            second_sl.related_logs.all(), [first_sl], transofrm=None
         )
         self.assertEqual(first_sl.user, second_sl.user)
 
